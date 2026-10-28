@@ -1,6 +1,6 @@
 # Remi design system — Catalog
 
-Status: direction and comps approved 2026-10-28; production UI not built.
+Status: direction and comps approved 2026-10-28; production library and editor implemented; physical-device acceptance pending.
 
 The surface is **Operate**: a person opens Remi to make one card quickly, on a laptop at a desk or
 a phone in hand. The visual world is a convention catalog sheet: numbered artwork cells you circle,
@@ -72,6 +72,35 @@ Header (wordmark, title, save), plate at 300px, four tabs (Preview, Add, Arrange
 panel below, and a pinned Export bar. Preview is always visible; Export is always one tap away.
 Nothing requires dragging or hovering.
 
+## Production surface
+
+Routes: `/` library, `/editor/[id]` editor, `/credits`. Library and editor are client-rendered because
+all data lives in IndexedDB.
+
+- **Desktop editor:** sticky toolbar (wordmark/back, editable title, save state, Export), tool panel
+  with Add/Arrange/Style tabs, centred plate with Fit/100% zoom, sheet map, unplaced tray footer.
+- **Mobile editor:** same toolbar, plate at frame width, four tabs (Preview, Add, Arrange, Style), the
+  active panel below, and a pinned Export bar. The sheet map and tray are desktop-only; Arrange carries
+  the slot list and tray on mobile.
+- **Add:** six category chips, visibly separate Search and Browse modes, year input, provider filters,
+  title-language choice, paginated results, Add per result, and an upload path. Filter changes are
+  provider-side; the panel never presents page-local filtering as catalog-wide.
+- **Arrange:** grid chips, free-space switch, shuffle, selected-item Move / To tray / Remove, the full
+  slot list, and the unplaced tray.
+- **Style:** title visibility, four formats, three faces, background/ink presets plus native colour
+  inputs, caption override, per-format crop sliders, image replacement, and removal.
+- **Export:** native modal with standard/2× choice, prepared dimensions and size, unplaced-item
+  warning, Save PNG, Share, Open image, and `.remi` project export.
+- **Library:** thumbnails, open, inline rename, duplicate, two-step delete, New card, project import,
+  empty/loading/error states.
+- **Saving:** status dot and text for saved/saving/unsaved/error/conflict; error and conflict banners
+  offer retry, project export, and reload. Edits flush on visibility loss, page hide, and SPA
+  navigation.
+
+Tool sections use tabs rather than the comp's stacked headings to make room for real search and
+crop controls; the visual grammar, palette, typography, and plate composition are unchanged. The
+export slip uses the native `<dialog>` element for focus trapping and Escape handling.
+
 ## Components
 
 - **Stamp** — filled ink rectangle, mono caps, no radius. The commit action (Export, New card, Save
@@ -131,8 +160,11 @@ comes from AniList/TMDB or user uploads; each shipped raster keeps its generatio
 - Final UI face if a bundled grotesque is ever justified; today system Helvetica Neue wins on
   offline reliability.
 - Grain strength at production scale (must be validated against text contrast).
-- Whether the sheet map stays permanently visible on desktop or collapses to a drawer below 1200px.
+- The sheet map is permanently visible on desktop and hidden on mobile; a drawer for 900–1200px is
+  still open.
 - Motion: one orchestrated transition for slot selection and export ready; nothing else.
+- Provider artwork replacement currently goes through Remove + Add; an in-place provider picker is
+  not built.
 
 The Impeccable detector ran in degraded regex mode on the comp route: one warning, "overused font"
 for Helvetica Neue, accepted for offline system availability and documented above. The detector did
