@@ -2,7 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { randomId } from '#lib/card/document';
-	import { CATEGORIES, type CardItem } from '#lib/card/types';
+	import { ADD_CATEGORIES, type CardItem, type Category } from '#lib/card/types';
 	import {
 		createMediaSearch,
 		fetchMediaOptions,
@@ -18,7 +18,6 @@
 
 	let options = $state<MediaOptions | null>(null);
 	let optionsError = $state<string | null>(null);
-	let mode = $state<'search' | 'browse'>('search');
 	let query = $state('');
 	let page = $state(1);
 	let year = $state('');
@@ -37,9 +36,7 @@
 	let optionsToken = 0;
 
 	const search = createMediaSearch();
-	const discoveryFilters = $derived(
-		(editor.addCategory !== 'movie' && editor.addCategory !== 'tv') || mode === 'browse'
-	);
+	const supportsFilters = $derived(editor.addCategory !== 'movie' && editor.addCategory !== 'tv');
 
 	$effect(() => {
 		const category = editor.addCategory;
@@ -48,7 +45,6 @@
 
 	$effect(() => {
 		const category = editor.addCategory;
-		const currentMode = mode;
 		const text = query;
 		const currentPage = page;
 		const currentYear = year;
@@ -67,7 +63,7 @@
 			return;
 		}
 
-		if (currentMode === 'search' && !text.trim()) {
+		if (!text.trim()) {
 			search.cancel();
 			results = [];
 			total = null;
@@ -83,13 +79,13 @@
 		search.schedule(
 			{
 				category,
-				mode: currentMode,
-				query: currentMode === 'search' ? text.trim() : undefined,
+				mode: 'search',
+				query: text.trim(),
 				page: currentPage,
 				year: currentYear ? Number(currentYear) : undefined,
-				genre: discoveryFilters ? currentFilters.genre : undefined,
-				format: discoveryFilters ? currentFilters.format : undefined,
-				status: discoveryFilters ? currentFilters.status : undefined,
+				genre: supportsFilters ? currentFilters.genre : undefined,
+				format: supportsFilters ? currentFilters.format : undefined,
+				status: supportsFilters ? currentFilters.status : undefined,
 				titleLanguage: language as 'english' | 'romaji' | 'native'
 			},
 			{
@@ -137,14 +133,6 @@
 				optionsError = error instanceof Error ? error.message : String(error);
 			}
 		}
-	}
-
-	function setMode(next: 'search' | 'browse') {
-		mode = next;
-		if (editor.addCategory === 'movie' || editor.addCategory === 'tv') filters = {};
-		page = 1;
-		results = [];
-		searchError = null;
 	}
 
 	function setFilter(key: string, value: string) {
@@ -230,44 +218,25 @@
 <section class="panel-body" aria-label="Add media">
 	<h2 class="section-title">Add</h2>
 
-	<div class="chip-row" aria-label="Category">
-		{#each CATEGORIES as category (category)}
-			<button
-				type="button"
-				class="chip"
-				class:on={editor.addCategory === category}
-				aria-pressed={editor.addCategory === category}
-				onclick={() => editor.setAddCategory(category)}
-				>{category[0].toUpperCase() + category.slice(1)}</button
+	<div class="search-row">
+		<label class="category-field">
+			<span class="visually-hidden">Category</span>
+			<select
+				value={editor.addCategory}
+				onchange={(event) => editor.setAddCategory(event.currentTarget.value as Category)}
 			>
-		{/each}
-	</div>
-
-	<div class="seg mode" aria-label="Search or browse">
-		<button
-			type="button"
-			class="seg-btn"
-			class:on={mode === 'search'}
-			aria-pressed={mode === 'search'}
-			onclick={() => setMode('search')}>Search</button
-		>
-		<button
-			type="button"
-			class="seg-btn"
-			class:on={mode === 'browse'}
-			aria-pressed={mode === 'browse'}
-			onclick={() => setMode('browse')}>Browse</button
-		>
-	</div>
-
-	{#if mode === 'search'}
-		<label class="field stacked">
-			<span class="label">Title</span>
+				{#each ADD_CATEGORIES as category (category)}
+					<option value={category}>{category[0].toUpperCase() + category.slice(1)}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="title-field">
+			<span class="visually-hidden">Title</span>
 			<input
 				class="input"
 				data-testid="search-input"
 				type="search"
-				placeholder="Search titles…"
+				placeholder="Search by title"
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;
@@ -275,9 +244,7 @@
 				}}
 			/>
 		</label>
-	{:else}
-		<p class="mode-note">Browsing the provider catalog by popularity, not the current page.</p>
-	{/if}
+	</div>
 
 	<div class="filters">
 		<label class="field stacked">
@@ -298,7 +265,7 @@
 		</label>
 
 		{#if options}
-			{#each discoveryFilters ? options.filters : [] as filter (filter.key)}
+			{#each supportsFilters ? options.filters : [] as filter (filter.key)}
 				<label class="field stacked">
 					<span class="label">{filter.label}</span>
 					<select
@@ -347,8 +314,14 @@
 	{/if}
 
 	<div class="results-head">
-		<span class="label">{mode === 'search' ? 'Search results' : 'Browse · popular'}</span>
-		<span class="mono">{loading ? 'Loading…' : total === null ? '' : `${total} results`}</span>
+		<span class="label">Search results</span>
+		<span class="mono"
+			>{loading
+				? 'Loading…'
+				: total === null
+					? ''
+					: `${total} ${total === 1 ? 'result' : 'results'}`}</span
+		>
 	</div>
 
 	{#if loading}
@@ -358,8 +331,8 @@
 			{/each}
 			<p class="mono">Searching…</p>
 		</div>
-	{:else if results.length === 0 && mode === 'search' && !query.trim()}
-		<p class="hint">Type a title, or switch to Browse.</p>
+	{:else if results.length === 0 && !query.trim()}
+		<p class="hint">Type a title to search.</p>
 	{:else if results.length === 0 && !searchError}
 		<p class="hint">No results on this page.</p>
 	{:else}
@@ -383,7 +356,7 @@
 					<div class="result-text">
 						<span class="result-title">{result.title.preferred}</span>
 						<span class="meta">
-							{[result.year, result.format, result.category].filter(Boolean).join(' · ')}
+							{[result.year, result.format].filter(Boolean).join(' · ')}
 						</span>
 						{#if result.title.alternatives.length > 0}
 							<span class="alt">{result.title.alternatives[0]}</span>
@@ -402,18 +375,20 @@
 		</ul>
 	{/if}
 
-	<div class="pager">
-		<button
-			class="ghost"
-			type="button"
-			disabled={page <= 1 || loading}
-			onclick={() => (page = Math.max(1, page - 1))}>Previous</button
-		>
-		<span class="mono">Page {page}</span>
-		<button class="ghost" type="button" disabled={!hasNext || loading} onclick={() => (page += 1)}
-			>Next</button
-		>
-	</div>
+	{#if results.length > 0}
+		<div class="pager">
+			<button
+				class="ghost"
+				type="button"
+				disabled={page <= 1 || loading}
+				onclick={() => (page = Math.max(1, page - 1))}>Previous</button
+			>
+			<span class="mono">Page {page}</span>
+			<button class="ghost" type="button" disabled={!hasNext || loading} onclick={() => (page += 1)}
+				>Next</button
+			>
+		</div>
+	{/if}
 
 	{#if addError}<p class="error-text" role="alert">{addError}</p>{/if}
 	{#if notice}<p class="notice" role="status">{notice}</p>{/if}
@@ -440,14 +415,53 @@
 		flex-direction: column;
 		gap: 10px;
 	}
-	.mode {
-		align-self: flex-start;
+	.search-row {
+		display: flex;
+		align-items: stretch;
+		border: 1px solid var(--ink);
+		background: var(--paper);
 	}
-	.mode-note {
-		margin: 0;
-		font-size: 11px;
-		line-height: 1.5;
-		color: var(--muted);
+	.search-row:focus-within {
+		outline: 2px solid var(--spot);
+		outline-offset: 1px;
+	}
+	.category-field {
+		flex: none;
+		display: flex;
+		align-items: center;
+		border-right: 1px solid var(--rule);
+		background: var(--panel);
+	}
+	.category-field select {
+		appearance: none;
+		border: 0;
+		background: transparent;
+		height: 40px;
+		padding: 0 26px 0 10px;
+		font-family: var(--mono);
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		background-image:
+			linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+			linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+		background-position:
+			calc(100% - 14px) 18px,
+			calc(100% - 9px) 18px;
+		background-size: 5px 5px;
+		background-repeat: no-repeat;
+	}
+	.title-field {
+		flex: 1;
+		display: flex;
+		min-width: 0;
+	}
+	.title-field .input {
+		border: 0;
+		height: 40px;
+		padding: 0 10px;
+		font-size: 13px;
 	}
 	.filters {
 		display: grid;

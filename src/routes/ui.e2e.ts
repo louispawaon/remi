@@ -249,7 +249,7 @@ test('shows credential guidance when movie discovery is unavailable', async ({ p
 
 	await createCard(page);
 	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
-	await page.getByRole('button', { name: 'Movie', exact: true }).click();
+	await page.getByLabel('Category').selectOption('movie');
 	await expect(page.getByText(/TMDB read access token/)).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Credits and setup' })).toBeVisible();
 });

@@ -166,7 +166,7 @@ test('rejects oversized text while keeping the accepted card exportable', async 
 	expect((await download).suggestedFilename()).toMatch(/\.remi$/);
 });
 
-test('offers TMDB discovery filters only in Browse and clears them in Search', async ({ page }) => {
+test('searches the chosen medium without discovery filters', async ({ page }) => {
 	const requests: URL[] = [];
 	await page.route('**/api/media/options*', (route) => {
 		const category = new URL(route.request().url()).searchParams.get('category');
@@ -200,19 +200,13 @@ test('offers TMDB discovery filters only in Browse and clears them in Search', a
 	});
 	await seed(page);
 	await page.getByTestId('tabs').getByRole('button', { name: 'Add', exact: true }).click();
-	await page.getByRole('button', { name: 'Tv', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Browse', exact: true })).toHaveCount(0);
+	await page.getByLabel('Category').selectOption('tv');
 	await expect(page.locator('.filters select')).toHaveCount(0);
-	await page.getByRole('button', { name: 'Browse', exact: true }).click();
-	await expect(page.locator('.filters select')).toHaveCount(2);
-	await page.locator('.filters select').nth(0).selectOption('12');
-	await page.locator('.filters select').nth(1).selectOption('0');
-	await expect.poll(() => requests.at(-1)?.searchParams.get('status')).toBe('0');
-	await page.getByRole('button', { name: 'Search', exact: true }).click();
 	await page.getByTestId('search-input').fill('Breaking Bad');
 	await expect.poll(() => requests.at(-1)?.searchParams.get('query')).toBe('Breaking Bad');
+	expect(requests.at(-1)?.searchParams.get('category')).toBe('tv');
+	expect(requests.at(-1)?.searchParams.get('mode')).toBe('search');
 	expect(requests.at(-1)?.searchParams.has('genre')).toBe(false);
 	expect(requests.at(-1)?.searchParams.has('status')).toBe(false);
-	await page.getByRole('button', { name: 'Browse', exact: true }).click();
-	await expect(page.locator('.filters select').nth(0)).toHaveValue('');
-	await expect(page.locator('.filters select').nth(1)).toHaveValue('');
 });
