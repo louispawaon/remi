@@ -92,6 +92,74 @@ describe('Autosave', () => {
 });
 
 describe('Autosave races', () => {
+	it('drains newer edits before flush resolves without overlapping writes', async () => {
+		let release!: () => void;
+		let revision = 1;
+		const saver = vi.fn(async (value: CardRecord) => {
+			if (saver.mock.calls.length === 1) await new Promise<void>((resolve) => (release = resolve));
+			else await wait(5);
+			if (value.document.revision !== revision) throw new RevisionConflictError(revision);
+			return { ...value, document: { ...value.document, revision: ++revision } };
+		});
+		const autosave = new Autosave(record(), saver, { debounceMs: 10_000 });
+		try {
+			autosave.update(record());
+			const first = autosave.flush();
+			autosave.update({ ...record(), document: { ...record().document, title: 'Latest edit' } });
+			const second = autosave.flush();
+			const third = autosave.flush();
+			release();
+			await Promise.all([first, second, third]);
+			expect(saver).toHaveBeenCalledTimes(2);
+			expect(autosave.record.document).toMatchObject({ title: 'Latest edit', revision: 3 });
+			expect(autosave.status).toBe('saved');
+		} finally {
+			autosave.dispose();
+		}
+	});
+
+	it('a single flush waits for edits that arrive during its write', async () => {
+		let release!: () => void;
+		const saver = vi.fn(async (value: CardRecord) => {
+			if (saver.mock.calls.length === 1) await new Promise<void>((resolve) => (release = resolve));
+			return { ...value, document: { ...value.document, revision: value.document.revision + 1 } };
+		});
+		const autosave = new Autosave(record(), saver, { debounceMs: 10_000 });
+		try {
+			autosave.update(record());
+			const flushing = autosave.flush();
+			autosave.update({ ...record(), document: { ...record().document, title: 'Latest edit' } });
+			release();
+			const saved = await flushing;
+			expect(saved?.document).toMatchObject({ title: 'Latest edit', revision: 3 });
+			expect(autosave.status).toBe('saved');
+			expect(saver).toHaveBeenCalledTimes(2);
+		} finally {
+			autosave.dispose();
+		}
+	});
+
+	it('does not retry a failed write for callers already waiting on it', async () => {
+		let reject!: (error: Error) => void;
+		const saver = vi.fn(() =>
+			saver.mock.calls.length === 1
+				? new Promise<CardRecord>((_resolve, fail) => (reject = fail))
+				: Promise.reject(new StorageWriteError('full'))
+		);
+		const autosave = new Autosave(record(), saver);
+		try {
+			autosave.update(record());
+			const first = autosave.flush();
+			const second = autosave.flush();
+			reject(new StorageWriteError('full'));
+			await Promise.all([first, second]);
+			expect(saver).toHaveBeenCalledTimes(1);
+			expect(autosave.status).toBe('error');
+		} finally {
+			autosave.dispose();
+		}
+	});
+
 	it('adopts the acknowledged revision when an edit lands during a save', async () => {
 		let release: ((value: CardRecord) => void) | undefined;
 		let calls = 0;

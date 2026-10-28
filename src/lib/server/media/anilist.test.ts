@@ -40,6 +40,20 @@ function fetchMock(response = page([media], true, 42)) {
 }
 
 describe('AniList adapter', () => {
+	it.each(['manga', 'manhwa', 'manhua'] as const)(
+		'filters %s by publication year and returns that year',
+		async (category) => {
+			const fetcher = fetchMock(page([{ ...media, seasonYear: null, startDate: { year: 1997 } }]));
+			const adapter = createAniList(fetcher);
+			const result = await adapter.search({ ...request, category, year: 1997 });
+			const body = JSON.parse(fetcher.mock.calls[0][1]!.body as string);
+			expect(body.variables.startYear).toBe('1997%');
+			expect(body.variables.year).toBeUndefined();
+			expect(body.query).toContain('startDate_like: $startYear');
+			expect(result.results[0].year).toBe(1997);
+		}
+	);
+
 	it('searches anime with title matching and normalizes the result', async () => {
 		const fetcher = fetchMock();
 		const adapter = createAniList(fetcher as unknown as typeof fetch);

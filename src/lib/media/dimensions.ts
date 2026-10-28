@@ -3,6 +3,16 @@ export interface ImageDimensions {
 	height: number;
 }
 
+export type ImageFormat = 'png' | 'jpeg' | 'webp';
+
+/** Recognise the container independently of whether dimensions can be read. */
+export function imageFormat(bytes: Uint8Array): ImageFormat | null {
+	if (isPng(bytes)) return 'png';
+	if (isJpeg(bytes)) return 'jpeg';
+	if (isWebp(bytes)) return 'webp';
+	return null;
+}
+
 /** Read dimensions from headers so oversized images are rejected before decoding. */
 export function sniffDimensions(bytes: Uint8Array): ImageDimensions | null {
 	if (isPng(bytes)) {
@@ -56,12 +66,16 @@ function readU32(bytes: Uint8Array, offset: number) {
 
 function jpegDimensions(bytes: Uint8Array): ImageDimensions | null {
 	let offset = 2;
-	while (offset + 9 < bytes.length) {
+	while (offset + 8 < bytes.length) {
 		if (bytes[offset] !== 0xff) {
 			offset += 1;
 			continue;
 		}
 		const marker = bytes[offset + 1];
+		if (marker === 0xff) {
+			offset += 1;
+			continue;
+		}
 		if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
 			offset += 2;
 			continue;

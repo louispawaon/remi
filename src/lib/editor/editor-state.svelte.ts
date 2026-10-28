@@ -8,11 +8,12 @@ import {
 	setFreeSpace as withFreeSpace,
 	unplacedItems
 } from '#lib/card/document';
+import { projectManifestSize } from '#lib/card/archive';
 import { shuffleDocument } from '#lib/card/shuffle';
 import type { CardDocument, CardItem, CardRecord, Category } from '#lib/card/types';
 import type { NormalizedArtwork } from '#lib/media/artwork';
 import { Autosave, type AutosaveStatus } from '#lib/library/autosave';
-import { saveCard, updateThumbnail } from '#lib/library/store';
+import { assertStorable, saveCard, updateThumbnail } from '#lib/library/store';
 import { createThumbnail } from '#lib/library/thumbnail';
 
 export type EditorTool = 'preview' | 'add' | 'arrange' | 'style';
@@ -21,6 +22,7 @@ export class EditorState {
 	record = $state.raw<CardRecord>({} as CardRecord);
 	status = $state<AutosaveStatus>('saved');
 	statusDetail = $state<string | undefined>(undefined);
+	editError = $state<string | null>(null);
 	selectedSlot = $state<number | null>(null);
 	selectedItemId = $state<string | null>(null);
 	movingItemId = $state<string | null>(null);
@@ -81,6 +83,7 @@ export class EditorState {
 	}
 
 	selectSlot(index: number): void {
+		this.editError = null;
 		if (this.movingItemId) {
 			this.placeMovingItem(index);
 			return;
@@ -91,6 +94,7 @@ export class EditorState {
 	}
 
 	beginMove(itemId: string): void {
+		this.editError = null;
 		this.selectedItemId = itemId;
 		this.selectedSlot = this.document.slots.indexOf(itemId);
 		if (this.selectedSlot < 0) this.selectedSlot = null;
@@ -165,15 +169,17 @@ export class EditorState {
 		const artwork = { ...this.record.artwork };
 		if (blob && item.artwork) artwork[item.artwork.id] = blob;
 
-		this.record = { document: { ...document, items: [...document.items, item], slots }, artwork };
+		const next = { document: { ...document, items: [...document.items, item], slots }, artwork };
+		assertStorable(next);
+		this.record = next;
 		this.#queue();
 		this.selectedItemId = item.id;
 		this.selectedSlot = target >= 0 ? target : null;
 	}
 
-	replaceSelectedArtwork(normalized: NormalizedArtwork): void {
-		const item = this.selectedItem;
-		if (!item) return;
+	replaceArtwork(itemId: string, normalized: NormalizedArtwork): boolean {
+		const item = this.document.items.find((candidate) => candidate.id === itemId);
+		if (!item) return false;
 
 		const document = this.document;
 		const oldId = item.artwork?.id;
@@ -194,8 +200,11 @@ export class EditorState {
 		let artwork = { ...this.record.artwork, [artworkId]: normalized.blob };
 		artwork = this.#dropArtwork(oldId, { ...document, items }, artwork);
 
-		this.record = { document: { ...document, items }, artwork };
+		const next = { document: { ...document, items }, artwork };
+		assertStorable(next);
+		this.record = next;
 		this.#queue();
+		return true;
 	}
 
 	setItemTitle(title: string): void {
@@ -260,12 +269,33 @@ export class EditorState {
 	}
 
 	#mutate(document: CardDocument, thumbnailDirty = true): void {
-		this.record = { ...this.record, document };
+		const next = { ...this.record, document };
+		try {
+			assertStorable(next);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			// An over-limit card must still be repairable: accept edits that shrink the manifest,
+			// keep them in memory, and resume autosave once the card fits again.
+			const repairable =
+				message.includes('manifest') &&
+				projectManifestSize(next.document) < projectManifestSize(this.record.document);
+			if (repairable) {
+				this.editError = `${message} Keep shortening to save.`;
+				this.record = next;
+				this.#thumbnailDirty ||= thumbnailDirty;
+				return;
+			}
+			this.editError = message;
+			return;
+		}
+		this.editError = null;
+		this.record = next;
 		this.#thumbnailDirty ||= thumbnailDirty;
 		this.#autosave.update(this.record);
 	}
 
 	#queue(): void {
+		this.editError = null;
 		this.#thumbnailDirty = true;
 		this.#autosave.update(this.record);
 	}

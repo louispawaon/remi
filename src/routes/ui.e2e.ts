@@ -227,6 +227,12 @@ test('adds a mocked provider result through the search panel', async ({ page }) 
 
 	await expect(page.locator('.sheet-foot .mono').first()).toContainText('01 items');
 	await expect(page.locator('.sheet-map')).toContainText('Frieren');
+	await expect(page.getByTestId('save-status')).toHaveText('Saved', { timeout: 8000 });
+
+	await page.reload();
+	await page.waitForSelector('[data-testid="tabs"]');
+	await expect(page.getByTestId('save-status')).toHaveText('Saved');
+	await expect(page.locator('.sheet-map')).toContainText('Frieren');
 });
 
 test('shows credential guidance when movie discovery is unavailable', async ({ page }) => {

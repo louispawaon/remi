@@ -37,6 +37,9 @@
 	let optionsToken = 0;
 
 	const search = createMediaSearch();
+	const discoveryFilters = $derived(
+		(editor.addCategory !== 'movie' && editor.addCategory !== 'tv') || mode === 'browse'
+	);
 
 	$effect(() => {
 		const category = editor.addCategory;
@@ -84,9 +87,9 @@
 				query: currentMode === 'search' ? text.trim() : undefined,
 				page: currentPage,
 				year: currentYear ? Number(currentYear) : undefined,
-				genre: currentFilters.genre,
-				format: currentFilters.format,
-				status: currentFilters.status,
+				genre: discoveryFilters ? currentFilters.genre : undefined,
+				format: discoveryFilters ? currentFilters.format : undefined,
+				status: discoveryFilters ? currentFilters.status : undefined,
 				titleLanguage: language as 'english' | 'romaji' | 'native'
 			},
 			{
@@ -138,6 +141,7 @@
 
 	function setMode(next: 'search' | 'browse') {
 		mode = next;
+		if (editor.addCategory === 'movie' || editor.addCategory === 'tv') filters = {};
 		page = 1;
 		results = [];
 		searchError = null;
@@ -166,7 +170,10 @@
 				id: randomId(),
 				category: result.category,
 				sourceId: `${result.provider}:${result.providerId}`,
-				titles: { preferred: result.title.preferred, alternatives: result.title.alternatives },
+				titles: {
+					preferred: result.title.preferred,
+					alternatives: [...result.title.alternatives]
+				},
 				titleOverride: null,
 				artwork: normalized
 					? {
@@ -291,7 +298,7 @@
 		</label>
 
 		{#if options}
-			{#each options.filters as filter (filter.key)}
+			{#each discoveryFilters ? options.filters : [] as filter (filter.key)}
 				<label class="field stacked">
 					<span class="label">{filter.label}</span>
 					<select

@@ -10,6 +10,7 @@ These documents preserve the plan agreed in the conversation. They describe inte
 2. [Implementation plan](plans/2026-10-28-remi-v1.md) — initialization through delivery, with independently testable phases and exit gates.
 3. [Design direction](design/2026-10-28-remi-direction.md) — locked Catalog world, comps, and rejected alternatives.
 4. [Acceptance checklist](plans/2026-10-28-remi-v1-acceptance.md) — evidence required before calling v1 accepted.
+5. [Audit fixes](plans/2026-10-29-audit-fixes.md) — nine verified findings, review follow-ups, and their verification record.
 
 The specification owns product behavior and architectural decisions. The implementation plan owns sequencing. [DESIGN.md](../../../DESIGN.md) owns the visual system. The acceptance checklist owns verification. Update the affected documents together when a decision changes.
 

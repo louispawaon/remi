@@ -6,6 +6,7 @@ import {
 	unplacedItems
 } from '#lib/card/document';
 import { CARD_LIMITS, type CardDocument, type CardRecord } from '#lib/card/types';
+import { createProjectManifest } from '#lib/card/archive';
 import { getDatabase } from './db';
 import { CardGoneError, RevisionConflictError, StorageWriteError, toStorageError } from './errors';
 import type { CardSummary } from './types';
@@ -38,6 +39,7 @@ export function assertStorable(record: CardRecord): void {
 	if (record.document.items.length > CARD_LIMITS.maxItems) {
 		throw new StorageWriteError(`A card can hold at most ${CARD_LIMITS.maxItems} items.`);
 	}
+	createProjectManifest(record.document);
 
 	let total = 0;
 	for (const blob of Object.values(record.artwork)) {
@@ -112,6 +114,7 @@ async function writeCard(
 			},
 			artwork: record.artwork
 		};
+		createProjectManifest(next.document);
 
 		await cards.put(next, next.document.id);
 		await library.put(

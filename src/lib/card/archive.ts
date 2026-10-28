@@ -8,6 +8,7 @@ import {
 	CATEGORIES,
 	FONT_CHOICES,
 	FORMATS,
+	type CardDocument,
 	type CardRecord
 } from './types';
 
@@ -92,53 +93,68 @@ type ManifestArtwork = Manifest['artwork'][number];
 
 const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as const;
 
+function buildManifest(document: CardDocument): Manifest {
+	const byId = new Map<string, ManifestArtwork>();
+	for (const item of document.items) {
+		if (!item.artwork) continue;
+		const existing = byId.get(item.artwork.id);
+		if (existing) {
+			assertSameArtwork(existing, item.artwork);
+		} else {
+			byId.set(item.artwork.id, {
+				...item.artwork,
+				path: `${ARTWORK_DIRECTORY}/${byId.size}.${EXTENSIONS[item.artwork.type]}`
+			});
+		}
+	}
+	return {
+		schemaVersion: CARD_SCHEMA_VERSION,
+		document,
+		artwork: [...byId.values()]
+	};
+}
+
+function manifestByteLength(document: CardDocument): number {
+	return strToU8(JSON.stringify(buildManifest(document))).byteLength;
+}
+
+/** Used by the editor to allow a card that is over budget to be shrunk back under it. */
+export function projectManifestSize(document: CardDocument): number {
+	return manifestByteLength(document);
+}
+
+/** Shared by editing, saving, and export so every accepted card stays portable. */
+export function createProjectManifest(document: CardDocument): Manifest {
+	const manifest = buildManifest(document);
+	if (strToU8(JSON.stringify(manifest)).byteLength > ARCHIVE_LIMITS.manifestBytes) {
+		throw new Error(
+			'Project manifest exceeds the 1 MiB limit. Shorten the card title or captions.'
+		);
+	}
+	return manifest;
+}
+
 export async function createProjectArchive(record: CardRecord): Promise<Uint8Array> {
 	if (record.document.items.length > CARD_LIMITS.maxItems) {
 		throw new Error(`Card has more than ${CARD_LIMITS.maxItems} items`);
 	}
 
+	const manifest = createProjectManifest(record.document);
 	const files: Record<string, Uint8Array> = {};
-	const artwork: ManifestArtwork[] = [];
-	const byId = new Map<string, ManifestArtwork>();
 	let artworkBytes = 0;
-
-	for (const item of record.document.items) {
-		if (!item.artwork) continue;
-
-		const existing = byId.get(item.artwork.id);
-		if (existing) {
-			assertSameArtwork(existing, item.artwork);
-			continue;
-		}
-
-		const blob = record.artwork[item.artwork.id];
-		if (!blob) throw new Error(`Cannot export project: artwork ${item.artwork.id} is missing`);
+	for (const entry of manifest.artwork) {
+		const blob = record.artwork[entry.id];
+		if (!blob) throw new Error(`Cannot export project: artwork ${entry.id} is missing`);
 		if (blob.size > CARD_LIMITS.maxArtworkBytes) {
-			throw new Error(
-				`Artwork ${item.artwork.id} exceeds the ${CARD_LIMITS.maxArtworkBytes} byte limit`
-			);
+			throw new Error(`Artwork ${entry.id} exceeds the ${CARD_LIMITS.maxArtworkBytes} byte limit`);
 		}
 		artworkBytes += blob.size;
 		if (artworkBytes > CARD_LIMITS.maxCardArtworkBytes) {
 			throw new Error(`Card artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`);
 		}
-
-		const entry: ManifestArtwork = {
-			...item.artwork,
-			path: `${ARTWORK_DIRECTORY}/${byId.size}.${EXTENSIONS[item.artwork.type]}`
-		};
-		byId.set(entry.id, entry);
-		artwork.push(entry);
 		files[entry.path] = new Uint8Array(await blob.arrayBuffer());
 	}
-
-	const manifest: Manifest = {
-		schemaVersion: CARD_SCHEMA_VERSION,
-		document: record.document,
-		artwork
-	};
 	files[PROJECT_MANIFEST_PATH] = strToU8(JSON.stringify(manifest));
-
 	return zipSync(files, { level: 6 });
 }
 
@@ -158,6 +174,9 @@ export function readProjectArchive(bytes: Uint8Array): CardRecord {
 	const files = unzipSync(bytes, {
 		filter: (file) => {
 			if (file.name.endsWith('/')) return false;
+			if (file.compression === 0 && file.size !== file.originalSize) {
+				throw new Error('Stored archive entry sizes are inconsistent');
+			}
 			if (++entryCount > ARCHIVE_LIMITS.entries) {
 				throw new Error(`Archive has more than ${ARCHIVE_LIMITS.entries} entries`);
 			}
@@ -179,6 +198,8 @@ export function readProjectArchive(bytes: Uint8Array): CardRecord {
 
 	const manifestBytes = files[PROJECT_MANIFEST_PATH];
 	if (!manifestBytes) throw new Error('Project archive is missing its manifest');
+	if (manifestBytes.byteLength > ARCHIVE_LIMITS.manifestBytes)
+		throw new Error('Manifest exceeds its byte limit');
 
 	let json: unknown;
 	try {

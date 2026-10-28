@@ -29,7 +29,7 @@ function makeRecord(): CardRecord {
 async function manifestOf(record: CardRecord) {
 	const archive = await createProjectArchive(record);
 	const files = unzipSync(archive);
-	return JSON.parse(strFromU8(files[PROJECT_MANIFEST_PATH])) as Record<string, unknown>;
+	return JSON.parse(strFromU8(files[PROJECT_MANIFEST_PATH])) as MutableManifest;
 }
 
 interface MutableManifest {
@@ -83,6 +83,30 @@ function zipWithDuplicateEntry(manifest: Uint8Array): Promise<Uint8Array> {
 }
 
 describe('project archive', () => {
+	it('refuses exports whose UTF-8 manifest exceeds the import limit', async () => {
+		const record = makeRecord();
+		record.document.title = '界'.repeat(Math.ceil(ARCHIVE_LIMITS.manifestBytes / 3));
+		await expect(createProjectArchive(record).then(() => 'exported')).rejects.toThrow(/manifest/i);
+	});
+
+	it('rejects stored ZIP entries with a forged original size', async () => {
+		const manifest = await manifestOf(makeRecord());
+		manifest.document.title = 'x'.repeat(ARCHIVE_LIMITS.manifestBytes);
+		manifest.document.items = [];
+		manifest.document.slots.fill(null);
+		manifest.artwork = [];
+		const files = { [PROJECT_MANIFEST_PATH]: strToU8(JSON.stringify(manifest)) };
+		const bytes = zipSync(files, { level: 0 });
+		const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+		for (let offset = 0; offset < bytes.length - 46; offset++) {
+			if (view.getUint32(offset, true) === 0x02014b50) {
+				view.setUint32(offset + 24, 1, true);
+				break;
+			}
+		}
+		expect(() => readProjectArchive(bytes)).toThrow(/size/i);
+	});
+
 	it('round-trips the document and every artwork blob, including unplaced items', async () => {
 		const record = makeRecord();
 		const archive = await createProjectArchive(record);

@@ -19,11 +19,13 @@
 	async function replaceImage(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
-		if (!file) return;
+		const itemId = editor.selectedItemId;
+		if (!file || !itemId) return;
 		replacing = true;
 		imageError = null;
 		try {
-			editor.replaceSelectedArtwork(await normalizeArtwork(file, file.type));
+			const replaced = editor.replaceArtwork(itemId, await normalizeArtwork(file, file.type));
+			if (!replaced) imageError = 'That item was removed while the image was loading.';
 		} catch (error) {
 			imageError = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -147,7 +149,13 @@
 					type="text"
 					value={editor.selectedItem.titleOverride ?? ''}
 					placeholder={editor.selectedItem.titles.preferred}
-					oninput={(event) => editor.setItemTitle(event.currentTarget.value)}
+					oninput={(event) => {
+						editor.setItemTitle(event.currentTarget.value);
+						const accepted = editor.selectedItem?.titleOverride ?? '';
+						if (editor.editError && event.currentTarget.value !== accepted) {
+							event.currentTarget.value = accepted;
+						}
+					}}
 				/>
 			</label>
 			<p class="full-title">{editor.selectedItem.titles.preferred}</p>

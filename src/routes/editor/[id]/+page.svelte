@@ -17,23 +17,22 @@
 	let loadError = $state<string | null>(null);
 	let exportOpen = $state(false);
 	let allowLeave = false;
+	let leaving = false;
 
 	const leaveWarning =
 		'This card is not saved. Leave and lose the changes in this tab? Export the project first to keep them.';
 
-	function unsaved(instance: EditorState | null): boolean {
-		return instance?.status === 'error' || instance?.status === 'conflict';
-	}
-
-	beforeNavigate(async (navigation) => {
-		if (!editor) return;
-		if (unsaved(editor)) {
-			if (!allowLeave && !window.confirm(leaveWarning)) navigation.cancel();
+	beforeNavigate((navigation) => {
+		if (allowLeave) {
+			allowLeave = false;
 			return;
 		}
-		await editor.flush();
-		if (unsaved(editor) && !window.confirm(leaveWarning)) {
-			navigation.cancel();
+		if (!editor || editor.status === 'saved') return;
+		navigation.cancel();
+		if (navigation.willUnload) {
+			void editor.flush();
+		} else if (navigation.to) {
+			void leave(navigation.to.url, navigation.type === 'popstate' ? navigation.delta : undefined);
 		}
 	});
 
@@ -77,17 +76,24 @@
 	});
 
 	onDestroy(() => {
-		void editor?.flush();
 		editor?.dispose();
 	});
 
-	async function leave() {
-		if (editor && unsaved(editor) && !window.confirm(leaveWarning)) {
-			return;
+	async function leave(url: string | URL = resolve('/'), delta?: number) {
+		if (leaving) return;
+		leaving = true;
+		try {
+			await editor?.flush();
+			if (editor && editor.status !== 'saved' && !window.confirm(leaveWarning)) return;
+			allowLeave = true;
+			if (delta) window.history.go(delta);
+			else {
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- SvelteKit's URL already includes the base path.
+				await goto(url);
+			}
+		} finally {
+			leaving = false;
 		}
-		allowLeave = true;
-		await editor?.flush();
-		await goto(resolve('/'));
 	}
 </script>
 
@@ -109,7 +115,7 @@
 	<div class="editor-app">
 		<header class="bar">
 			<div class="brand">
-				<button class="wordmark" type="button" onclick={leave}>REMI</button>
+				<button class="wordmark" type="button" onclick={() => leave()}>REMI</button>
 				<span class="doc-code"
 					>SHEET 01 · {editor.document.gridSize}×{editor.document.gridSize}</span
 				>
@@ -122,7 +128,12 @@
 					data-testid="title"
 					type="text"
 					value={editor.document.title}
-					oninput={(event) => editor?.setTitle(event.currentTarget.value)}
+					oninput={(event) => {
+						editor?.setTitle(event.currentTarget.value);
+						if (editor?.editError && event.currentTarget.value !== editor.document.title) {
+							event.currentTarget.value = editor.document.title;
+						}
+					}}
 				/>
 			</label>
 
@@ -138,6 +149,12 @@
 				<button class="stamp" type="button" onclick={() => (exportOpen = true)}>Export</button>
 			</div>
 		</header>
+
+		{#if editor.editError}
+			<div class="banner" role="alert">
+				{editor.editError} Your last accepted edit is unchanged.
+			</div>
+		{/if}
 
 		{#if editor.status === 'error' || editor.status === 'conflict'}
 			<div class="banner" role="alert">
@@ -159,7 +176,10 @@
 							class="text-action"
 							type="button"
 							onclick={() => {
-								if (window.confirm(leaveWarning)) window.location.reload();
+								if (window.confirm(leaveWarning)) {
+									allowLeave = true;
+									window.location.reload();
+								}
 							}}>Reload card</button
 						>
 					{/if}

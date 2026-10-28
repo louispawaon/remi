@@ -1,5 +1,5 @@
 import { imageUrl } from './client';
-import { sniffDimensions } from './dimensions';
+import { imageFormat, sniffDimensions } from './dimensions';
 
 export const UPLOAD_LIMITS = {
 	maxBytes: 10 * 1024 * 1024,
@@ -51,7 +51,17 @@ export async function normalizeArtwork(
 	const type = declaredType ?? blob.type;
 	validateArtworkSource({ type, size: blob.size });
 
-	const header = new Uint8Array(await blob.slice(0, 65_536).arrayBuffer());
+	let header = new Uint8Array(await blob.slice(0, 65_536).arrayBuffer());
+	const format = imageFormat(header);
+	if (!format) {
+		throw new ArtworkError(
+			'That file is not a readable PNG, JPEG, or WebP image.',
+			'decode_failed'
+		);
+	}
+	// JPEG start-of-frame markers can sit beyond the first 64 KiB of metadata.
+	if (format === 'jpeg') header = new Uint8Array(await blob.arrayBuffer());
+
 	const sniffed = sniffDimensions(header);
 	if (sniffed && sniffed.width * sniffed.height > UPLOAD_LIMITS.maxPixels) {
 		throw new ArtworkError('That image has more than 24 megapixels.', 'too_many_pixels');

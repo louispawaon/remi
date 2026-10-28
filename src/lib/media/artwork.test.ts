@@ -30,6 +30,27 @@ describe('upload validation', () => {
 describe('pre-decode pixel guard', () => {
 	afterEach(() => vi.unstubAllGlobals());
 
+	it('rejects disguised unsupported images before decoding', async () => {
+		const decode = vi.fn();
+		vi.stubGlobal('createImageBitmap', decode);
+		await expect(
+			normalizeArtwork(new Blob([new Uint8Array([0x47, 0x49, 0x46, 0x38])], { type: 'image/png' }))
+		).rejects.toMatchObject({ code: 'decode_failed' });
+		expect(decode).not.toHaveBeenCalled();
+	});
+
+	it('rejects oversized JPEGs with dimensions after a large metadata segment before decoding', async () => {
+		const bytes = new Uint8Array(65_560);
+		bytes.set([0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff]);
+		bytes.set([0xff, 0xc0, 0, 17, 8, 0x27, 0x10, 0x27, 0x10], 65_539);
+		const decode = vi.fn(async () => ({ width: 10000, height: 10000, close() {} }));
+		vi.stubGlobal('createImageBitmap', decode);
+		await expect(normalizeArtwork(new Blob([bytes], { type: 'image/jpeg' }))).rejects.toMatchObject(
+			{ code: 'too_many_pixels' }
+		);
+		expect(decode).not.toHaveBeenCalled();
+	});
+
 	it('rejects a 30MP PNG before createImageBitmap runs', async () => {
 		const bytes = new Uint8Array(24);
 		bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

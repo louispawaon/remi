@@ -21,6 +21,12 @@ describe('sniffDimensions', () => {
 		expect(sniffDimensions(bytes)).toEqual({ width: 4000, height: 3000 });
 	});
 
+	it('walks JPEG fill bytes before the start-of-frame marker', () => {
+		const bytes = new Uint8Array(13);
+		bytes.set([0xff, 0xd8, 0xff, 0xff, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x0b, 0xb8, 0x0f, 0xa0]);
+		expect(sniffDimensions(bytes)).toEqual({ width: 4000, height: 3000 });
+	});
+
 	it('reads WebP VP8X headers', () => {
 		const bytes = new Uint8Array(30);
 		bytes.set([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);

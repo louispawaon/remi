@@ -58,10 +58,13 @@ export class Autosave {
 	async flush(): Promise<CardRecord | null> {
 		if (this.#disposed) return null;
 		this.#clearTimer();
-		if (this.#inFlight) await this.#inFlight;
+		while (this.#inFlight) {
+			if (!(await this.#inFlight)) return null;
+		}
 		if (this.#disposed) return null;
 		if (!this.#dirty) return this.#record;
-		return this.#saveNow();
+		const saved = await this.#saveNow();
+		return saved && this.#dirty && !this.#disposed ? this.flush() : saved;
 	}
 
 	dispose(): void {

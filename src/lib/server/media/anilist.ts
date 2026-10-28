@@ -55,6 +55,7 @@ query Media(
 	$country: CountryCode,
 	$countries: [CountryCode],
 	$year: Int,
+	$startYear: String,
 	$genre: String,
 	$format: MediaFormat,
 	$status: MediaStatus,
@@ -69,6 +70,7 @@ query Media(
 			countryOfOrigin: $country,
 			countryOfOrigin_in: $countries,
 			seasonYear: $year,
+			startDate_like: $startYear,
 			genre: $genre,
 			format: $format,
 			status: $status,
@@ -81,6 +83,7 @@ query Media(
 			format
 			status
 			seasonYear
+			startDate { year }
 			genres
 		}
 	}
@@ -93,6 +96,7 @@ interface AniListMedia {
 	format?: string | null;
 	status?: string | null;
 	seasonYear?: number | null;
+	startDate?: { year?: number | null } | null;
 	genres?: string[] | null;
 }
 
@@ -122,7 +126,10 @@ export function createAniList(fetcher: typeof fetch = globalThis.fetch): MediaAd
 			if (request.mode === 'search') variables.search = request.query;
 			if (mapping.countries.length === 1) variables.country = mapping.countries[0];
 			if (mapping.countries.length > 1) variables.countries = mapping.countries;
-			if (request.year) variables.year = request.year;
+			if (request.year) {
+				if (mapping.type === 'ANIME') variables.year = request.year;
+				else variables.startYear = `${request.year}%`;
+			}
 			if (request.genre) variables.genre = request.genre;
 			if (request.format) variables.format = request.format;
 			if (request.status) variables.status = request.status;
@@ -211,7 +218,8 @@ function normalize(media: AniListMedia, request: MediaSearchRequest): MediaResul
 		providerId: String(media.id),
 		category: request.category,
 		title: pickTitle(media.title, request.titleLanguage),
-		year: media.seasonYear ?? null,
+		year:
+			request.category === 'anime' ? (media.seasonYear ?? null) : (media.startDate?.year ?? null),
 		format: media.format ?? null,
 		status: media.status ?? null,
 		genres: media.genres ?? [],
