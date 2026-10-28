@@ -109,16 +109,14 @@
 	</main>
 {:else if !editor}
 	<main class="load-state">
-		<p class="mono">Opening sheet…</p>
+		<p class="mono">Opening card…</p>
 	</main>
 {:else}
 	<div class="editor-app">
 		<header class="bar">
 			<div class="brand">
 				<button class="wordmark" type="button" onclick={() => leave()}>REMI</button>
-				<span class="doc-code"
-					>SHEET 01 · {editor.document.gridSize}×{editor.document.gridSize}</span
-				>
+				<span class="doc-code">{editor.document.gridSize}×{editor.document.gridSize} GRID</span>
 			</div>
 
 			<label class="title-wrap">
@@ -216,9 +214,8 @@
 				<h1 class="visually-hidden">{editor.document.title || 'Untitled card'}</h1>
 				<div class="sheet-head">
 					<span class="mono">
-						PLATE 01 · {FORMAT_SIZES[editor.document.format][0]} × {FORMAT_SIZES[
-							editor.document.format
-						][1]} · {editor.document.format}
+						{FORMAT_SIZES[editor.document.format][0]} × {FORMAT_SIZES[editor.document.format][1]}
+						· {editor.document.format}
 					</span>
 					<span class="zoom">
 						<button

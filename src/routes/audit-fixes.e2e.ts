@@ -109,7 +109,7 @@ test('saves a pending edit before following browser Back', async ({ page }) => {
 		history.back();
 	});
 	await expect(page).toHaveURL(/\/$/);
-	await page.getByRole('heading', { name: 'Every card is a sheet.' }).waitFor();
+	await page.getByRole('heading', { name: 'Library' }).waitFor();
 	expect((await readDocument(page, id)).title).toBe('Saved before Back');
 });
 

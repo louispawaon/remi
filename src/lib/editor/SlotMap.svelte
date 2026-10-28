@@ -5,9 +5,9 @@
 	let { editor }: { editor: EditorState } = $props();
 </script>
 
-<aside class="sheet-map" aria-label="Sheet map">
+<aside class="sheet-map" aria-label="Slots">
 	<div class="map-head">
-		<h2 class="section-title">Sheet map</h2>
+		<h2 class="section-title">Slots</h2>
 		<span class="mono">{editor.document.gridSize}×{editor.document.gridSize}</span>
 	</div>
 

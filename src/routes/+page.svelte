@@ -163,44 +163,35 @@
 	<header class="bar">
 		<div class="brand">
 			<span class="wordmark">REMI</span>
-			<span class="doc-code">CATALOG · {String(cards.length).padStart(2, '0')} SHEETS</span>
+			<span class="doc-code">{String(cards.length).padStart(2, '0')} CARDS</span>
 		</div>
 		<div class="doc-title">Library</div>
-		<div class="bar-meta">
-			<span class="dot"></span>
-			<span>{String(cards.length).padStart(2, '0')} cards</span>
+		<div class="actions">
+			<label class="ghost file-label">
+				{importing ? 'Importing…' : 'Import project'}
+				<input
+					class="visually-hidden"
+					data-testid="import-input"
+					type="file"
+					accept=".remi,application/zip"
+					onchange={importProject}
+					disabled={importing}
+				/>
+			</label>
+			<button
+				class="stamp"
+				data-testid="new-card"
+				type="button"
+				disabled={creating}
+				onclick={create}
+			>
+				{creating ? 'Making…' : 'New card'}
+			</button>
 		</div>
 	</header>
 
 	<main>
-		<div class="head">
-			<div>
-				<div class="label">Library</div>
-				<h1>Every card is a sheet.</h1>
-			</div>
-			<div class="actions">
-				<label class="ghost file-label">
-					{importing ? 'Importing…' : 'Import project'}
-					<input
-						class="visually-hidden"
-						data-testid="import-input"
-						type="file"
-						accept=".remi,application/zip"
-						onchange={importProject}
-						disabled={importing}
-					/>
-				</label>
-				<button
-					class="stamp"
-					data-testid="new-card"
-					type="button"
-					disabled={creating}
-					onclick={create}
-				>
-					{creating ? 'Making…' : 'New card'}
-				</button>
-			</div>
-		</div>
+		<h1 class="visually-hidden">Library</h1>
 
 		{#if error}
 			<div class="error-block" role="alert">
@@ -223,7 +214,7 @@
 				<div class="empty-grid" aria-hidden="true">
 					{#each Array.from({ length: 9 }, (_, index) => index) as cell (cell)}<span></span>{/each}
 				</div>
-				<p>No sheets yet.</p>
+				<p>No cards yet.</p>
 				<button class="stamp" type="button" onclick={create}>Make the first card</button>
 				<p class="label">Or import a .remi project</p>
 			</section>
@@ -300,8 +291,11 @@
 	</main>
 
 	<footer class="foot">
-		<span class="label">Stored in this browser · export projects for backup</span>
-		<a class="text-action" href={resolve('/credits')}>Credits</a>
+		<span class="foot-links">
+			<a class="text-action" href={resolve('/credits')}>Credits</a>
+			<a class="text-action" href={resolve('/privacy')}>Privacy</a>
+			<a class="text-action" href={resolve('/terms')}>Terms</a>
+		</span>
 	</footer>
 </div>
 
@@ -339,42 +333,12 @@
 		font-size: 15px;
 		font-weight: 500;
 	}
-	.bar-meta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-family: var(--mono);
-		font-size: 10px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-	}
-	.dot {
-		width: 6px;
-		height: 6px;
-		background: var(--spot);
-	}
 	main {
 		flex: 1;
 		width: 100%;
 		max-width: 1280px;
 		margin: 0 auto;
 		padding: 32px 40px 48px;
-	}
-	.head {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 24px;
-		border-bottom: 1px solid var(--ink);
-		padding-bottom: 18px;
-		margin-bottom: 26px;
-	}
-	h1 {
-		font-size: 38px;
-		line-height: 1.02;
-		letter-spacing: -0.03em;
-		font-weight: 500;
-		margin: 8px 0 0;
 	}
 	.actions {
 		display: flex;
@@ -435,7 +399,15 @@
 		display: flex;
 		gap: 10px;
 		flex-wrap: wrap;
+		align-items: center;
 		margin-top: 8px;
+	}
+	.card-actions .text-action {
+		display: inline-flex;
+		align-items: center;
+		min-height: 24px;
+		padding: 0;
+		line-height: 1;
 	}
 	.delete.confirming {
 		color: var(--spot);
@@ -504,9 +476,13 @@
 		border-top: 1px solid var(--rule);
 		padding: 12px 24px;
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-end;
 		gap: 12px;
 		flex-wrap: wrap;
+	}
+	.foot-links {
+		display: flex;
+		gap: 16px;
 	}
 	@media (max-width: 1100px) {
 		.grid {
@@ -523,14 +499,6 @@
 		}
 		main {
 			padding: 22px 16px 32px;
-		}
-		.head {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 14px;
-		}
-		h1 {
-			font-size: 30px;
 		}
 		.grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));

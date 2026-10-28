@@ -304,7 +304,7 @@ test('mobile editor keeps all tabs and export reachable without horizontal overf
 
 test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await page.goto('/');
-	await page.waitForSelector('text=Every card is a sheet.');
+	await page.getByRole('heading', { name: 'Library' }).waitFor();
 	let results = await new AxeBuilder({ page }).analyze();
 	expect(results.violations).toEqual([]);
 
@@ -440,7 +440,7 @@ test('imports a .remi project through a mobile file picker', async ({ browser })
 
 	try {
 		await page.goto('/');
-		await page.waitForSelector('text=Every card is a sheet.');
+		await page.getByRole('heading', { name: 'Library' }).waitFor();
 		await page.getByTestId('import-input').setInputFiles(path);
 		await page.waitForURL(/\/editor\//);
 		await page.waitForSelector('[data-testid="title"]');
