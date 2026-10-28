@@ -1,6 +1,6 @@
 # Remi design system — Catalog
 
-Status: direction locked 2026-10-28; comps captured; production UI not built.
+Status: direction and comps approved 2026-10-28; production UI not built.
 
 The surface is **Operate**: a person opens Remi to make one card quickly, on a laptop at a desk or
 a phone in hand. The visual world is a convention catalog sheet: numbered artwork cells you circle,
