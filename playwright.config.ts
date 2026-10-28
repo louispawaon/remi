@@ -5,6 +5,7 @@ export default defineConfig({
 	webServer: {
 		command: 'npm run build && npm run start',
 		port: 3000,
+		env: { PORT: '3000' },
 		reuseExistingServer: !process.env.CI
 	},
 	testMatch: '**/*.e2e.{ts,js}'

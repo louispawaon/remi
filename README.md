@@ -15,8 +15,9 @@ npx playwright install chromium
 ```
 
 `TMDB_READ_ACCESS_TOKEN` is optional. Without it, movie and TV search stays disabled with a
-setup explanation; the rest of the app works. The token is read only by server code
-(`$env/dynamic/private`) and must never be given a `PUBLIC_` name.
+setup explanation; the rest of the app works. Credentials are declared in `src/env.ts` and
+read only by server code from `$app/env/private`; that module cannot be imported into client
+code, so an accidental leak fails the build instead of shipping.
 
 ## Commands
 
@@ -26,7 +27,7 @@ setup explanation; the rest of the app works. The token is read only by server c
 | `npm run dev:lan`         | Development server exposed on the LAN for phone testing |
 | `npm run build`           | Production build via the Node adapter                   |
 | `npm run start`           | Run the built Node server (`PORT`, default 3000)        |
-| `npm run preview`         | Vite preview of the build                               |
+| `npm run preview`         | Vite preview of the compiled app, not the Node server   |
 | `npm run check`           | Svelte + TypeScript checks                              |
 | `npm run lint`            | Prettier check and ESLint                               |
 | `npm run format`          | Write Prettier formatting                               |

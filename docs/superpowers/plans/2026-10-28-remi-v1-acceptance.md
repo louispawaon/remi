@@ -1,6 +1,6 @@
 # Remi v1 acceptance checklist
 
-Date: 2026-10-28. Status: not run; implementation has not started.
+Date: 2026-10-28. Status: not run; Phase 0 foundation complete.
 
 This checklist defines acceptance, not completed verification. Leave an item unchecked until its required evidence exists. Record the tested commit, environment, and evidence when executing it.
 

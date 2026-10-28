@@ -1,6 +1,6 @@
 # Remi v1 planning documents
 
-Agreed on 2026-10-28. Status: planning complete; implementation has not started.
+Agreed on 2026-10-28. Status: Phase 0 (project foundation) complete; Phases 1–7 not started.
 
 These documents preserve the plan agreed in the conversation. They describe intended behavior, not implemented capabilities or completed acceptance checks.
 
@@ -56,4 +56,4 @@ Hosting, cloud storage, authentication, synchronization, public card links, list
 - Native file sharing requires a secure context; LAN HTTP must support the documented saving fallback.
 - Geometry checks passed all 12 grid/format combinations during planning. Artwork quality, typography, generated files, and real-device behavior remain unverified.
 
-No application scaffold, dependency installation, Git initialization, or deployment was performed while preparing these plans.
+Phase 0 (project initialization) was completed on 2026-10-28. No deployment was performed.
