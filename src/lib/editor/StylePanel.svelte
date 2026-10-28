@@ -7,6 +7,12 @@
 
 	let replacing = $state(false);
 	let imageError = $state<string | null>(null);
+	let removeArmed = $state(false);
+
+	$effect(() => {
+		void editor.selectedItemId;
+		removeArmed = false;
+	});
 
 	const crop = $derived(editor.selectedItem?.crops[editor.document.format] ?? { x: 0.5, y: 0.5 });
 
@@ -65,18 +71,21 @@
 				type="button"
 				class="seg-btn"
 				class:on={editor.document.appearance.font === 'sans'}
+				aria-pressed={editor.document.appearance.font === 'sans'}
 				onclick={() => editor.setAppearance({ font: 'sans' })}>Grotesque</button
 			>
 			<button
 				type="button"
 				class="seg-btn"
 				class:on={editor.document.appearance.font === 'serif'}
+				aria-pressed={editor.document.appearance.font === 'serif'}
 				onclick={() => editor.setAppearance({ font: 'serif' })}>Serif</button
 			>
 			<button
 				type="button"
 				class="seg-btn"
 				class:on={editor.document.appearance.font === 'display'}
+				aria-pressed={editor.document.appearance.font === 'display'}
 				onclick={() => editor.setAppearance({ font: 'display' })}>Display</button
 			>
 		</span>
@@ -90,6 +99,7 @@
 					type="button"
 					class="swatch"
 					class:on={editor.document.appearance.background === color}
+					aria-pressed={editor.document.appearance.background === color}
 					style={`background:${color}`}
 					aria-label={`Background ${color}`}
 					onclick={() => editor.setAppearance({ background: color })}
@@ -112,6 +122,7 @@
 					type="button"
 					class="swatch"
 					class:on={editor.document.appearance.foreground === color}
+					aria-pressed={editor.document.appearance.foreground === color}
 					style={`background:${color}`}
 					aria-label={`Foreground ${color}`}
 					onclick={() => editor.setAppearance({ foreground: color })}
@@ -175,19 +186,19 @@
 					</label>
 					<p class="hint">Crops are saved per format.</p>
 				</div>
-
-				<label class="ghost file-label">
-					{replacing ? 'Reading image…' : 'Replace image'}
-					<input
-						class="visually-hidden"
-						type="file"
-						accept="image/png,image/jpeg,image/webp"
-						onchange={replaceImage}
-						disabled={replacing}
-					/>
-				</label>
-				{#if imageError}<p class="error-text" role="alert">{imageError}</p>{/if}
 			{/if}
+
+			<label class="ghost file-label">
+				{replacing ? 'Reading image…' : editor.selectedItem.artwork ? 'Replace image' : 'Add image'}
+				<input
+					class="visually-hidden"
+					type="file"
+					accept="image/png,image/jpeg,image/webp"
+					onchange={replaceImage}
+					disabled={replacing}
+				/>
+			</label>
+			{#if imageError}<p class="error-text" role="alert">{imageError}</p>{/if}
 
 			<div class="row-actions">
 				<button
@@ -197,9 +208,23 @@
 				>
 					Move
 				</button>
-				<button class="text-action" type="button" onclick={() => editor.removeSelectedItem()}>
-					Remove item
-				</button>
+				{#if removeArmed}
+					<button
+						class="text-action"
+						type="button"
+						onclick={() => {
+							editor.removeSelectedItem();
+							removeArmed = false;
+						}}>Confirm remove</button
+					>
+					<button class="text-action" type="button" onclick={() => (removeArmed = false)}
+						>Keep</button
+					>
+				{:else}
+					<button class="text-action" type="button" onclick={() => (removeArmed = true)}
+						>Remove item</button
+					>
+				{/if}
 			</div>
 		</section>
 	{:else}
@@ -279,6 +304,19 @@
 		gap: 10px;
 		align-items: center;
 		flex-wrap: wrap;
+	}
+	@media (max-width: 900px) {
+		.swatch {
+			width: 32px;
+			height: 32px;
+		}
+		.colors input[type='color'] {
+			width: 44px;
+			height: 44px;
+		}
+		.crop-row input[type='range'] {
+			height: 44px;
+		}
 	}
 	.file-label {
 		display: inline-flex;

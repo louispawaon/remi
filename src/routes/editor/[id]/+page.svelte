@@ -16,9 +16,25 @@
 	let editor = $state<EditorState | null>(null);
 	let loadError = $state<string | null>(null);
 	let exportOpen = $state(false);
+	let allowLeave = false;
 
-	beforeNavigate(async () => {
-		await editor?.flush();
+	const leaveWarning =
+		'This card is not saved. Leave and lose the changes in this tab? Export the project first to keep them.';
+
+	function unsaved(instance: EditorState | null): boolean {
+		return instance?.status === 'error' || instance?.status === 'conflict';
+	}
+
+	beforeNavigate(async (navigation) => {
+		if (!editor) return;
+		if (unsaved(editor)) {
+			if (!allowLeave && !window.confirm(leaveWarning)) navigation.cancel();
+			return;
+		}
+		await editor.flush();
+		if (unsaved(editor) && !window.confirm(leaveWarning)) {
+			navigation.cancel();
+		}
 	});
 
 	const tabs: { id: EditorTool; label: string; mobileOnly?: boolean }[] = [
@@ -66,6 +82,10 @@
 	});
 
 	async function leave() {
+		if (editor && unsaved(editor) && !window.confirm(leaveWarning)) {
+			return;
+		}
+		allowLeave = true;
 		await editor?.flush();
 		await goto(resolve('/'));
 	}
@@ -112,7 +132,9 @@
 					class:busy={editor.status === 'saving'}
 					class:bad={editor.status === 'error' || editor.status === 'conflict'}
 				></span>
-				<span data-testid="save-status">{statusLabel(editor.status, editor.statusDetail)}</span>
+				<span data-testid="save-status" aria-live="polite"
+					>{statusLabel(editor.status, editor.statusDetail)}</span
+				>
 				<button class="stamp" type="button" onclick={() => (exportOpen = true)}>Export</button>
 			</div>
 		</header>
@@ -133,8 +155,12 @@
 						>Export project</button
 					>
 					{#if editor.status === 'conflict'}
-						<button class="text-action" type="button" onclick={() => window.location.reload()}
-							>Reload card</button
+						<button
+							class="text-action"
+							type="button"
+							onclick={() => {
+								if (window.confirm(leaveWarning)) window.location.reload();
+							}}>Reload card</button
 						>
 					{/if}
 				</span>
@@ -157,13 +183,10 @@
 				</nav>
 
 				<div class="panel-scroll">
-					{#if editor.tool === 'add'}
-						<AddPanel {editor} />
-					{:else if editor.tool === 'arrange'}
-						<ArrangePanel {editor} />
-					{:else if editor.tool === 'style'}
-						<StylePanel {editor} />
-					{:else}
+					<div hidden={editor.tool !== 'add'}><AddPanel {editor} /></div>
+					<div hidden={editor.tool !== 'arrange'}><ArrangePanel {editor} /></div>
+					<div hidden={editor.tool !== 'style'}><StylePanel {editor} /></div>
+					{#if editor.tool === 'preview'}
 						<p class="hint">Tap a cell to select it, or use Add to place media.</p>
 					{/if}
 				</div>

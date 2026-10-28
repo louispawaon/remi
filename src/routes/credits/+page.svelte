@@ -1,8 +1,13 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+</script>
+
 <svelte:head>
 	<title>Credits — Remi</title>
 </svelte:head>
 
 <main>
+	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Credits</h1>
 
 	<section>
@@ -49,6 +54,10 @@
 		color: #171512;
 		background: #f1eee4;
 		min-height: 100vh;
+	}
+	.back {
+		display: inline-block;
+		margin-bottom: 12px;
 	}
 	h1 {
 		font-size: 40px;

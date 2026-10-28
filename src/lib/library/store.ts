@@ -67,6 +67,20 @@ export async function getThumbnail(id: string): Promise<Blob | null> {
 	return (await database.get('library', id))?.thumbnail ?? null;
 }
 
+/** Update only the summary thumbnail; the document write is never blocked on rendering. */
+export async function updateThumbnail(id: string, thumbnail: Blob): Promise<void> {
+	const database = await getDatabase();
+	try {
+		const transaction = database.transaction('library', 'readwrite');
+		const library = transaction.objectStore('library');
+		const prior = await library.get(id);
+		if (prior) await library.put({ ...prior, thumbnail }, id);
+		await transaction.done;
+	} catch (error) {
+		throw toStorageError(error);
+	}
+}
+
 async function writeCard(
 	record: CardRecord,
 	options: SaveOptions,

@@ -53,9 +53,21 @@
 		const language = titleLanguage;
 		void retry;
 
+		const yearText = currentYear.trim();
+		if (yearText && !/^\d{4}$/.test(yearText)) {
+			search.cancel();
+			results = [];
+			total = null;
+			hasNext = false;
+			loading = false;
+			searchError = 'Enter a four-digit year.';
+			return;
+		}
+
 		if (currentMode === 'search' && !text.trim()) {
 			search.cancel();
 			results = [];
+			total = null;
 			loading = false;
 			hasNext = false;
 			return;
@@ -63,6 +75,8 @@
 
 		loading = true;
 		searchError = null;
+		total = null;
+		hasNext = false;
 		search.schedule(
 			{
 				category,
@@ -85,6 +99,8 @@
 				onError: (error: MediaClientError) => {
 					searchError = error.message;
 					results = [];
+					total = null;
+					hasNext = false;
 					loading = false;
 					if (error.code === 'provider_credentials_missing') optionsError = error.message;
 				}
@@ -101,10 +117,18 @@
 		filters = {};
 		page = 1;
 		results = [];
+		total = null;
+		hasNext = false;
+		loading = false;
 		searchError = null;
 		try {
 			const loaded = await fetchMediaOptions(category);
-			if (ticket === optionsToken) options = loaded;
+			if (ticket === optionsToken) {
+				options = loaded;
+				if (!loaded.titleLanguages.some((option) => option.value === titleLanguage)) {
+					titleLanguage = 'english';
+				}
+			}
 		} catch (error) {
 			if (ticket === optionsToken) {
 				optionsError = error instanceof Error ? error.message : String(error);
@@ -156,7 +180,6 @@
 			};
 			editor.addItem(item, normalized?.blob ?? null);
 			notice = `Added ${result.title.preferred}`;
-			editor.setTool('arrange');
 		} catch (error) {
 			addError = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -189,7 +212,6 @@
 			};
 			editor.addItem(item, normalized.blob);
 			notice = `Added ${title}`;
-			editor.setTool('arrange');
 		} catch (error) {
 			uploadError = error instanceof Error ? error.message : String(error);
 		} finally {

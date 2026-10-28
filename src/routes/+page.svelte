@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { CardSummary } from '#lib/library/types';
@@ -10,7 +10,9 @@
 		deleteCard,
 		duplicateCard,
 		listCards,
-		renameCard
+		loadCard,
+		renameCard,
+		updateThumbnail
 	} from '#lib/library/store';
 	import { createThumbnail } from '#lib/library/thumbnail';
 
@@ -34,10 +36,6 @@
 		return () => {
 			for (const url of urls) URL.revokeObjectURL(url);
 		};
-	});
-
-	onDestroy(() => {
-		for (const url of urls) URL.revokeObjectURL(url);
 	});
 
 	async function refresh() {
@@ -99,7 +97,13 @@
 	async function duplicate(id: string) {
 		error = null;
 		try {
-			await duplicateCard(id);
+			const copy = await duplicateCard(id);
+			try {
+				const record = await loadCard(copy.document.id);
+				if (record) await updateThumbnail(copy.document.id, await createThumbnail(record));
+			} catch {
+				// The copied card is already saved; its thumbnail can refresh later.
+			}
 			await refresh();
 		} catch (failure) {
 			error = failure instanceof Error ? failure.message : String(failure);
@@ -200,7 +204,7 @@
 		{#if error}
 			<div class="error-block" role="alert">
 				<p class="error-text">{error}</p>
-				<button class="text-action" type="button" onclick={refresh}>Try again</button>
+				<button class="text-action" type="button" onclick={refresh}>Refresh library</button>
 			</div>
 		{/if}
 
@@ -540,9 +544,28 @@
 		.grid {
 			grid-template-columns: 1fr;
 		}
-		.art-link,
+		.sheet-card {
+			display: grid;
+			grid-template-columns: 96px minmax(0, 1fr);
+			gap: 2px 12px;
+			align-items: start;
+		}
+		.art-link {
+			grid-row: 1 / span 3;
+			height: 120px;
+			margin-bottom: 0;
+		}
 		.skeleton-art {
-			height: 280px;
+			height: 120px;
+		}
+		h2,
+		.meta,
+		.card-actions,
+		.rename {
+			grid-column: 2;
+		}
+		.card-actions {
+			margin-top: 4px;
 		}
 	}
 </style>

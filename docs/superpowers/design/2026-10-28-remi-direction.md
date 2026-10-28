@@ -1,6 +1,6 @@
 # Remi v1 design direction
 
-Date: 2026-10-28. Status: **Catalog** locked and comps approved; production UI not built.
+Date: 2026-10-28. Status: **Catalog** locked and comps approved; production library and editor built. Physical-device acceptance pending.
 
 Product truth: [PRODUCT.md](../../../PRODUCT.md). Scope: library, desktop editor, mobile editor,
 export flow, plus empty/loading/error/saving states. Mode: **Operate**. Scene: laptop and phone

@@ -12,7 +12,7 @@ import { shuffleDocument } from '#lib/card/shuffle';
 import type { CardDocument, CardItem, CardRecord, Category } from '#lib/card/types';
 import type { NormalizedArtwork } from '#lib/media/artwork';
 import { Autosave, type AutosaveStatus } from '#lib/library/autosave';
-import { saveCard } from '#lib/library/store';
+import { saveCard, updateThumbnail } from '#lib/library/store';
 import { createThumbnail } from '#lib/library/thumbnail';
 
 export type EditorTool = 'preview' | 'add' | 'arrange' | 'style';
@@ -301,15 +301,15 @@ export class EditorState {
 		if (thumbnailDirty) this.#thumbnailDirty = false;
 
 		try {
-			let thumbnail: Blob | undefined;
+			const saved = await saveCard(next);
 			if (thumbnailDirty) {
 				try {
-					thumbnail = await createThumbnail(next);
+					await updateThumbnail(saved.document.id, await createThumbnail(saved));
 				} catch {
-					// A render problem must not block saving the working document.
+					// The document is already durable; a failed thumbnail is cosmetic.
 				}
 			}
-			return await saveCard(next, thumbnail ? { thumbnail } : {});
+			return saved;
 		} catch (error) {
 			if (thumbnailDirty) this.#thumbnailDirty = true;
 			throw error;

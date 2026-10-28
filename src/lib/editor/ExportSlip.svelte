@@ -206,6 +206,7 @@
 		width: 430px;
 		max-width: calc(100vw - 24px);
 		max-height: calc(100vh - 24px);
+		overflow: auto;
 		font-family: var(--sans);
 	}
 	.slip::backdrop {
@@ -282,6 +283,10 @@
 		margin: 0;
 	}
 	@media (max-width: 640px) {
+		.choice {
+			min-height: 44px;
+			align-items: center;
+		}
 		.slip {
 			width: 100%;
 			max-width: none;

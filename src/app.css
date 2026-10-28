@@ -229,3 +229,26 @@ img {
 		transition-duration: 0.001ms !important;
 	}
 }
+
+@media (max-width: 900px) {
+	.text-action {
+		min-height: 44px;
+		padding: 10px 0;
+	}
+	.chip,
+	.seg-btn {
+		min-height: 44px;
+		padding: 10px 12px;
+	}
+	.field {
+		min-height: 44px;
+	}
+	.switch {
+		width: 44px;
+		height: 28px;
+	}
+	.switch::after {
+		width: 18px;
+		height: 18px;
+	}
+}

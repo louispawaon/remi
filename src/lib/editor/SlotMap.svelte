@@ -21,6 +21,7 @@
 				class="row"
 				class:selected={editor.selectedSlot === index}
 				class:empty={!item}
+				aria-pressed={editor.selectedSlot === index}
 				onclick={() => editor.selectSlot(index)}
 				disabled={isFreeSpaceCell(editor.document, index)}
 			>

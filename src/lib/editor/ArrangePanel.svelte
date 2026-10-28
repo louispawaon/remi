@@ -5,6 +5,13 @@
 
 	let { editor }: { editor: EditorState } = $props();
 
+	let removeArmed = $state(false);
+
+	$effect(() => {
+		void editor.selectedItemId;
+		removeArmed = false;
+	});
+
 	function title(id: string | null) {
 		const item = id ? editor.document.items.find((candidate) => candidate.id === id) : undefined;
 		return item ? (item.titleOverride ?? item.titles.preferred) : '— blank —';
@@ -46,7 +53,7 @@
 			type="button"
 			class="switch"
 			role="switch"
-			aria-checked={editor.document.freeSpace}
+			aria-checked={editor.document.freeSpace && editor.document.gridSize % 2 === 1}
 			aria-label="Central free space"
 			disabled={editor.document.gridSize % 2 === 0}
 			onclick={() => editor.setFreeSpace(!editor.document.freeSpace)}
@@ -78,9 +85,23 @@
 				<button class="ghost" type="button" onclick={() => editor.unplace(editor.selectedItem!.id)}>
 					To tray
 				</button>
-				<button class="text-action" type="button" onclick={() => editor.removeSelectedItem()}>
-					Remove item
-				</button>
+				{#if removeArmed}
+					<button
+						class="text-action"
+						type="button"
+						onclick={() => {
+							editor.removeSelectedItem();
+							removeArmed = false;
+						}}>Confirm remove</button
+					>
+					<button class="text-action" type="button" onclick={() => (removeArmed = false)}
+						>Keep</button
+					>
+				{:else}
+					<button class="text-action" type="button" onclick={() => (removeArmed = true)}
+						>Remove item</button
+					>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -92,6 +113,7 @@
 				class="slot"
 				class:selected={editor.selectedSlot === index}
 				class:empty={!slot}
+				aria-pressed={editor.selectedSlot === index}
 				disabled={isFreeSpaceCell(editor.document, index)}
 				onclick={() => editor.selectSlot(index)}
 			>
@@ -223,6 +245,12 @@
 	.tray-row .name {
 		font-size: 12px;
 		white-space: normal;
+	}
+	@media (max-width: 900px) {
+		.slot {
+			min-height: 44px;
+			padding: 8px 0;
+		}
 	}
 	.hint {
 		font-size: 10px;

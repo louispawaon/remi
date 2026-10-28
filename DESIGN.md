@@ -92,10 +92,10 @@ all data lives in IndexedDB.
 - **Export:** native modal with standard/2× choice, prepared dimensions and size, unplaced-item
   warning, Save PNG, Share, Open image, and `.remi` project export.
 - **Library:** thumbnails, open, inline rename, duplicate, two-step delete, New card, project import,
-  empty/loading/error states.
+  empty/loading/error states. Mobile library becomes the comp's horizontal thumbnail row.
 - **Saving:** status dot and text for saved/saving/unsaved/error/conflict; error and conflict banners
-  offer retry, project export, and reload. Edits flush on visibility loss, page hide, and SPA
-  navigation.
+  offer retry, project export, and reload, and leaving with unsaved failures requires confirmation.
+  Edits flush on visibility loss, page hide, and SPA navigation. Item removal is two-step.
 
 Tool sections use tabs rather than the comp's stacked headings to make room for real search and
 crop controls; the visual grammar, palette, typography, and plate composition are unchanged. The
@@ -135,7 +135,8 @@ save failed, export ready. All six are comped; error copy names the consequence 
 ## Responsive and accessibility
 
 - Breakpoint at 900px; below it the desktop grid becomes the mobile shell, not a squeezed desktop.
-- Touch targets ≥44px; the mobile Export bar is 56px.
+- Touch targets are 44px on mobile for actions, chips, segments, switches, swatches, ranges, slot
+  rows, and export choices; the mobile Export bar is 56px.
 - Focus is a 2px spot outline offset 2px; never removed.
 - Safe-area insets respected on the pinned bar; software keyboard must not cover the active field.
 - No page-level horizontal overflow at 320, 390, 768, or 1440px.

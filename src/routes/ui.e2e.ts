@@ -128,6 +128,7 @@ test('selects a cell by keyboard, moves an item, and removes it without losing t
 	await expect(page.locator('.sheet-foot .mono').first()).toContainText('08 items');
 
 	await page.getByRole('button', { name: 'Remove item' }).click();
+	await page.getByRole('button', { name: 'Confirm remove' }).click();
 	await expect(page.locator('.sheet-foot .mono').first()).toContainText('07 items');
 });
 
@@ -277,4 +278,29 @@ test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await seedFixture(page);
 	results = await new AxeBuilder({ page }).analyze();
 	expect(results.violations).toEqual([]);
+});
+
+test('detects a newer revision from another tab and keeps the work exportable', async ({
+	page,
+	context
+}) => {
+	const id = await seedFixture(page);
+
+	const other = await context.newPage();
+	await other.goto('/dev/library');
+	await other.waitForFunction(() => Boolean(window.__remiLibrary));
+	await other.evaluate(
+		(cardId) => window.__remiLibrary!.rename(cardId, 'Newer from another tab'),
+		id
+	);
+
+	await page.getByTestId('title').fill('Local unsaved title');
+	await expect(page.getByTestId('save-status')).toHaveText(/Changed in another tab/, {
+		timeout: 8000
+	});
+	await expect(page.getByRole('alert')).toContainText(/changed in another tab/i);
+
+	await page.getByRole('button', { name: 'Export project' }).click();
+	await expect(page.getByTestId('export-dialog')).toBeVisible();
+	await other.close();
 });

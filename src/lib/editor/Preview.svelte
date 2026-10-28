@@ -16,24 +16,32 @@
 		const ticket = ++token;
 
 		if (!host) return;
-		void (async () => {
-			try {
-				const rendered = await renderCard(snapshot, 1);
-				if (ticket !== token) return;
-				const canvas = rendered.canvas;
-				canvas.style.width = '100%';
-				canvas.style.height = 'auto';
-				canvas.style.display = 'block';
-				// eslint-disable-next-line svelte/no-dom-manipulating -- the canvas is the preview surface
-				host.replaceChildren(canvas);
-				layout = rendered.layout;
-				renderError = null;
-			} catch (error) {
-				if (ticket === token) {
-					renderError = error instanceof Error ? error.message : String(error);
+		const target = host;
+		const timer = setTimeout(() => {
+			if (ticket !== token) return;
+			void (async () => {
+				try {
+					const rendered = await renderCard(snapshot, 1);
+					if (ticket !== token) return;
+					const canvas = rendered.canvas;
+					canvas.style.width = '100%';
+					canvas.style.height = 'auto';
+					canvas.style.display = 'block';
+					target.replaceChildren(canvas);
+					layout = rendered.layout;
+					renderError = null;
+				} catch (error) {
+					if (ticket === token) {
+						renderError = error instanceof Error ? error.message : String(error);
+					}
 				}
-			}
-		})();
+			})();
+		}, 120);
+
+		return () => {
+			clearTimeout(timer);
+			token += 1;
+		};
 	});
 
 	onDestroy(() => {
