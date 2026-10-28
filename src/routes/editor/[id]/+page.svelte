@@ -251,7 +251,17 @@
 			<span class="label">Unplaced · {String(editor.unplaced.length).padStart(2, '0')}</span>
 			<span class="tray-items">
 				{#each editor.unplaced as item (item.id)}
-					<button class="text-action" type="button" onclick={() => editor?.beginMove(item.id)}
+					<button
+						class="text-action"
+						type="button"
+						draggable="true"
+						onclick={() => editor?.beginMove(item.id)}
+						ondragstart={(event) => {
+							event.dataTransfer?.setData('text/plain', item.id);
+							if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+							editor?.beginMove(item.id);
+						}}
+						ondragend={() => editor?.cancelMove()}
 						>{item.titleOverride ?? item.titles.preferred}</button
 					>
 				{:else}

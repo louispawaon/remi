@@ -132,6 +132,26 @@ test('selects a cell by keyboard, moves an item, and removes it without losing t
 	await expect(page.locator('.sheet-foot .mono').first()).toContainText('07 items');
 });
 
+test('drags a placed cell onto another to swap their items', async ({ page }) => {
+	await seedFixture(page);
+	const first = page.locator('.cell[aria-label^="Slot 01:"]');
+	const second = page.locator('.cell[aria-label^="Slot 02:"]');
+	const firstTitle = (await first.getAttribute('aria-label'))!.replace(/^Slot \d+: /, '');
+	const secondTitle = (await second.getAttribute('aria-label'))!.replace(/^Slot \d+: /, '');
+
+	await expect(first).toHaveAttribute('draggable', 'true');
+	await first.dragTo(second);
+
+	await expect(page.locator('.cell[aria-label^="Slot 01:"]')).toHaveAttribute(
+		'aria-label',
+		`Slot 01: ${secondTitle}`
+	);
+	await expect(page.locator('.cell[aria-label^="Slot 02:"]')).toHaveAttribute(
+		'aria-label',
+		`Slot 02: ${firstTitle}`
+	);
+});
+
 test('uploads artwork, saves it, and exports standard and 2x PNG files', async ({ page }) => {
 	await createCard(page);
 	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();

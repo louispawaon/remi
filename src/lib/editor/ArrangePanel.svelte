@@ -154,7 +154,9 @@
 		{/if}
 	</div>
 
-	<p class="hint">Select a slot, then a cell. No dragging.</p>
+	<p class="hint">
+		Drag a cell onto another to move or swap it, or select a slot and choose a cell.
+	</p>
 </section>
 
 <style>

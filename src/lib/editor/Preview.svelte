@@ -9,6 +9,7 @@
 	let host = $state<HTMLDivElement>();
 	let layout = $state<CardLayout | null>(null);
 	let renderError = $state<string | null>(null);
+	let overIndex = $state<number | null>(null);
 	let token = 0;
 
 	$effect(() => {
@@ -65,6 +66,40 @@
 		const item = editor.document.items.find((candidate) => candidate.id === id);
 		return `Slot ${number}: ${item ? (item.titleOverride ?? item.titles.preferred) : 'unknown item'}`;
 	}
+
+	function startDrag(event: DragEvent, index: number): void {
+		const itemId = editor.document.slots[index];
+		if (!itemId) {
+			event.preventDefault();
+			return;
+		}
+		event.dataTransfer?.setData('text/plain', itemId);
+		if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+		editor.beginMove(itemId);
+		overIndex = null;
+	}
+
+	function overCell(event: DragEvent, index: number): void {
+		if (!editor.movingItemId) return;
+		event.preventDefault();
+		if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+		overIndex = index;
+	}
+
+	function leaveCell(index: number): void {
+		if (overIndex === index) overIndex = null;
+	}
+
+	function dropOnCell(event: DragEvent, index: number): void {
+		event.preventDefault();
+		editor.placeMovingItem(index);
+		overIndex = null;
+	}
+
+	function endDrag(): void {
+		overIndex = null;
+		editor.cancelMove();
+	}
 </script>
 
 <div class="preview-frame">
@@ -79,17 +114,27 @@
 			<div class="cells">
 				{#each layout.cells as cell, index (index)}
 					{@const free = index === layout.freeCellIndex}
+					{@const occupied = Boolean(editor.document.slots[index])}
 					<button
 						type="button"
 						class="cell"
 						class:selected={editor.selectedSlot === index}
 						class:target={Boolean(editor.movingItemId) && !free}
+						class:over={overIndex === index}
+						class:dragging={Boolean(editor.movingItemId) &&
+							editor.document.slots[index] === editor.movingItemId}
 						class:free
 						style={cellStyle(cell, layout)}
 						disabled={free}
+						draggable={occupied}
 						aria-label={label(index)}
 						aria-pressed={editor.selectedSlot === index}
 						onclick={() => editor.selectSlot(index)}
+						ondragstart={(event) => startDrag(event, index)}
+						ondragend={endDrag}
+						ondragover={(event) => overCell(event, index)}
+						ondragleave={() => leaveCell(index)}
+						ondrop={(event) => dropOnCell(event, index)}
 					>
 						{#if editor.selectedSlot === index && !free}
 							<span class="cell-code">{String(index + 1).padStart(2, '0')}</span>
@@ -153,6 +198,15 @@
 	.cell:not(:disabled) {
 		cursor: pointer;
 	}
+	.cell[draggable='true'] {
+		cursor: grab;
+	}
+	.cell[draggable='true']:active {
+		cursor: grabbing;
+	}
+	.cell.dragging {
+		opacity: 0.4;
+	}
 	.cell:focus-visible {
 		outline: 3px solid var(--spot);
 		outline-offset: -4px;
@@ -160,8 +214,12 @@
 	.cell.selected {
 		box-shadow: inset 0 0 0 2px var(--spot);
 	}
-	.cell.target:not(.free) {
+	.cell.target {
 		box-shadow: inset 0 0 0 1px var(--rule);
+	}
+	.cell.over {
+		box-shadow: inset 0 0 0 2px var(--spot);
+		background: rgba(194, 59, 34, 0.08);
 	}
 	.cell-code {
 		position: absolute;
