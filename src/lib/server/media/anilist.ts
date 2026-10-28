@@ -13,11 +13,12 @@ import { withTimeout } from './timeout';
 const ENDPOINT = 'https://graphql.anilist.co';
 const PER_PAGE = 24;
 
+// One unfiltered manga search covers manga, manhwa and manhua; country filters hid matches.
 const CATEGORY_MAP: Record<string, { type: 'ANIME' | 'MANGA'; countries: string[] }> = {
 	anime: { type: 'ANIME', countries: [] },
-	manga: { type: 'MANGA', countries: ['JP'] },
-	manhwa: { type: 'MANGA', countries: ['KR'] },
-	manhua: { type: 'MANGA', countries: ['CN', 'TW'] }
+	manga: { type: 'MANGA', countries: [] },
+	manhwa: { type: 'MANGA', countries: [] },
+	manhua: { type: 'MANGA', countries: [] }
 };
 
 const GENRES = [

@@ -87,23 +87,18 @@ describe('AniList adapter', () => {
 		expect(body.variables.isAdult).toBe(false);
 	});
 
-	it('maps manga, manhwa, and manhua country filters', async () => {
-		const cases = [
-			{ category: 'manga' as const, country: 'JP', countries: undefined },
-			{ category: 'manhwa' as const, country: 'KR', countries: undefined },
-			{ category: 'manhua' as const, country: undefined, countries: ['CN', 'TW'] }
-		];
-
-		for (const entry of cases) {
+	it.each(['manga', 'manhwa', 'manhua'] as const)(
+		'searches %s as one unfiltered manga query',
+		async (category) => {
 			const fetcher = fetchMock();
-			const adapter = createAniList(fetcher as unknown as typeof fetch);
-			await adapter.search({ ...request, category: entry.category });
+			const adapter = createAniList(fetcher);
+			await adapter.search({ ...request, category });
 			const variables = JSON.parse(fetcher.mock.calls[0][1]!.body as string).variables;
 			expect(variables.type).toBe('MANGA');
-			expect(variables.country).toBe(entry.country);
-			expect(variables.countries).toEqual(entry.countries);
+			expect(variables.country).toBeUndefined();
+			expect(variables.countries).toBeUndefined();
 		}
-	});
+	);
 
 	it('browses by popularity instead of search match', async () => {
 		const fetcher = fetchMock();
