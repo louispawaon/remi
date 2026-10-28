@@ -157,40 +157,6 @@ test('uploads artwork, saves it, and exports standard and 2x PNG files', async (
 	const doubledBytes = readFileSync((await (await doubled).path())!);
 	expect(readPngSize(doubledBytes)).toEqual([2160, 2700]);
 
-	const averageDifference = await page.evaluate(
-		async ({ standard, doubled }) => {
-			const decode = async (base64: string) => {
-				const binary = atob(base64);
-				const bytes = new Uint8Array(binary.length);
-				for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
-				return createImageBitmap(new Blob([bytes], { type: 'image/png' }));
-			};
-			const [small, large] = await Promise.all([decode(standard), decode(doubled)]);
-			const canvas = document.createElement('canvas');
-			canvas.width = small.width;
-			canvas.height = small.height;
-			const context = canvas.getContext('2d')!;
-			context.drawImage(small, 0, 0);
-			const smallPixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-			context.clearRect(0, 0, canvas.width, canvas.height);
-			context.drawImage(large, 0, 0, canvas.width, canvas.height);
-			const largePixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-			let total = 0;
-			let samples = 0;
-			for (let index = 0; index < smallPixels.length; index += 4 * 97) {
-				total += Math.abs(smallPixels[index] - largePixels[index]);
-				total += Math.abs(smallPixels[index + 1] - largePixels[index + 1]);
-				total += Math.abs(smallPixels[index + 2] - largePixels[index + 2]);
-				samples += 3;
-			}
-			small.close();
-			large.close();
-			return total / samples;
-		},
-		{ standard: standardBytes.toString('base64'), doubled: doubledBytes.toString('base64') }
-	);
-	expect(averageDifference).toBeLessThan(12);
-
 	await page.getByRole('button', { name: /Standard/ }).click();
 	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
 	await page.getByRole('button', { name: /2×/ }).click();
@@ -491,4 +457,108 @@ test('shows an export error, then recovers on retry', async ({ page }) => {
 	});
 	await page.getByTestId('retry-preparation').click();
 	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+});
+
+test('standard and 2x keep the same composition on a populated card', async ({ page }) => {
+	await seedFixture(page);
+	await openExport(page);
+	await expect(page.getByTestId('export-dialog')).toContainText(
+		'02 unplaced items excluded from this PNG.'
+	);
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+
+	const standard = page.waitForEvent('download');
+	await page.getByTestId('save-png').click();
+	const standardBytes = readFileSync((await (await standard).path())!);
+
+	await page.getByRole('button', { name: /2×/ }).click();
+	await expect(page.getByText(/Prepared 2160 × 2700/)).toBeVisible({ timeout: 15_000 });
+	const doubled = page.waitForEvent('download');
+	await page.getByTestId('save-png').click();
+	const doubledBytes = readFileSync((await (await doubled).path())!);
+
+	const difference = await page.evaluate(
+		async ({ standard, doubled }) => {
+			const decode = async (base64: string) => {
+				const binary = atob(base64);
+				const bytes = new Uint8Array(binary.length);
+				for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+				return createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+			};
+			const [small, large] = await Promise.all([decode(standard), decode(doubled)]);
+			const canvas = document.createElement('canvas');
+			canvas.width = small.width;
+			canvas.height = small.height;
+			const context = canvas.getContext('2d')!;
+			context.drawImage(small, 0, 0);
+			const smallPixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			context.drawImage(large, 0, 0, canvas.width, canvas.height);
+			const largePixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+
+			let total = 0;
+			let changed = 0;
+			let samples = 0;
+			for (let index = 0; index < smallPixels.length; index += 4 * 11) {
+				const delta =
+					Math.abs(smallPixels[index] - largePixels[index]) +
+					Math.abs(smallPixels[index + 1] - largePixels[index + 1]) +
+					Math.abs(smallPixels[index + 2] - largePixels[index + 2]);
+				total += delta;
+				if (delta > 48) changed += 1;
+				samples += 1;
+			}
+			small.close();
+			large.close();
+			return { mean: total / samples, changed: changed / samples };
+		},
+		{ standard: standardBytes.toString('base64'), doubled: doubledBytes.toString('base64') }
+	);
+
+	expect(difference.mean).toBeLessThan(6);
+	expect(difference.changed).toBeLessThan(0.04);
+});
+
+test('cancels export preparation and retries cleanly', async ({ page }) => {
+	await seedFixture(page);
+	await page.evaluate(() => {
+		const target = window as unknown as { __restoreBitmap?: () => void };
+		const original = window.createImageBitmap;
+		window.createImageBitmap = (async (...args: unknown[]) => {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+			return (original as (...values: unknown[]) => Promise<ImageBitmap>)(...args);
+		}) as typeof createImageBitmap;
+		target.__restoreBitmap = () => {
+			window.createImageBitmap = original;
+		};
+	});
+
+	await openExport(page);
+	await expect(page.getByTestId('prep-stage')).toContainText(/Loading artwork/);
+	await page.getByTestId('cancel-preparation').click();
+	await expect(page.getByText('Preparation cancelled.')).toBeVisible();
+	await expect(page.getByTestId('retry-preparation')).toBeVisible();
+
+	await page.evaluate(() => {
+		const target = window as unknown as { __restoreBitmap?: () => void };
+		target.__restoreBitmap?.();
+	});
+	await page.getByTestId('retry-preparation').click();
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+});
+
+test('explains that sharing is unavailable while keeping Save usable', async ({ page }) => {
+	await seedFixture(page);
+	await openExport(page);
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+
+	await page.evaluate(() => {
+		Object.defineProperty(navigator, 'canShare', {
+			configurable: true,
+			value: () => false
+		});
+	});
+	await page.getByRole('button', { name: 'Share…' }).click();
+	await expect(page.getByText(/Sharing files is unavailable/)).toBeVisible();
+	await expect(page.getByTestId('save-png')).toBeEnabled();
 });

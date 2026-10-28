@@ -20,6 +20,7 @@
 	let error = $state<string | null>(null);
 	let notice = $state<string | null>(null);
 	let stage = $state<RenderStage | 'idle'>('idle');
+	let cancelling = $state(false);
 	let completed = $state(0);
 	let total = $state(0);
 	let retry = $state(0);
@@ -37,6 +38,7 @@
 		const ticket = ++token;
 
 		preparing = true;
+		cancelling = false;
 		error = null;
 		notice = null;
 		prepared = null;
@@ -78,6 +80,7 @@
 	});
 
 	function stageLabel(): string {
+		if (cancelling) return 'Cancelling…';
 		switch (stage) {
 			case 'fonts':
 				return 'Loading fonts…';
@@ -93,6 +96,7 @@
 	}
 
 	function cancelPreparation() {
+		cancelling = true;
 		controller?.abort();
 	}
 
@@ -140,23 +144,31 @@
 	function openImage() {
 		if (!prepared) return;
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
-		objectUrl = URL.createObjectURL(prepared.blob);
-		window.open(objectUrl, '_blank');
+		const url = URL.createObjectURL(prepared.blob);
+		objectUrl = url;
+		window.open(url, '_blank');
+		setTimeout(() => {
+			if (objectUrl === url) {
+				URL.revokeObjectURL(url);
+				objectUrl = null;
+			}
+		}, 60_000);
 	}
 
 	async function share() {
 		if (!prepared) return;
 		notice = null;
+		error = null;
 		const file = new File([prepared.blob], filename('png'), { type: 'image/png' });
-		if (!navigator.canShare?.({ files: [file] })) {
-			notice = 'Sharing files is unavailable here. Save the PNG instead.';
-			return;
-		}
 		try {
+			if (!navigator.canShare?.({ files: [file] })) {
+				notice = 'Sharing files is unavailable here. Save the PNG instead.';
+				return;
+			}
 			await navigator.share({ files: [file], title: snapshot.document.title });
 		} catch (failure) {
 			if (failure instanceof DOMException && failure.name === 'AbortError') return;
-			error = failure instanceof Error ? failure.message : String(failure);
+			notice = 'Sharing did not complete. Save the PNG instead.';
 		}
 	}
 
@@ -229,7 +241,8 @@
 				class="text-action"
 				data-testid="cancel-preparation"
 				type="button"
-				onclick={cancelPreparation}>Cancel preparation</button
+				disabled={cancelling}
+				onclick={cancelPreparation}>{cancelling ? 'Cancelling…' : 'Cancel preparation'}</button
 			>
 		</div>
 	{:else if prepared}
@@ -252,6 +265,12 @@
 			type="button"
 			onclick={retryPreparation}>Retry preparation</button
 		>
+	{/if}
+	{#if prepared && notice}
+		<p class="status" role="status">{notice}</p>
+	{/if}
+	{#if prepared && error}
+		<p class="error-text" role="alert">{error}</p>
 	{/if}
 
 	<div class="actions">
