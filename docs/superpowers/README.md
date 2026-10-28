@@ -1,6 +1,6 @@
 # Remi v1 planning documents
 
-Agreed on 2026-10-28. Status: Phases 0–1 (foundation and rendering/portability) complete; Phases 2–7 not started.
+Agreed on 2026-10-28. Status: Phases 0–2 (foundation, rendering/portability, design direction) complete; Phases 3–7 not started.
 
 These documents preserve the plan agreed in the conversation. They describe intended behavior, not implemented capabilities or completed acceptance checks.
 
@@ -8,9 +8,10 @@ These documents preserve the plan agreed in the conversation. They describe inte
 
 1. [Product and architecture specification](specs/2026-10-28-remi-v1-design.md) — scope, stack, interfaces, data, rendering, mobile behavior, and exports.
 2. [Implementation plan](plans/2026-10-28-remi-v1.md) — initialization through delivery, with independently testable phases and exit gates.
-3. [Acceptance checklist](plans/2026-10-28-remi-v1-acceptance.md) — evidence required before calling v1 accepted.
+3. [Design direction](design/2026-10-28-remi-direction.md) — locked Catalog world, comps, and rejected alternatives.
+4. [Acceptance checklist](plans/2026-10-28-remi-v1-acceptance.md) — evidence required before calling v1 accepted.
 
-The specification owns product behavior and architectural decisions. The implementation plan owns sequencing. The acceptance checklist owns verification. Update the affected documents together when a decision changes.
+The specification owns product behavior and architectural decisions. The implementation plan owns sequencing. [DESIGN.md](../../../DESIGN.md) owns the visual system. The acceptance checklist owns verification. Update the affected documents together when a decision changes.
 
 ## Product intent
 
