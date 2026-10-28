@@ -183,6 +183,7 @@
 					{importing ? 'Importing…' : 'Import project'}
 					<input
 						class="visually-hidden"
+						data-testid="import-input"
 						type="file"
 						accept=".remi,application/zip"
 						onchange={importProject}

@@ -89,8 +89,9 @@ all data lives in IndexedDB.
   slot list, and the unplaced tray.
 - **Style:** title visibility, four formats, three faces, background/ink presets plus native colour
   inputs, caption override, per-format crop sliders, image replacement, and removal.
-- **Export:** native modal with standard/2× choice, prepared dimensions and size, unplaced-item
-  warning, Save PNG, Share, Open image, and `.remi` project export.
+- **Export:** native modal with standard/2× choice, staged preparation (fonts, artwork count, drawing,
+  encoding) with cancel and retry, prepared dimensions and size, unplaced-item warning, Save PNG,
+  Share, Open image, and `.remi` project export.
 - **Library:** thumbnails, open, inline rename, duplicate, two-step delete, New card, project import,
   empty/loading/error states. Mobile library becomes the comp's horizontal thumbnail row.
 - **Saving:** status dot and text for saved/saving/unsaved/error/conflict; error and conflict banners

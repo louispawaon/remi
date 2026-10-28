@@ -147,13 +147,54 @@ test('uploads artwork, saves it, and exports standard and 2x PNG files', async (
 	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
 	const standard = page.waitForEvent('download');
 	await page.getByTestId('save-png').click();
-	expect(readPngSize(readFileSync((await (await standard).path())!))).toEqual([1080, 1350]);
+	const standardBytes = readFileSync((await (await standard).path())!);
+	expect(readPngSize(standardBytes)).toEqual([1080, 1350]);
 
 	await page.getByRole('button', { name: /2×/ }).click();
 	await expect(page.getByText(/Prepared 2160 × 2700/)).toBeVisible({ timeout: 15_000 });
 	const doubled = page.waitForEvent('download');
 	await page.getByTestId('save-png').click();
-	expect(readPngSize(readFileSync((await (await doubled).path())!))).toEqual([2160, 2700]);
+	const doubledBytes = readFileSync((await (await doubled).path())!);
+	expect(readPngSize(doubledBytes)).toEqual([2160, 2700]);
+
+	const averageDifference = await page.evaluate(
+		async ({ standard, doubled }) => {
+			const decode = async (base64: string) => {
+				const binary = atob(base64);
+				const bytes = new Uint8Array(binary.length);
+				for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+				return createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+			};
+			const [small, large] = await Promise.all([decode(standard), decode(doubled)]);
+			const canvas = document.createElement('canvas');
+			canvas.width = small.width;
+			canvas.height = small.height;
+			const context = canvas.getContext('2d')!;
+			context.drawImage(small, 0, 0);
+			const smallPixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			context.drawImage(large, 0, 0, canvas.width, canvas.height);
+			const largePixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+			let total = 0;
+			let samples = 0;
+			for (let index = 0; index < smallPixels.length; index += 4 * 97) {
+				total += Math.abs(smallPixels[index] - largePixels[index]);
+				total += Math.abs(smallPixels[index + 1] - largePixels[index + 1]);
+				total += Math.abs(smallPixels[index + 2] - largePixels[index + 2]);
+				samples += 3;
+			}
+			small.close();
+			large.close();
+			return total / samples;
+		},
+		{ standard: standardBytes.toString('base64'), doubled: doubledBytes.toString('base64') }
+	);
+	expect(averageDifference).toBeLessThan(12);
+
+	await page.getByRole('button', { name: /Standard/ }).click();
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+	await page.getByRole('button', { name: /2×/ }).click();
+	await expect(page.getByText(/Prepared 2160 × 2700/)).toBeVisible({ timeout: 15_000 });
 
 	const project = page.waitForEvent('download');
 	await page.getByTestId('export-project').click();
@@ -303,4 +344,151 @@ test('detects a newer revision from another tab and keeps the work exportable', 
 	await page.getByRole('button', { name: 'Export project' }).click();
 	await expect(page.getByTestId('export-dialog')).toBeVisible();
 	await other.close();
+});
+
+test('retries a provider outage without losing the search draft', async ({ page }) => {
+	let fail = true;
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'anime',
+				provider: 'anilist',
+				supportsYear: true,
+				titleLanguages: [{ value: 'english', label: 'English' }],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) => {
+		if (fail) {
+			fail = false;
+			return route.fulfill({
+				status: 502,
+				contentType: 'application/json',
+				body: JSON.stringify({ error: 'provider_unavailable', message: 'Provider outage.' })
+			});
+		}
+		return route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'anilist',
+						providerId: '1',
+						category: 'anime',
+						title: { preferred: 'Recovered result', alternatives: [] },
+						year: 2024,
+						format: 'TV',
+						status: 'FINISHED',
+						genres: [],
+						coverPath: null
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: 1
+			})
+		});
+	});
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByTestId('search-input').fill('retry me');
+	await expect(page.getByText('Provider outage.')).toBeVisible();
+	await page.getByRole('button', { name: 'Retry' }).click();
+	await expect(page.getByTestId('result')).toHaveCount(1);
+});
+
+test('keeps the working card exportable after a storage write failure', async ({ page }) => {
+	await seedFixture(page);
+	await page.evaluate(() => {
+		const target = window as unknown as { __restorePut?: () => void };
+		const prototype = IDBObjectStore.prototype;
+		const original = prototype.put;
+		prototype.put = function () {
+			throw new DOMException('full', 'QuotaExceededError');
+		};
+		target.__restorePut = () => {
+			prototype.put = original;
+		};
+	});
+
+	await page.getByTestId('title').fill('Unsaved work');
+	await expect(page.getByTestId('save-status')).toHaveText(/Save failed/i, { timeout: 8000 });
+	await expect(page.getByRole('alert')).toContainText(/out of storage/i);
+
+	await page.getByRole('button', { name: 'Export project' }).click();
+	await expect(page.getByTestId('export-dialog')).toBeVisible();
+	await expect(page.getByTestId('export-project')).toBeVisible();
+
+	await page.evaluate(() => {
+		const target = window as unknown as { __restorePut?: () => void };
+		target.__restorePut?.();
+	});
+});
+
+test('imports a .remi project through a mobile file picker', async ({ browser }) => {
+	const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	const page = await context.newPage();
+
+	await page.goto('/dev/library');
+	await page.waitForFunction(() => Boolean(window.__remiLibrary));
+	await page.evaluate(() => window.__remiLibrary!.reset());
+	const id = await page.evaluate(() => window.__remiLibrary!.createFixture());
+	const bytes = await page.evaluate((cardId) => window.__remiLibrary!.exportBytes(cardId), id);
+
+	const { writeFileSync, unlinkSync } = await import('node:fs');
+	const { tmpdir } = await import('node:os');
+	const { join } = await import('node:path');
+	const path = join(tmpdir(), `remi-mobile-${Date.now()}.remi`);
+	writeFileSync(path, Buffer.from(bytes));
+
+	try {
+		await page.goto('/');
+		await page.waitForSelector('text=Every card is a sheet.');
+		await page.getByTestId('import-input').setInputFiles(path);
+		await page.waitForURL(/\/editor\//);
+		await page.waitForSelector('[data-testid="title"]');
+		await expect(page.getByTestId('title')).toHaveValue('Remi fixture card');
+	} finally {
+		unlinkSync(path);
+		await context.close();
+	}
+});
+
+test('shows an export error, then recovers on retry', async ({ page }) => {
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByTestId('add-upload').setInputFiles({
+		name: 'break.png',
+		mimeType: 'image/png',
+		buffer: PNG
+	});
+	await expect(page.locator('.sheet-foot .mono').first()).toContainText('01 items');
+
+	await page.evaluate(() => {
+		const target = window as unknown as { __restoreToBlob?: () => void };
+		const prototype = HTMLCanvasElement.prototype;
+		const original = prototype.toBlob;
+		prototype.toBlob = function (callback) {
+			callback(null);
+		};
+		target.__restoreToBlob = () => {
+			prototype.toBlob = original;
+		};
+	});
+
+	await openExport(page);
+	await expect(page.getByText('PNG encoding failed')).toBeVisible({ timeout: 10_000 });
+	await expect(page.getByTestId('retry-preparation')).toBeVisible();
+
+	await page.evaluate(() => {
+		const target = window as unknown as { __restoreToBlob?: () => void };
+		target.__restoreToBlob?.();
+	});
+	await page.getByTestId('retry-preparation').click();
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
 });

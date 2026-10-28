@@ -3,7 +3,7 @@
 	import { unplacedItems } from '#lib/card/document';
 	import { FORMAT_SIZES } from '#lib/card/layout';
 	import { createProjectArchive } from '#lib/card/archive';
-	import { renderCardPng } from '#lib/card/png';
+	import { renderCardPng, type RenderStage } from '#lib/card/png';
 	import type { CardRecord } from '#lib/card/types';
 	import type { EditorState } from './editor-state.svelte';
 
@@ -19,34 +19,86 @@
 	let preparing = $state(true);
 	let error = $state<string | null>(null);
 	let notice = $state<string | null>(null);
+	let stage = $state<RenderStage | 'idle'>('idle');
+	let completed = $state(0);
+	let total = $state(0);
+	let retry = $state(0);
 	let token = 0;
 	let objectUrl: string | null = null;
+	let controller: AbortController | null = null;
 
 	$effect(() => {
 		const selected = resolution;
+		void retry;
+
+		controller?.abort();
+		const active = new AbortController();
+		controller = active;
 		const ticket = ++token;
+
 		preparing = true;
 		error = null;
+		notice = null;
 		prepared = null;
+		stage = 'fonts';
+		completed = 0;
+		total = 0;
 
 		void (async () => {
 			try {
-				const rendered = await renderCardPng(snapshot, selected);
+				const rendered = await renderCardPng(snapshot, selected, {
+					signal: active.signal,
+					onProgress: (next, done, count) => {
+						if (ticket !== token) return;
+						stage = next;
+						if (done !== undefined) completed = done;
+						if (count !== undefined) total = count;
+					}
+				});
 				if (ticket !== token) return;
 				prepared = {
 					blob: rendered.blob,
 					width: rendered.layout.width,
 					height: rendered.layout.height
 				};
+				stage = 'idle';
 			} catch (failure) {
-				if (ticket === token) {
+				if (ticket !== token) return;
+				if (failure instanceof DOMException && failure.name === 'AbortError') {
+					notice = 'Preparation cancelled.';
+				} else {
 					error = failure instanceof Error ? failure.message : String(failure);
 				}
 			} finally {
 				if (ticket === token) preparing = false;
 			}
 		})();
+
+		return () => active.abort();
 	});
+
+	function stageLabel(): string {
+		switch (stage) {
+			case 'fonts':
+				return 'Loading fonts…';
+			case 'artwork':
+				return total > 0 ? `Loading artwork ${completed}/${total}…` : 'Loading artwork…';
+			case 'drawing':
+				return 'Drawing card…';
+			case 'encoding':
+				return 'Encoding PNG…';
+			default:
+				return 'Preparing…';
+		}
+	}
+
+	function cancelPreparation() {
+		controller?.abort();
+	}
+
+	function retryPreparation() {
+		retry += 1;
+	}
 
 	onMount(() => {
 		dialog?.showModal();
@@ -57,6 +109,7 @@
 
 	onDestroy(() => {
 		token += 1;
+		controller?.abort();
 		if (dialog?.open) dialog.close();
 	});
 
@@ -165,14 +218,41 @@
 	{/if}
 
 	{#if preparing}
-		<p class="status" role="status">Preparing {resolution === 2 ? '2×' : 'standard'} PNG…</p>
+		<div class="prep">
+			<p class="status" role="status" data-testid="prep-stage">{stageLabel()}</p>
+			<div class="prep-track" aria-hidden="true">
+				<span
+					style={`width:${stage === 'artwork' && total > 0 ? Math.round((completed / total) * 100) : 100}%`}
+				></span>
+			</div>
+			<button
+				class="text-action"
+				data-testid="cancel-preparation"
+				type="button"
+				onclick={cancelPreparation}>Cancel preparation</button
+			>
+		</div>
 	{:else if prepared}
 		<p class="status" role="status">
 			Prepared {prepared.width} × {prepared.height} · {Math.round(prepared.blob.size / 1024)} KB
 		</p>
+	{:else if notice}
+		<p class="status" role="status">{notice}</p>
+		<button
+			class="text-action"
+			data-testid="retry-preparation"
+			type="button"
+			onclick={retryPreparation}>Retry preparation</button
+		>
+	{:else if error}
+		<p class="error-text" role="alert">{error}</p>
+		<button
+			class="text-action"
+			data-testid="retry-preparation"
+			type="button"
+			onclick={retryPreparation}>Retry preparation</button
+		>
 	{/if}
-	{#if error}<p class="error-text" role="alert">{error}</p>{/if}
-	{#if notice}<p class="status" role="status">{notice}</p>{/if}
 
 	<div class="actions">
 		<button
@@ -258,6 +338,24 @@
 		font-size: 11px;
 		color: var(--muted);
 		margin: 10px 0;
+	}
+	.prep {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+	}
+	.prep-track {
+		width: 100%;
+		height: 2px;
+		background: var(--rule);
+		overflow: hidden;
+	}
+	.prep-track span {
+		display: block;
+		height: 2px;
+		background: var(--ink);
+		transition: width 0.15s linear;
 	}
 	.actions {
 		display: flex;
