@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { ArtworkError, validateArtworkSource } from './artwork';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ArtworkError, normalizeArtwork, validateArtworkSource } from './artwork';
 import { imageUrl } from './client';
 
 describe('upload validation', () => {
@@ -24,5 +24,24 @@ describe('upload validation', () => {
 		const url = imageUrl('anilist', 'https://s4.anilist.co/file/anilistcdn/media/x y.jpg');
 		expect(url).toContain('provider=anilist');
 		expect(url).toContain('x+y.jpg');
+	});
+});
+
+describe('pre-decode pixel guard', () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('rejects a 30MP PNG before createImageBitmap runs', async () => {
+		const bytes = new Uint8Array(24);
+		bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		const view = new DataView(bytes.buffer);
+		view.setUint32(16, 6000);
+		view.setUint32(20, 5000);
+
+		const decode = vi.fn();
+		vi.stubGlobal('createImageBitmap', decode);
+		const blob = new Blob([bytes], { type: 'image/png' });
+
+		await expect(normalizeArtwork(blob)).rejects.toMatchObject({ code: 'too_many_pixels' });
+		expect(decode).not.toHaveBeenCalled();
 	});
 });

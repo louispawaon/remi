@@ -70,6 +70,7 @@ describe('AniList adapter', () => {
 		});
 		expect(body.variables.country).toBeUndefined();
 		expect(body.variables.countries).toBeUndefined();
+		expect(body.variables.isAdult).toBe(false);
 	});
 
 	it('maps manga, manhwa, and manhua country filters', async () => {
@@ -141,11 +142,25 @@ describe('AniList adapter', () => {
 		await expect(malformed.search(request)).rejects.toBeInstanceOf(MediaError);
 	});
 
-	it('maps an aborted request to a timeout', async () => {
-		const aborted = createAniList((async () => {
-			throw new DOMException('aborted', 'AbortError');
-		}) as unknown as typeof fetch);
-		await expect(aborted.search(request)).rejects.toMatchObject({ code: 'provider_timeout' });
+	it('distinguishes deadlines from caller cancellations', async () => {
+		const waiting = () =>
+			vi.fn<typeof fetch>((input, init) => {
+				void input;
+				return new Promise<Response>((_resolve, reject) => {
+					init!.signal!.addEventListener('abort', () => reject(init!.signal!.reason));
+				});
+			});
+
+		const deadline = createAniList(waiting());
+		await expect(deadline.search(request, AbortSignal.timeout(5))).rejects.toMatchObject({
+			code: 'provider_timeout'
+		});
+
+		const cancelled = createAniList(waiting());
+		const controller = new AbortController();
+		const pending = cancelled.search(request, controller.signal);
+		controller.abort();
+		await expect(pending).rejects.toMatchObject({ code: 'provider_unavailable' });
 	});
 
 	it('exposes category-appropriate options', async () => {

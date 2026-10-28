@@ -119,6 +119,32 @@ describe('MediaService', () => {
 		expect(right).toEqual(left);
 	});
 
+	it('keeps a shared request alive when one caller cancels', async () => {
+		let release: (() => void) | undefined;
+		const fetcher = vi.fn<typeof fetch>(
+			() =>
+				new Promise<Response>((resolve) => {
+					release = () =>
+						resolve(
+							new Response(JSON.stringify(anilistPage), {
+								headers: { 'content-type': 'application/json' }
+							})
+						);
+				})
+		);
+		const service = new MediaService({ fetch: fetcher, now: () => 0 });
+
+		const controller = new AbortController();
+		const first = service.search(animeRequest, controller.signal);
+		const second = service.search(animeRequest, new AbortController().signal);
+		controller.abort();
+
+		await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+		release!();
+		await expect(second).resolves.toBeTruthy();
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
 	it('does not cache across pages', async () => {
 		const fetcher = fetcherMock();
 		const service = new MediaService({

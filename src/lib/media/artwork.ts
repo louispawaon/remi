@@ -1,4 +1,5 @@
 import { imageUrl } from './client';
+import { sniffDimensions } from './dimensions';
 
 export const UPLOAD_LIMITS = {
 	maxBytes: 10 * 1024 * 1024,
@@ -50,6 +51,12 @@ export async function normalizeArtwork(
 	const type = declaredType ?? blob.type;
 	validateArtworkSource({ type, size: blob.size });
 
+	const header = new Uint8Array(await blob.slice(0, 65_536).arrayBuffer());
+	const sniffed = sniffDimensions(header);
+	if (sniffed && sniffed.width * sniffed.height > UPLOAD_LIMITS.maxPixels) {
+		throw new ArtworkError('That image has more than 24 megapixels.', 'too_many_pixels');
+	}
+
 	let bitmap: ImageBitmap;
 	try {
 		bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
@@ -94,7 +101,13 @@ async function encode(
 	const preferred: NormalizedArtwork['type'] =
 		sourceType === 'image/jpeg' ? 'image/jpeg' : 'image/webp';
 	const encoded = await toBlob(canvas, preferred, preferred === 'image/jpeg' ? 0.9 : 0.92);
-	if (encoded) return { blob: encoded, type: preferred };
+	if (encoded) {
+		const actual = encoded.type as NormalizedArtwork['type'];
+		return {
+			blob: encoded,
+			type: ALLOWED_UPLOAD_TYPES.includes(actual) ? actual : preferred
+		};
+	}
 
 	const fallback: NormalizedArtwork['type'] =
 		sourceType === 'image/jpeg' ? 'image/jpeg' : 'image/png';
@@ -111,9 +124,10 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Prom
 export async function fetchProviderArtwork(
 	provider: 'anilist' | 'tmdb',
 	path: string,
+	signal?: AbortSignal,
 	fetcher: typeof fetch = globalThis.fetch
 ): Promise<NormalizedArtwork> {
-	const response = await fetcher(imageUrl(provider, path));
+	const response = await fetcher(imageUrl(provider, path), { signal });
 	if (!response.ok) {
 		let message = 'That artwork could not be retrieved.';
 		try {

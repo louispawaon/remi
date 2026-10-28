@@ -62,14 +62,14 @@ export class MediaService {
 
 		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
 		const pending = adapter
-			.search(request, signal)
+			.search(request)
 			.then((result) => {
 				this.#searchCache.set(key, result);
 				return result;
 			})
 			.finally(() => this.#searchInFlight.delete(key));
 		this.#searchInFlight.set(key, pending);
-		return pending;
+		return abortable(pending, signal);
 	}
 
 	async options(category: Category, signal?: AbortSignal): Promise<MediaOptions> {
@@ -84,19 +84,41 @@ export class MediaService {
 
 		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
 		const pending = adapter
-			.options(category, signal)
+			.options(category)
 			.then((result) => {
 				this.#optionsCache.set(category, result);
 				return result;
 			})
 			.finally(() => this.#optionsInFlight.delete(category));
 		this.#optionsInFlight.set(category, pending);
-		return pending;
+		return abortable(pending, signal);
 	}
 }
 
+/** Detach a caller from a shared upstream request without aborting it for everyone else. */
+function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+	if (!signal) return promise;
+	if (signal.aborted) {
+		return Promise.reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+	}
+	return new Promise((resolve, reject) => {
+		const onAbort = () => reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+		signal.addEventListener('abort', onAbort, { once: true });
+		promise.then(
+			(value) => {
+				signal.removeEventListener('abort', onAbort);
+				resolve(value);
+			},
+			(error) => {
+				signal.removeEventListener('abort', onAbort);
+				reject(error);
+			}
+		);
+	});
+}
+
 function searchKey(request: MediaSearchRequest): string {
-	return [
+	return JSON.stringify([
 		request.category,
 		request.mode,
 		request.query ?? '',
@@ -106,7 +128,7 @@ function searchKey(request: MediaSearchRequest): string {
 		request.format ?? '',
 		request.status ?? '',
 		request.titleLanguage
-	].join('|');
+	]);
 }
 
 let service: MediaService | undefined;

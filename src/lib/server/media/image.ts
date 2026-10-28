@@ -1,4 +1,5 @@
 import { MediaError, RequestError, timeoutError } from './errors';
+import { retryAfterSeconds } from './http';
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -25,7 +26,13 @@ export function resolveImageUrl(provider: 'anilist' | 'tmdb', value: string): UR
 		if (!ANILIST_HOSTS.has(url.hostname)) {
 			throw new RequestError('AniList images must come from its CDN.');
 		}
-		if (!url.pathname.startsWith('/file/anilistcdn/')) {
+		let pathname: string;
+		try {
+			pathname = decodeURIComponent(url.pathname);
+		} catch {
+			throw new RequestError('AniList image path is not approved.');
+		}
+		if (!pathname.startsWith('/file/anilistcdn/') || pathname.includes('..')) {
 			throw new RequestError('AniList image path is not approved.');
 		}
 		if (url.search || url.hash) {
@@ -56,7 +63,7 @@ export async function proxyImage(
 			signal
 		});
 	} catch (error) {
-		if (error instanceof DOMException && error.name === 'AbortError') {
+		if (error instanceof DOMException && error.name === 'TimeoutError') {
 			throw timeoutError('The image provider');
 		}
 		throw new MediaError('provider_unavailable', 'The image provider is not answering right now.');
@@ -70,12 +77,11 @@ export async function proxyImage(
 	}
 	if (!response.ok) {
 		if (response.status === 429) {
-			const retry = Number(response.headers.get('retry-after'));
 			throw new MediaError(
 				'provider_rate_limited',
 				'The image provider is rate limiting requests. Try again shortly.',
 				429,
-				Number.isFinite(retry) ? retry : undefined
+				retryAfterSeconds(response)
 			);
 		}
 		throw new MediaError('provider_unavailable', 'The image provider rejected the request.');
@@ -102,15 +108,24 @@ export async function proxyImage(
 	const chunks: Uint8Array[] = [];
 	let total = 0;
 
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		total += value.byteLength;
-		if (total > MAX_IMAGE_BYTES) {
-			await reader.cancel();
-			throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			total += value.byteLength;
+			if (total > MAX_IMAGE_BYTES) {
+				await reader.cancel();
+				throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+			}
+			chunks.push(value);
 		}
-		chunks.push(value);
+	} catch (error) {
+		await reader.cancel().catch(() => undefined);
+		if (error instanceof MediaError) throw error;
+		if (error instanceof DOMException && error.name === 'TimeoutError') {
+			throw timeoutError('The image provider');
+		}
+		throw new MediaError('provider_unavailable', 'The image provider stopped mid-download.');
 	}
 
 	const bytes = new Uint8Array(total);

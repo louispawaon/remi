@@ -7,6 +7,7 @@ import type {
 } from '#lib/media/types';
 import type { MediaAdapter } from './adapter';
 import { MediaError, timeoutError, upstreamError } from './errors';
+import { rateLimitResetSeconds, retryAfterSeconds } from './http';
 import { withTimeout } from './timeout';
 
 const ENDPOINT = 'https://graphql.anilist.co';
@@ -57,7 +58,8 @@ query Media(
 	$genre: String,
 	$format: MediaFormat,
 	$status: MediaStatus,
-	$sort: [MediaSort]
+	$sort: [MediaSort],
+	$isAdult: Boolean
 ) {
 	Page(page: $page, perPage: $perPage) {
 		pageInfo { hasNextPage currentPage total }
@@ -70,6 +72,7 @@ query Media(
 			genre: $genre,
 			format: $format,
 			status: $status,
+			isAdult: $isAdult,
 			sort: $sort
 		) {
 			id
@@ -113,6 +116,7 @@ export function createAniList(fetcher: typeof fetch = globalThis.fetch): MediaAd
 				page: request.page,
 				perPage: PER_PAGE,
 				type: mapping.type,
+				isAdult: false,
 				sort: request.mode === 'search' ? ['SEARCH_MATCH'] : ['POPULARITY_DESC']
 			};
 			if (request.mode === 'search') variables.search = request.query;
@@ -136,7 +140,11 @@ export function createAniList(fetcher: typeof fetch = globalThis.fetch): MediaAd
 			}
 
 			if (!response.ok) {
-				throw upstreamError('AniList', response.status, retryAfter(response));
+				throw upstreamError(
+					'AniList',
+					response.status,
+					retryAfterSeconds(response) ?? rateLimitResetSeconds(response)
+				);
 			}
 
 			let payload: AniListPayload;
@@ -215,11 +223,11 @@ export function pickTitle(
 	titles: { romaji?: string | null; english?: string | null; native?: string | null },
 	language: TitleLanguage
 ): MediaTitle {
-	const preferred =
-		titles[language] ?? titles.english ?? titles.romaji ?? titles.native ?? 'Untitled';
-	const alternatives = [...new Set([titles.english, titles.romaji, titles.native])].filter(
-		(title): title is string => Boolean(title) && title !== preferred
-	);
+	const candidates = [titles[language], titles.english, titles.romaji, titles.native];
+	const preferred = candidates.find((title) => title?.trim()) ?? 'Untitled';
+	const alternatives = [
+		...new Set([titles.english, titles.romaji, titles.native].filter((title) => title?.trim()))
+	].filter((title) => title !== preferred) as string[];
 	return { preferred, alternatives };
 }
 
@@ -231,15 +239,8 @@ export function humanize(value: string): string {
 		.replace(/\bTv\b/, 'TV');
 }
 
-function retryAfter(response: Response): number | undefined {
-	const header = response.headers.get('retry-after');
-	if (!header) return undefined;
-	const seconds = Number(header);
-	return Number.isFinite(seconds) ? seconds : undefined;
-}
-
 function fetchFailure(error: unknown, provider: string): Error {
-	if (error instanceof DOMException && error.name === 'AbortError') {
+	if (error instanceof DOMException && error.name === 'TimeoutError') {
 		return timeoutError(provider);
 	}
 	return new MediaError(

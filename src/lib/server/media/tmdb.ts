@@ -1,7 +1,14 @@
 import type { Category } from '#lib/card/types';
 import type { MediaOptions, MediaResult, MediaSearchResult } from '#lib/media/types';
 import type { MediaAdapter } from './adapter';
-import { missingTmdbCredentials, MediaError, timeoutError, upstreamError } from './errors';
+import {
+	missingTmdbCredentials,
+	MediaError,
+	RequestError,
+	timeoutError,
+	upstreamError
+} from './errors';
+import { retryAfterSeconds } from './http';
 import { withTimeout } from './timeout';
 
 const BASE = 'https://api.themoviedb.org/3';
@@ -67,7 +74,7 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 				signal: withTimeout(signal)
 			});
 		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') {
+			if (error instanceof DOMException && error.name === 'TimeoutError') {
 				throw timeoutError('TMDB');
 			}
 			throw new MediaError(
@@ -77,8 +84,7 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 		}
 
 		if (!response.ok) {
-			const retry = Number(response.headers.get('retry-after'));
-			throw upstreamError('TMDB', response.status, Number.isFinite(retry) ? retry : undefined);
+			throw upstreamError('TMDB', response.status, retryAfterSeconds(response));
 		}
 
 		try {
@@ -90,6 +96,19 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 
 	return {
 		async search(request, signal): Promise<MediaSearchResult> {
+			if (request.titleLanguage !== 'english') {
+				throw new RequestError('TMDB supplies one title; language choice applies to AniList.');
+			}
+			if (request.format) {
+				throw new RequestError('Format filters are not available for movies and TV.');
+			}
+			if (request.mode === 'search' && (request.genre || request.status)) {
+				throw new RequestError('Genre and status filters apply to Browse, not Search.');
+			}
+			if (request.category === 'movie' && request.status) {
+				throw new RequestError('Status filters apply to TV only.');
+			}
+
 			const isMovie = request.category === 'movie';
 			const path = isMovie
 				? request.mode === 'search'

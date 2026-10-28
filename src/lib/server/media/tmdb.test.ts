@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createTmdb } from './tmdb';
+import { RequestError } from './errors';
 import type { MediaSearchRequest } from '#lib/media/types';
 
 const movieRequest: MediaSearchRequest = {
@@ -88,7 +89,13 @@ describe('TMDB adapter', () => {
 	it('searches TV with the first-air-date year', async () => {
 		const fetcher = fetchMock();
 		const adapter = createTmdb({ token: 'secret', fetch: fetcher as unknown as typeof fetch });
-		await adapter.search({ ...tvRequest, mode: 'search', query: 'severance', status: undefined });
+		await adapter.search({
+			...tvRequest,
+			mode: 'search',
+			query: 'severance',
+			genre: undefined,
+			status: undefined
+		});
 
 		const url = new URL(String(fetcher.mock.calls[0][0]));
 		expect(url.pathname).toBe('/3/search/tv');
@@ -137,6 +144,26 @@ describe('TMDB adapter', () => {
 			format: 'TV',
 			coverPath: null
 		});
+	});
+
+	it('rejects filters TMDB would otherwise drop', async () => {
+		const adapter = createTmdb({
+			token: 'secret',
+			fetch: fetchMock() as unknown as typeof fetch
+		});
+
+		await expect(adapter.search({ ...movieRequest, genre: '18' })).rejects.toBeInstanceOf(
+			RequestError
+		);
+		await expect(
+			adapter.search({ ...movieRequest, mode: 'browse', query: undefined, status: '3' })
+		).rejects.toBeInstanceOf(RequestError);
+		await expect(
+			adapter.search({ ...movieRequest, titleLanguage: 'native' })
+		).rejects.toBeInstanceOf(RequestError);
+		await expect(
+			adapter.search({ ...movieRequest, mode: 'browse', query: undefined, format: 'TV' })
+		).rejects.toBeInstanceOf(RequestError);
 	});
 
 	it('maps rejected credentials and rate limits', async () => {

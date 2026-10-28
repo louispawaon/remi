@@ -37,6 +37,21 @@ describe('resolveImageUrl', () => {
 		);
 		expect(() => resolveImageUrl('tmdb', '/w500/abc.jpg')).toThrow(RequestError);
 		expect(() => resolveImageUrl('tmdb', '/t/p/../../etc/passwd')).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('anilist', 'https://s4.anilist.co/file/anilistcdn/%2e%2e/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('anilist', 'https://s4.anilist.co:8443/file/anilistcdn/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('anilist', 'https://s4.anilist.co/file/anilistcdn/x.jpg?q=1')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('anilist', 'https://s4.anilist.co/file/anilistcdn/x.jpg#f')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('anilist', 'https://s4.anilist.co./file/anilistcdn/x.jpg')
+		).toThrow(RequestError);
 	});
 });
 
@@ -144,6 +159,32 @@ describe('proxyImage', () => {
 				aborted as unknown as typeof fetch,
 				signal
 			)
+		).rejects.toMatchObject({ code: 'provider_unavailable' });
+
+		const timed = vi.fn<typeof fetch>((input, init) => {
+			void input;
+			return new Promise<Response>((_resolve, reject) => {
+				init!.signal!.addEventListener('abort', () => reject(init!.signal!.reason));
+			});
+		});
+		await expect(
+			proxyImage(new URL('https://image.tmdb.org/t/p/x.jpg'), timed, AbortSignal.timeout(5))
+		).rejects.toMatchObject({ code: 'provider_timeout' });
+	});
+
+	it('maps mid-stream failures instead of leaking a 500', async () => {
+		const broken = vi.fn<typeof fetch>(async () => {
+			const body = new ReadableStream<Uint8Array>({
+				start(controller) {
+					controller.enqueue(PNG);
+					controller.error(new DOMException('timeout', 'TimeoutError'));
+				}
+			});
+			return new Response(body, { headers: { 'content-type': 'image/png' } });
+		});
+
+		await expect(
+			proxyImage(new URL('https://image.tmdb.org/t/p/x.jpg'), broken, signal)
 		).rejects.toMatchObject({ code: 'provider_timeout' });
 	});
 

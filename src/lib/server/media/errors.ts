@@ -38,7 +38,9 @@ export function upstreamError(provider: string, status: number, retryAfter?: num
 	if (status === 401 || status === 403) {
 		return new MediaError(
 			'provider_credentials_invalid',
-			`${provider} rejected its credentials. Check the TMDB token in .env.`,
+			provider === 'TMDB'
+				? 'TMDB rejected its credentials. Check the token in .env.'
+				: `${provider} rejected the request. Try again shortly.`,
 			502
 		);
 	}
