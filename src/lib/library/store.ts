@@ -7,7 +7,7 @@ import {
 } from '#lib/card/document';
 import { CARD_LIMITS, type CardDocument, type CardRecord } from '#lib/card/types';
 import { getDatabase } from './db';
-import { RevisionConflictError, StorageWriteError, toStorageError } from './errors';
+import { CardGoneError, RevisionConflictError, StorageWriteError, toStorageError } from './errors';
 import type { CardSummary } from './types';
 
 export interface NewCard {
@@ -67,11 +67,11 @@ export async function getThumbnail(id: string): Promise<Blob | null> {
 	return (await database.get('library', id))?.thumbnail ?? null;
 }
 
-/**
- * Atomic document + summary write. A stale revision is rejected inside the same transaction
- * that would have written it, so two tabs cannot silently overwrite each other.
- */
-export async function saveCard(record: CardRecord, options: SaveOptions = {}): Promise<CardRecord> {
+async function writeCard(
+	record: CardRecord,
+	options: SaveOptions,
+	mode: 'insert' | 'update'
+): Promise<CardRecord> {
 	assertStorable(record);
 	const database = await getDatabase();
 
@@ -81,7 +81,11 @@ export async function saveCard(record: CardRecord, options: SaveOptions = {}): P
 		const library = transaction.objectStore('library');
 
 		const existing = await cards.get(record.document.id);
-		if (existing && existing.document.revision !== record.document.revision) {
+		if (mode === 'insert') {
+			if (existing) throw new StorageWriteError('A card with this id already exists.');
+		} else if (!existing) {
+			throw new CardGoneError();
+		} else if (existing.document.revision !== record.document.revision) {
 			throw new RevisionConflictError(existing.document.revision);
 		}
 
@@ -103,9 +107,19 @@ export async function saveCard(record: CardRecord, options: SaveOptions = {}): P
 		await transaction.done;
 		return next;
 	} catch (error) {
-		if (error instanceof RevisionConflictError) throw error;
+		if (error instanceof RevisionConflictError || error instanceof CardGoneError) throw error;
 		throw toStorageError(error);
 	}
+}
+
+/** Update an existing card; missing cards and stale revisions are rejected. */
+export function saveCard(record: CardRecord, options: SaveOptions = {}): Promise<CardRecord> {
+	return writeCard(record, options, 'update');
+}
+
+/** Insert-only; used by create, duplicate, and import so they can never overwrite. */
+export function insertCard(record: CardRecord, options: SaveOptions = {}): Promise<CardRecord> {
+	return writeCard(record, options, 'insert');
 }
 
 export function createEmptyCard(now = new Date().toISOString()): CardRecord {
@@ -130,7 +144,7 @@ export async function createCard(
 	record?: CardRecord,
 	options: SaveOptions = {}
 ): Promise<CardRecord> {
-	return saveCard(record ? prepareNewCard(record) : createEmptyCard(), options);
+	return insertCard(record ? prepareNewCard(record) : createEmptyCard(), options);
 }
 
 export async function renameCard(id: string, title: string): Promise<CardRecord> {
@@ -149,7 +163,7 @@ export async function duplicateCard(id: string): Promise<CardRecord> {
 		artwork: structuredClone(existing.artwork)
 	};
 	const thumbnail = await getThumbnail(id);
-	return saveCard(copy, thumbnail ? { thumbnail } : {});
+	return insertCard(copy, thumbnail ? { thumbnail } : {});
 }
 
 export async function deleteCard(id: string): Promise<void> {

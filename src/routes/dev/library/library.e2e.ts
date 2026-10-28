@@ -34,7 +34,7 @@ test('creates a fixture card with a thumbnail and survives a refresh', async ({ 
 	expect(loaded?.artwork).toHaveLength(6);
 });
 
-test('autosaves a title with Saving and Saved feedback', async ({ page }) => {
+test('autosaves a title and persists it after a reload', async ({ page }) => {
 	await openLibrary(page);
 	const id = await page.evaluate(() => window.__remiLibrary!.createEmpty());
 	await page.evaluate((cardId) => window.__remiLibrary!.open(cardId), id);
@@ -74,6 +74,10 @@ test('duplicates independently and deletes only the chosen card', async ({ page 
 	expect(copy?.document.title).toBe('Copy only');
 	expect(copy?.document.items).toHaveLength(8);
 	expect(copy?.artwork).toHaveLength(6);
+
+	const original = await page.evaluate((id) => window.__remiLibrary!.load(id), originalId);
+	expect(original?.document.title).toBe('Remi fixture card');
+	expect(original?.document.revision).toBe(1);
 
 	await page.evaluate((id) => window.__remiLibrary!.remove(id), originalId);
 

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	createDefaultDocument,
 	duplicateDocument,
 	isFreeSpaceCell,
 	placedItemIds,
+	randomId,
 	removeItem,
 	resizeGrid,
 	setFormat,
@@ -110,6 +111,23 @@ describe('card document helpers', () => {
 		);
 		expect(copy.items.map((item) => item.titles)).toEqual(
 			document.items.map((item) => item.titles)
+		);
+	});
+});
+
+describe('randomId', () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('still produces a UUID when randomUUID is unavailable over LAN HTTP', () => {
+		vi.stubGlobal('crypto', {
+			getRandomValues: (bytes: Uint8Array) => {
+				for (let index = 0; index < bytes.length; index++) bytes[index] = index;
+				return bytes;
+			}
+		});
+
+		expect(randomId()).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 		);
 	});
 });

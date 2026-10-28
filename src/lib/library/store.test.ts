@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFixtureDocument } from '#lib/card/fixture';
 import { CARD_LIMITS, type CardRecord } from '#lib/card/types';
-import { resetLibrary } from './db';
-import { RevisionConflictError, StorageWriteError, toStorageError } from './errors';
+import { getDatabase, resetLibrary } from './db';
+import { importProjectFile } from './import';
+import { CardGoneError, RevisionConflictError, StorageWriteError, toStorageError } from './errors';
 import {
 	assertStorable,
 	createCard,
@@ -134,6 +135,41 @@ describe('card library store', () => {
 		expect((await listCards()).map((card) => card.id).sort()).toEqual(
 			[existing.document.id, imported.document.id].sort()
 		);
+	});
+
+	it('does not resurrect a card deleted in another tab', async () => {
+		const saved = await createCard(fixtureRecord());
+		const stale = await loadCard(saved.document.id);
+		await deleteCard(saved.document.id);
+
+		await expect(saveCard(stale!)).rejects.toBeInstanceOf(CardGoneError);
+		expect(await listCards()).toEqual([]);
+	});
+
+	it('rolls back both stores when the write fails', async () => {
+		const saved = await createCard(fixtureRecord());
+		const before = await loadCard(saved.document.id);
+		const put = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementationOnce(() => {
+			throw new DOMException('full', 'QuotaExceededError');
+		});
+
+		try {
+			await expect(
+				saveCard({ ...before!, document: { ...before!.document, title: 'Should not land' } })
+			).rejects.toBeInstanceOf(StorageWriteError);
+		} finally {
+			put.mockRestore();
+		}
+
+		expect((await loadCard(saved.document.id))?.document.title).toBe(before!.document.title);
+		expect((await listCards())[0].title).toBe(before!.document.title);
+		expect(await getDatabase()).toBeTruthy();
+	});
+
+	it('leaves the library untouched when an import is invalid', async () => {
+		await createCard(fixtureRecord());
+		await expect(importProjectFile(new Uint8Array([1, 2, 3]))).rejects.toThrow();
+		expect(await listCards()).toHaveLength(1);
 	});
 
 	it('refuses cards over the storage limits', () => {

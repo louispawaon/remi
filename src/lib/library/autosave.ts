@@ -1,5 +1,5 @@
-import { RevisionConflictError } from './errors';
 import type { CardRecord } from '#lib/card/types';
+import { RevisionConflictError } from './errors';
 
 export type AutosaveStatus = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
 
@@ -12,14 +12,17 @@ export interface AutosaveOptions {
 }
 
 /**
- * Debounced, revision-aware saver. Failed saves keep the working record in memory so the
- * caller can still export it; a conflict stops retrying until the caller reloads.
+ * Debounced, revision-aware saver. The base revision always adopts what storage
+ * acknowledged, even when a newer edit queued during the write; failed saves keep the
+ * working record in memory so the caller can still export it.
  */
 export class Autosave {
 	#record: CardRecord;
+	readonly #documentId: string;
 	#status: AutosaveStatus = 'saved';
 	#timer: ReturnType<typeof setTimeout> | undefined;
 	#version = 0;
+	#dirty = false;
 	#inFlight: Promise<CardRecord | null> | null = null;
 	#disposed = false;
 
@@ -29,6 +32,7 @@ export class Autosave {
 		private readonly options: AutosaveOptions = {}
 	) {
 		this.#record = record;
+		this.#documentId = record.document.id;
 	}
 
 	get record(): CardRecord {
@@ -41,8 +45,12 @@ export class Autosave {
 
 	update(record: CardRecord): void {
 		if (this.#disposed) return;
+		if (record.document.id !== this.#documentId) {
+			throw new Error('This autosave belongs to a different card.');
+		}
 		this.#record = record;
 		this.#version += 1;
+		this.#dirty = true;
 		this.#setStatus('dirty');
 		this.#schedule();
 	}
@@ -51,6 +59,8 @@ export class Autosave {
 		if (this.#disposed) return null;
 		this.#clearTimer();
 		if (this.#inFlight) await this.#inFlight;
+		if (this.#disposed) return null;
+		if (!this.#dirty) return this.#record;
 		return this.#saveNow();
 	}
 
@@ -82,20 +92,38 @@ export class Autosave {
 
 		this.#inFlight = this.save(pending)
 			.then((saved) => {
+				if (this.#disposed) return saved;
+
+				// A newer edit may have arrived mid-write. Keep its content but adopt the
+				// revision storage acknowledged, so the next write is not falsely stale.
+				const adopted =
+					version === this.#version
+						? saved
+						: {
+								...this.#record,
+								document: { ...this.#record.document, revision: saved.document.revision }
+							};
+
+				this.#record = adopted;
+				this.options.onSaved?.(adopted);
+
 				if (version === this.#version) {
-					this.#record = saved;
+					this.#dirty = false;
 					this.#setStatus('saved');
-					this.options.onSaved?.(saved);
 				} else {
-					// A newer edit arrived while saving; queue that one instead.
+					this.#dirty = true;
 					this.#setStatus('dirty');
 					this.#schedule();
 				}
-				return saved;
+				return adopted;
 			})
 			.catch((error: unknown) => {
-				const conflict = error instanceof RevisionConflictError;
-				this.#setStatus(conflict ? 'conflict' : 'error', message(error));
+				if (this.#disposed) return null;
+				this.#dirty = true;
+				this.#setStatus(
+					error instanceof RevisionConflictError ? 'conflict' : 'error',
+					message(error)
+				);
 				return null;
 			});
 

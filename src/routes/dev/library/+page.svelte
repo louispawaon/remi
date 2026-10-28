@@ -43,7 +43,7 @@
 			case 'saved':
 				return 'Saved';
 			case 'conflict':
-				return `Changed in another tab: ${detail ?? ''}`.trim();
+				return detail ?? 'Changed in another tab. Reload the library.';
 			case 'error':
 				return `Save failed: ${detail ?? 'unknown error'}`;
 		}
@@ -52,23 +52,22 @@
 	async function refresh() {
 		const summaries = await listCards();
 		for (const url of urls) URL.revokeObjectURL(url);
-		urls = summaries.flatMap((summary) => {
-			if (!summary.thumbnail) return [];
-			const url = URL.createObjectURL(summary.thumbnail);
-			urls.push(url);
-			return [url];
-		});
+		urls = [];
 
-		rows = summaries.map((summary, index) => ({
-			id: summary.id,
-			title: summary.title,
-			revision: summary.revision,
-			itemCount: summary.itemCount,
-			unplacedCount: summary.unplacedCount,
-			updatedAt: summary.updatedAt,
-			thumbnailBytes: summary.thumbnail?.size ?? 0,
-			url: urls[index] ?? null
-		}));
+		rows = summaries.map((summary) => {
+			const url = summary.thumbnail ? URL.createObjectURL(summary.thumbnail) : null;
+			if (url) urls.push(url);
+			return {
+				id: summary.id,
+				title: summary.title,
+				revision: summary.revision,
+				itemCount: summary.itemCount,
+				unplacedCount: summary.unplacedCount,
+				updatedAt: summary.updatedAt,
+				thumbnailBytes: summary.thumbnail?.size ?? 0,
+				url
+			};
+		});
 
 		if (currentId && !summaries.some((summary) => summary.id === currentId)) {
 			currentId = null;
@@ -79,8 +78,11 @@
 		}
 	}
 
-	function attach(record: CardRecord) {
-		autosave?.dispose();
+	async function attach(record: CardRecord) {
+		if (autosave) {
+			await autosave.flush();
+			autosave.dispose();
+		}
 		current = record;
 		currentId = record.document.id;
 		titleDraft = record.document.title;
@@ -98,7 +100,7 @@
 		const record = createEmptyCard();
 		const thumbnail = await createThumbnail(record);
 		const saved = await createCard(record, { thumbnail });
-		attach(saved);
+		await attach(saved);
 		statusText = 'Saved';
 		await refresh();
 		return saved.document.id;
@@ -109,7 +111,7 @@
 		const record = recordFor(document, await createFixtureArtwork());
 		const thumbnail = await createThumbnail(record);
 		const saved = await createCard(record, { thumbnail });
-		attach(saved);
+		await attach(saved);
 		statusText = 'Saved';
 		await refresh();
 		return saved.document.id;
@@ -118,7 +120,7 @@
 	async function openCard(id: string) {
 		const record = await loadCard(id);
 		if (!record) throw new Error('That card no longer exists.');
-		attach(record);
+		await attach(record);
 		statusText = 'Saved';
 	}
 
@@ -172,7 +174,7 @@
 		if (!file) return;
 		try {
 			const saved = await importProjectFile(new Uint8Array(await file.arrayBuffer()));
-			attach(saved);
+			await attach(saved);
 			statusText = `Imported “${saved.document.title}”`;
 			await refresh();
 		} catch (error) {
@@ -184,6 +186,10 @@
 
 	function message(error: unknown) {
 		return error instanceof Error ? error.message : String(error);
+	}
+
+	function showError(error: unknown) {
+		statusText = `Action failed: ${message(error)}`;
 	}
 
 	onMount(() => {
@@ -208,7 +214,10 @@
 			open: openCard,
 			rename: async (id, title) => {
 				await renameCard(id, title);
-				if (id === currentId) attach((await loadCard(id))!);
+				if (id === currentId) {
+					const updated = await loadCard(id);
+					if (updated) await attach(updated);
+				}
 				await refresh();
 			},
 			duplicate: async (id) => {
@@ -222,7 +231,7 @@
 			exportBytes,
 			importBytes: async (bytes) => {
 				const saved = await importProjectFile(new Uint8Array(bytes));
-				attach(saved);
+				await attach(saved);
 				statusText = 'Imported';
 				await refresh();
 				return saved.document.id;
@@ -251,8 +260,10 @@
 	</p>
 
 	<div class="actions">
-		<button data-testid="new-empty" onclick={createEmpty}>New card</button>
-		<button data-testid="new-fixture" onclick={createFixture}>New fixture card</button>
+		<button data-testid="new-empty" onclick={() => createEmpty().catch(showError)}>New card</button>
+		<button data-testid="new-fixture" onclick={() => createFixture().catch(showError)}
+			>New fixture card</button
+		>
 		<button data-testid="flush" onclick={() => autosave?.flush()}>Flush save</button>
 		<button data-testid="export-current" onclick={downloadCurrent} disabled={!currentId}>
 			Export current

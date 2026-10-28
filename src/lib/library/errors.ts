@@ -6,6 +6,14 @@ export class StorageWriteError extends Error {
 	name = 'StorageWriteError';
 }
 
+export class CardGoneError extends Error {
+	name = 'CardGoneError';
+
+	constructor() {
+		super('That card was deleted in another tab. Reload the library.');
+	}
+}
+
 export class RevisionConflictError extends Error {
 	name = 'RevisionConflictError';
 
