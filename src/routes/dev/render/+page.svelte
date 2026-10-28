@@ -3,6 +3,7 @@
 	import { createProjectArchive, readProjectArchive } from '#lib/card/archive';
 	import { createFixtureDocument } from '#lib/card/fixture';
 	import { renderCard, renderCardPng } from '#lib/card/png';
+	import { verifyCardArtwork } from '#lib/card/verify';
 	import type { Format, GridSize, Resolution } from '#lib/card/types';
 	import { createFixtureArtwork, recordFor } from '#lib/dev/artwork';
 	import type { HarnessApi, HarnessRenderResult } from '#lib/dev/harness-api';
@@ -136,7 +137,9 @@
 		const file = input.files?.[0];
 		if (!file) return;
 		try {
-			record = readProjectArchive(new Uint8Array(await file.arrayBuffer()));
+			const imported = readProjectArchive(new Uint8Array(await file.arrayBuffer()));
+			await verifyCardArtwork(imported);
+			record = imported;
 			gridSize = record.document.gridSize;
 			format = record.document.format;
 			resolution = 1;
@@ -195,7 +198,9 @@
 			renderCurrent,
 			state: () => record?.document ?? null,
 			importBytes: async (bytes: number[]) => {
-				record = readProjectArchive(new Uint8Array(bytes));
+				const imported = readProjectArchive(new Uint8Array(bytes));
+				await verifyCardArtwork(imported);
+				record = imported;
 				gridSize = record.document.gridSize;
 				format = record.document.format;
 				await renderCurrent();

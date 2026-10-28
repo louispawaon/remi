@@ -1,11 +1,13 @@
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import * as v from 'valibot';
+import { isFreeSpaceCell } from './document';
 import {
 	ARTWORK_TYPES,
+	CARD_LIMITS,
 	CARD_SCHEMA_VERSION,
 	CATEGORIES,
+	FONT_CHOICES,
 	FORMATS,
-	type CardDocument,
 	type CardRecord
 } from './types';
 
@@ -61,7 +63,8 @@ const documentSchema = v.strictObject({
 	appearance: v.strictObject({
 		titleVisible: v.boolean(),
 		background: v.string(),
-		foreground: v.string()
+		foreground: v.string(),
+		font: v.picklist(FONT_CHOICES)
 	}),
 	items: v.array(itemSchema),
 	slots: v.array(v.nullable(v.string())),
@@ -90,9 +93,14 @@ type ManifestArtwork = Manifest['artwork'][number];
 const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as const;
 
 export async function createProjectArchive(record: CardRecord): Promise<Uint8Array> {
+	if (record.document.items.length > CARD_LIMITS.maxItems) {
+		throw new Error(`Card has more than ${CARD_LIMITS.maxItems} items`);
+	}
+
 	const files: Record<string, Uint8Array> = {};
 	const artwork: ManifestArtwork[] = [];
 	const byId = new Map<string, ManifestArtwork>();
+	let artworkBytes = 0;
 
 	for (const item of record.document.items) {
 		if (!item.artwork) continue;
@@ -105,6 +113,15 @@ export async function createProjectArchive(record: CardRecord): Promise<Uint8Arr
 
 		const blob = record.artwork[item.artwork.id];
 		if (!blob) throw new Error(`Cannot export project: artwork ${item.artwork.id} is missing`);
+		if (blob.size > CARD_LIMITS.maxArtworkBytes) {
+			throw new Error(
+				`Artwork ${item.artwork.id} exceeds the ${CARD_LIMITS.maxArtworkBytes} byte limit`
+			);
+		}
+		artworkBytes += blob.size;
+		if (artworkBytes > CARD_LIMITS.maxCardArtworkBytes) {
+			throw new Error(`Card artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`);
+		}
 
 		const entry: ManifestArtwork = {
 			...item.artwork,
@@ -181,7 +198,7 @@ export function readProjectArchive(bytes: Uint8Array): CardRecord {
 	validateDocument(manifest);
 	const artwork = collectArtwork(manifest, files);
 
-	return { document: manifest.document as CardDocument, artwork };
+	return { document: manifest.document, artwork };
 }
 
 function validateDocument(manifest: Manifest) {
@@ -192,21 +209,32 @@ function validateDocument(manifest: Manifest) {
 			`Slot count ${document.slots.length} does not match the ${document.gridSize}x${document.gridSize} grid`
 		);
 	}
+	if (document.items.length > CARD_LIMITS.maxItems) {
+		throw new Error(`Card has more than ${CARD_LIMITS.maxItems} items`);
+	}
 
 	const itemIds = new Set<string>();
 	for (const item of document.items) {
+		if (item.id === '__proto__') throw new Error('Reserved item id');
 		if (itemIds.has(item.id)) throw new Error(`Duplicate item id: ${item.id}`);
 		itemIds.add(item.id);
 	}
 
-	for (const slot of document.slots) {
-		if (slot !== null && !itemIds.has(slot)) {
-			throw new Error(`Slot references an unknown item: ${slot}`);
+	const placed = new Set<string>();
+	for (let index = 0; index < document.slots.length; index++) {
+		const slot = document.slots[index];
+		if (slot === null) continue;
+		if (!itemIds.has(slot)) throw new Error(`Slot references an unknown item: ${slot}`);
+		if (isFreeSpaceCell(document, index)) {
+			throw new Error(`Item ${slot} cannot occupy the free-space cell`);
 		}
+		if (placed.has(slot)) throw new Error(`Item ${slot} is placed in more than one slot`);
+		placed.add(slot);
 	}
 
 	const artworkIds = new Set<string>();
 	for (const entry of artwork) {
+		if (entry.id === '__proto__') throw new Error('Reserved artwork id');
 		if (artworkIds.has(entry.id)) throw new Error(`Duplicate artwork id: ${entry.id}`);
 		artworkIds.add(entry.id);
 	}
@@ -228,12 +256,21 @@ function validateDocument(manifest: Manifest) {
 function collectArtwork(manifest: Manifest, files: Record<string, Uint8Array>) {
 	const declared = new Set<string>([PROJECT_MANIFEST_PATH]);
 	const artwork: Record<string, Blob> = {};
+	let totalBytes = 0;
 
 	for (const entry of manifest.artwork) {
+		if (!isSafePath(entry.path)) throw new Error(`Unsafe artwork path: ${entry.path}`);
 		if (declared.has(entry.path)) throw new Error(`Duplicate artwork path: ${entry.path}`);
 		declared.add(entry.path);
 		const data = files[entry.path];
 		if (!data) throw new Error(`Project archive is missing artwork file ${entry.path}`);
+		if (data.byteLength > CARD_LIMITS.maxArtworkBytes) {
+			throw new Error(`Artwork ${entry.id} exceeds the ${CARD_LIMITS.maxArtworkBytes} byte limit`);
+		}
+		totalBytes += data.byteLength;
+		if (totalBytes > CARD_LIMITS.maxCardArtworkBytes) {
+			throw new Error(`Card artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`);
+		}
 		artwork[entry.id] = new Blob([new Uint8Array(data)], { type: entry.type });
 	}
 
@@ -260,5 +297,9 @@ function assertSameArtwork(
 function isSafePath(path: string) {
 	if (!/^[A-Za-z0-9._/-]+$/.test(path)) return false;
 	if (path.startsWith('/') || path.includes('\\')) return false;
-	return path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
+	return path
+		.split('/')
+		.every(
+			(segment) => segment !== '' && segment !== '.' && segment !== '..' && segment !== '__proto__'
+		);
 }

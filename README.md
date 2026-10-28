@@ -34,7 +34,7 @@ code, so an accidental leak fails the build instead of shipping.
 | `pnpm test:unit`       | Vitest, once                                            |
 | `pnpm test:unit:watch` | Vitest in watch mode                                    |
 | `pnpm test:e2e`        | Playwright browser tests (built server)                 |
-| `npm test`             | Unit and browser tests                                  |
+| `pnpm test`            | Unit and browser tests                                  |
 
 ## Render harness
 

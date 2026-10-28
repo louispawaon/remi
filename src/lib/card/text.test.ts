@@ -31,7 +31,7 @@ describe('wrapText', () => {
 	it('breaks Latin text at spaces', () => {
 		const lines = fit('one two three four five', 100);
 		expect(lines.length).toBe(2);
-		expect(lines[0].trim()).not.toMatch(/^\s/);
+		expect(lines[0]).toBe('one two');
 	});
 
 	it('breaks CJK text per character without needing spaces', () => {

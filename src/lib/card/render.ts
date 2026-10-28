@@ -1,6 +1,7 @@
+import { coverCrop } from './crop';
 import { captionHeight, type CardLayout, type Rect } from './layout';
 import { truncateText, wrapText } from './text';
-import type { CardDocument, CardItem } from './types';
+import type { CardDocument, CardItem, FontChoice } from './types';
 
 export type DrawableArtwork = HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas;
 
@@ -10,11 +11,16 @@ export interface DrawCardInput {
 	resolveArtwork: (id: string) => DrawableArtwork | undefined;
 }
 
-const FONT_STACK = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+const FONT_STACKS: Record<FontChoice, string> = {
+	sans: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+	serif: 'Georgia, "Times New Roman", serif',
+	display: '"Avenir Next", "Trebuchet MS", system-ui, sans-serif'
+};
 
 export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): void {
 	const { document: doc, layout, resolveArtwork } = input;
 	const measure = (text: string) => ctx.measureText(text).width;
+	const font = FONT_STACKS[doc.appearance.font];
 
 	ctx.save();
 	ctx.fillStyle = doc.appearance.background;
@@ -24,7 +30,7 @@ export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): v
 
 	if (doc.appearance.titleVisible && doc.title.trim() !== '') {
 		ctx.fillStyle = doc.appearance.foreground;
-		ctx.font = `600 ${layout.titleFontSize}px ${FONT_STACK}`;
+		ctx.font = `600 ${layout.titleFontSize}px ${font}`;
 		const title = truncateText(doc.title, layout.heading.width, measure);
 		ctx.fillText(title, layout.heading.x, layout.heading.y + layout.heading.height / 2);
 	}
@@ -33,19 +39,19 @@ export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): v
 		const rect = layout.cells[index];
 
 		if (index === layout.freeCellIndex) {
-			drawFreeSpace(ctx, rect, layout);
+			drawFreeSpace(ctx, rect, layout, doc, font);
 			continue;
 		}
 
 		const itemId = doc.slots[index] ?? null;
 		if (itemId === null) {
-			drawBlank(ctx, rect, layout);
+			drawBlank(ctx, rect, layout, doc.appearance.foreground);
 			continue;
 		}
 
 		const item = doc.items.find((candidate) => candidate.id === itemId);
 		if (!item) throw new Error(`Unknown item in slot: ${itemId}`);
-		drawItem(ctx, rect, item, doc, layout, resolveArtwork, measure);
+		drawItem(ctx, rect, item, doc, layout, font, resolveArtwork, measure);
 	}
 
 	ctx.restore();
@@ -57,6 +63,7 @@ function drawItem(
 	item: CardItem,
 	doc: CardDocument,
 	layout: CardLayout,
+	font: string,
 	resolveArtwork: DrawCardInput['resolveArtwork'],
 	measure: (text: string) => number
 ) {
@@ -73,47 +80,27 @@ function drawItem(
 		const artwork = resolveArtwork(item.artwork.id);
 		if (!artwork) throw new Error(`Missing artwork: ${item.artwork.id}`);
 		const crop = item.crops[layout.format] ?? { x: 0.5, y: 0.5 };
-		drawCover(ctx, artwork, rect, crop);
+		const source = coverCrop(artwork.width, artwork.height, rect.width, rect.height, crop);
+		ctx.drawImage(
+			artwork,
+			source.x,
+			source.y,
+			source.width,
+			source.height,
+			rect.x,
+			rect.y,
+			rect.width,
+			rect.height
+		);
 	} else {
-		drawTextTile(ctx, rect, title, doc.appearance.foreground, layout, measure);
+		drawTextTile(ctx, rect, title, doc.appearance.foreground, layout, font, measure);
 	}
 
 	if (doc.appearance.titleVisible && item.artwork) {
-		drawCaption(ctx, rect, title, layout, measure);
+		drawCaption(ctx, rect, title, layout, font, measure);
 	}
 
 	ctx.restore();
-}
-
-function drawCover(
-	ctx: CanvasRenderingContext2D,
-	artwork: DrawableArtwork,
-	rect: Rect,
-	crop: { x: number; y: number }
-) {
-	const width = artwork.width;
-	const height = artwork.height;
-	if (width <= 0 || height <= 0) throw new Error('Artwork has no pixels');
-
-	const scale = Math.max(rect.width / width, rect.height / height);
-	const sourceWidth = rect.width / scale;
-	const sourceHeight = rect.height / scale;
-	const maxX = width - sourceWidth;
-	const maxY = height - sourceHeight;
-	const sourceX = Math.min(Math.max(maxX * crop.x, 0), maxX);
-	const sourceY = Math.min(Math.max(maxY * crop.y, 0), maxY);
-
-	ctx.drawImage(
-		artwork,
-		sourceX,
-		sourceY,
-		sourceWidth,
-		sourceHeight,
-		rect.x,
-		rect.y,
-		rect.width,
-		rect.height
-	);
 }
 
 function drawTextTile(
@@ -122,12 +109,13 @@ function drawTextTile(
 	title: string,
 	color: string,
 	layout: CardLayout,
+	font: string,
 	measure: (text: string) => number
 ) {
 	const fontSize = layout.caption.fontSize * 1.2;
 	const lineHeight = fontSize * 1.3;
 	ctx.fillStyle = color;
-	ctx.font = `600 ${fontSize}px ${FONT_STACK}`;
+	ctx.font = `600 ${fontSize}px ${font}`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
@@ -148,6 +136,7 @@ function drawCaption(
 	rect: Rect,
 	title: string,
 	layout: CardLayout,
+	font: string,
 	measure: (text: string) => number
 ) {
 	const height = captionHeight(layout);
@@ -157,7 +146,7 @@ function drawCaption(
 	ctx.fillRect(rect.x, top, rect.width, height);
 
 	ctx.fillStyle = '#ffffff';
-	ctx.font = `500 ${layout.caption.fontSize}px ${FONT_STACK}`;
+	ctx.font = `500 ${layout.caption.fontSize}px ${font}`;
 	ctx.textBaseline = 'middle';
 
 	const lines = wrapText(
@@ -175,22 +164,35 @@ function drawCaption(
 	});
 }
 
-function drawFreeSpace(ctx: CanvasRenderingContext2D, rect: Rect, layout: CardLayout) {
+function drawFreeSpace(
+	ctx: CanvasRenderingContext2D,
+	rect: Rect,
+	layout: CardLayout,
+	doc: CardDocument,
+	font: string
+) {
 	ctx.save();
-	ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+	ctx.globalAlpha = 0.06;
+	ctx.fillStyle = doc.appearance.foreground;
 	ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
 	ctx.globalAlpha = 0.8;
-	ctx.fillStyle = '#ffffff';
-	ctx.font = `700 ${layout.caption.fontSize * 1.2}px ${FONT_STACK}`;
+	ctx.fillStyle = doc.appearance.foreground;
+	ctx.font = `700 ${layout.caption.fontSize * 1.2}px ${font}`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.fillText('FREE', rect.x + rect.width / 2, rect.y + rect.height / 2);
 	ctx.restore();
 }
 
-function drawBlank(ctx: CanvasRenderingContext2D, rect: Rect, layout: CardLayout) {
+function drawBlank(
+	ctx: CanvasRenderingContext2D,
+	rect: Rect,
+	layout: CardLayout,
+	foreground: string
+) {
 	ctx.save();
-	ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+	ctx.globalAlpha = 0.14;
+	ctx.strokeStyle = foreground;
 	ctx.lineWidth = 2 * layout.resolution;
 	ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 	ctx.restore();

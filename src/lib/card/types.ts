@@ -14,6 +14,15 @@ export type Resolution = 1 | 2;
 export const ARTWORK_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 export type ArtworkType = (typeof ARTWORK_TYPES)[number];
 
+export const FONT_CHOICES = ['sans', 'serif', 'display'] as const;
+export type FontChoice = (typeof FONT_CHOICES)[number];
+
+export const CARD_LIMITS = {
+	maxItems: 100,
+	maxArtworkBytes: 8 * 1024 * 1024,
+	maxCardArtworkBytes: 40 * 1024 * 1024
+} as const;
+
 /** Normalized focal point for cover-cropping, where 0.5 is centered. */
 export interface CropPosition {
 	x: number;
@@ -46,6 +55,7 @@ export interface CardAppearance {
 	titleVisible: boolean;
 	background: string;
 	foreground: string;
+	font: FontChoice;
 }
 
 /** Slot index holds an item id, or null for a deliberate blank cell. */

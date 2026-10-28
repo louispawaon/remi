@@ -7,7 +7,7 @@ import {
 	readProjectArchive
 } from './archive';
 import { createFixtureDocument } from './fixture';
-import type { CardRecord } from './types';
+import { CARD_LIMITS, type CardRecord } from './types';
 
 // Smallest valid PNG (1x1, transparent).
 const TINY_PNG = Buffer.from(
@@ -34,7 +34,11 @@ async function manifestOf(record: CardRecord) {
 
 interface MutableManifest {
 	schemaVersion: number;
-	document: Record<string, unknown> & { slots: unknown[]; title: string };
+	document: Record<string, unknown> & {
+		slots: unknown[];
+		title: string;
+		items: Array<Record<string, unknown> & { id: string }>;
+	};
 	artwork: unknown[];
 }
 
@@ -96,10 +100,10 @@ describe('project archive', () => {
 		}
 	});
 
-	it('excludes credentials and temporary urls from the manifest', async () => {
+	it('writes only schema, document and artwork metadata to the manifest', async () => {
 		const manifest = await manifestOf(makeRecord());
-		const serialized = JSON.stringify(manifest);
-		expect(serialized).not.toMatch(/token|api[_-]?key|https?:\/\//i);
+		expect(Object.keys(manifest).sort()).toEqual(['artwork', 'document', 'schemaVersion']);
+		expect(JSON.stringify(manifest)).not.toMatch(/https?:\/\//);
 	});
 
 	it('rejects unsupported schema versions', async () => {
@@ -176,5 +180,51 @@ describe('project archive', () => {
 			'artwork/bomb.bin': new Uint8Array(ARCHIVE_LIMITS.expandedBytes + 1)
 		});
 		expect(() => readProjectArchive(bytes)).toThrow(/size/i);
+	});
+
+	it('rejects artwork above the per-asset byte limit', async () => {
+		const files = unzipSync(await createProjectArchive(makeRecord()));
+		const artworkPath = Object.keys(files).find((path) => path.startsWith('artwork/'))!;
+		files[artworkPath] = new Uint8Array(CARD_LIMITS.maxArtworkBytes + 1);
+		expect(() => readProjectArchive(zipSync(files, { level: 1 }))).toThrow(/artwork.*limit/i);
+	});
+
+	it('rejects artwork above the per-card total', async () => {
+		const files = unzipSync(await createProjectArchive(makeRecord()));
+		for (const path of Object.keys(files).filter((entry) => entry.startsWith('artwork/'))) {
+			files[path] = new Uint8Array(7 * 1024 * 1024);
+		}
+		expect(() => readProjectArchive(zipSync(files, { level: 1 }))).toThrow(/card artwork/i);
+	});
+
+	it('rejects cards with too many items', async () => {
+		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
+			const base = manifest.document.items[0];
+			for (let index = 0; index < CARD_LIMITS.maxItems; index++) {
+				manifest.document.items.push({ ...base, id: `clone-${index}` });
+			}
+		});
+		expect(() => readProjectArchive(bytes)).toThrow(/items/i);
+	});
+
+	it('rejects the same item placed in more than one slot', async () => {
+		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
+			manifest.document.slots[1] = manifest.document.slots[0];
+		});
+		expect(() => readProjectArchive(bytes)).toThrow(/more than one slot/i);
+	});
+
+	it('rejects items placed in the free-space cell', async () => {
+		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
+			manifest.document.slots[12] = 'jp';
+		});
+		expect(() => readProjectArchive(bytes)).toThrow(/free-space/i);
+	});
+
+	it('rejects prototype-polluting manifest paths', async () => {
+		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
+			(manifest.artwork[0] as { path: string }).path = '__proto__';
+		});
+		expect(() => readProjectArchive(bytes)).toThrow(/path/i);
 	});
 });

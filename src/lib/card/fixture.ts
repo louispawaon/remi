@@ -115,7 +115,12 @@ export function createFixtureDocument(options: FixtureOptions = {}): CardDocumen
 		gridSize,
 		format,
 		freeSpace,
-		appearance: { titleVisible: true, background: '#12100e', foreground: '#f4efe6' },
+		appearance: {
+			titleVisible: true,
+			background: '#12100e',
+			foreground: '#f4efe6',
+			font: 'sans'
+		},
 		items: items.map((item) => structuredClone(item)),
 		slots,
 		createdAt: TIMESTAMP,

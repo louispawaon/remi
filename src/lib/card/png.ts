@@ -1,4 +1,5 @@
 import { computeLayout, type CardLayout } from './layout';
+import { placedItemIds } from './document';
 import { drawCard } from './render';
 import type { CardRecord, Resolution } from './types';
 
@@ -33,8 +34,15 @@ export async function renderCard(
 
 	const bitmaps = new Map<string, ImageBitmap>();
 	try {
+		// Decode only artwork the layout can show; unplaced or corrupt extras must not block export.
+		const placedItems = new Set(placedItemIds(document));
+		const requiredArtwork = new Set(
+			document.items
+				.filter((item) => placedItems.has(item.id) && item.artwork)
+				.map((item) => item.artwork!.id)
+		);
 		for (const [id, blob] of Object.entries(record.artwork)) {
-			bitmaps.set(id, await createImageBitmap(blob));
+			if (requiredArtwork.has(id)) bitmaps.set(id, await createImageBitmap(blob));
 		}
 		drawCard(context, { document, layout, resolveArtwork: (id) => bitmaps.get(id) });
 	} finally {

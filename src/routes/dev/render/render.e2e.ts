@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { unzipSync, zipSync } from 'fflate';
 import { devices, expect, test } from '@playwright/test';
 import type { Format } from '#lib/card/types';
 
@@ -126,4 +129,28 @@ test('fails visibly when referenced artwork is missing', async ({ page }) => {
 	await openHarness(page);
 	const message = await page.evaluate(() => window.__remiHarness!.missingArtworkError());
 	expect(message).toMatch(/missing artwork/i);
+});
+
+test('rejects undecodable project artwork without replacing the current card', async ({ page }) => {
+	await openHarness(page);
+
+	const downloadPromise = page.waitForEvent('download');
+	await page.getByTestId('export-project').click();
+	const download = await downloadPromise;
+	const files = unzipSync(readFileSync((await download.path())!));
+	const artworkPath = Object.keys(files).find((path) => path.startsWith('artwork/'))!;
+	files[artworkPath] = new Uint8Array([1, 2, 3, 4]);
+
+	const corruptPath = join(tmpdir(), `remi-corrupt-${Date.now()}.remi`);
+	writeFileSync(corruptPath, zipSync(files));
+
+	try {
+		await page.getByTestId('import-input').setInputFiles(corruptPath);
+		await expect(page.getByTestId('status')).toContainText('Import failed');
+		expect((await page.evaluate(() => window.__remiHarness!.state()))?.title).toBe(
+			'Remi fixture card'
+		);
+	} finally {
+		unlinkSync(corruptPath);
+	}
 });
