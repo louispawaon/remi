@@ -6,8 +6,9 @@ export const variables = defineEnvVars({
 		description: 'TMDB v4 read access token. Server-only; imported from $app/env/private.',
 		schema: optionalSecret
 	},
-	ENABLE_RENDER_HARNESS: {
-		description: 'Expose /dev/render in a production build for automated tests. Default off.',
+	ENABLE_DEV_HARNESS: {
+		description:
+			'Expose dev harness routes in a production build for automated tests. Default off.',
 		schema: (value) => value === '1'
 	}
 });

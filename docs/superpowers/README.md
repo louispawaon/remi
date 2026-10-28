@@ -1,6 +1,6 @@
 # Remi v1 planning documents
 
-Agreed on 2026-10-28. Status: Phases 0–2 (foundation, rendering/portability, design direction) complete; Phases 3–7 not started.
+Agreed on 2026-10-28. Status: Phases 0–3 (foundation, rendering/portability, design direction, local library) complete; Phases 4–7 not started.
 
 These documents preserve the plan agreed in the conversation. They describe intended behavior, not implemented capabilities or completed acceptance checks.
 

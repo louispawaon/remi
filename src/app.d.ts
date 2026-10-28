@@ -11,6 +11,7 @@ declare global {
 
 	interface Window {
 		__remiHarness?: import('./lib/dev/harness-api').HarnessApi;
+		__remiLibrary?: import('./lib/dev/library-api').LibraryHarnessApi;
 	}
 }
 

@@ -38,10 +38,10 @@ code, so an accidental leak fails the build instead of shipping.
 
 ## Render harness
 
-`pnpm dev`, then open `/dev/render`. It renders the deterministic fixture across grids,
-formats, and resolutions, and can download a PNG or export/import a project. It is
-unavailable in a production build unless `ENABLE_RENDER_HARNESS=1` is set, which the
-automated tests use.
+`pnpm dev`, then open `/dev/render` or `/dev/library`. They exercise the deterministic
+fixture across grids, formats, and resolutions, plus local cards, revisions, thumbnails, and
+project import. Both are unavailable in a production build unless `ENABLE_DEV_HARNESS=1` is
+set, which the automated tests use.
 
 ## Phone testing
 
