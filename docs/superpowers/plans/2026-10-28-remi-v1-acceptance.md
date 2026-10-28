@@ -1,6 +1,6 @@
 # Remi v1 acceptance checklist
 
-Date: 2026-10-28. Status: not run; Phase 0–3 gates verified.
+Date: 2026-10-28. Status: not run; Phase 0–4 gates verified.
 
 This checklist defines acceptance, not completed verification. Leave an item unchecked until its required evidence exists. Record the tested commit, environment, and evidence when executing it.
 

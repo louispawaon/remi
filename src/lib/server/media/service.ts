@@ -1,0 +1,125 @@
+import type { Category } from '#lib/card/types';
+import type {
+	MediaOptions,
+	MediaProvider,
+	MediaSearchRequest,
+	MediaSearchResult
+} from '#lib/media/types';
+import { createAniList } from './anilist';
+import type { MediaAdapter } from './adapter';
+import { TTLCache } from './cache';
+import { missingTmdbCredentials } from './errors';
+import { createTmdb } from './tmdb';
+
+const PROVIDERS: Record<Category, MediaProvider> = {
+	anime: 'anilist',
+	manga: 'anilist',
+	manhwa: 'anilist',
+	manhua: 'anilist',
+	movie: 'tmdb',
+	tv: 'tmdb'
+};
+
+export interface MediaServiceOptions {
+	tmdbToken?: string;
+	fetch?: typeof fetch;
+	now?: () => number;
+}
+
+export class MediaService {
+	readonly #searchCache: TTLCache<MediaSearchResult>;
+	readonly #optionsCache: TTLCache<MediaOptions>;
+	readonly #anilist: MediaAdapter;
+	readonly #tmdb: MediaAdapter | undefined;
+	readonly #searchInFlight = new Map<string, Promise<MediaSearchResult>>();
+	readonly #optionsInFlight = new Map<Category, Promise<MediaOptions>>();
+
+	constructor(options: MediaServiceOptions) {
+		this.#searchCache = new TTLCache({
+			ttlMs: 45_000,
+			maxEntries: 100,
+			now: options.now
+		});
+		this.#optionsCache = new TTLCache({
+			ttlMs: 6 * 60 * 60 * 1000,
+			maxEntries: 20,
+			now: options.now
+		});
+		this.#anilist = createAniList(options.fetch);
+		this.#tmdb = createTmdb({ token: options.tmdbToken, fetch: options.fetch });
+	}
+
+	async search(request: MediaSearchRequest, signal?: AbortSignal): Promise<MediaSearchResult> {
+		const provider = PROVIDERS[request.category];
+		if (provider === 'tmdb' && !this.#tmdb) throw missingTmdbCredentials();
+
+		const key = searchKey(request);
+		const cached = this.#searchCache.get(key);
+		if (cached) return cached;
+
+		const existing = this.#searchInFlight.get(key);
+		if (existing) return existing;
+
+		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
+		const pending = adapter
+			.search(request, signal)
+			.then((result) => {
+				this.#searchCache.set(key, result);
+				return result;
+			})
+			.finally(() => this.#searchInFlight.delete(key));
+		this.#searchInFlight.set(key, pending);
+		return pending;
+	}
+
+	async options(category: Category, signal?: AbortSignal): Promise<MediaOptions> {
+		const provider = PROVIDERS[category];
+		if (provider === 'tmdb' && !this.#tmdb) throw missingTmdbCredentials();
+
+		const cached = this.#optionsCache.get(category);
+		if (cached) return cached;
+
+		const existing = this.#optionsInFlight.get(category);
+		if (existing) return existing;
+
+		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
+		const pending = adapter
+			.options(category, signal)
+			.then((result) => {
+				this.#optionsCache.set(category, result);
+				return result;
+			})
+			.finally(() => this.#optionsInFlight.delete(category));
+		this.#optionsInFlight.set(category, pending);
+		return pending;
+	}
+}
+
+function searchKey(request: MediaSearchRequest): string {
+	return [
+		request.category,
+		request.mode,
+		request.query ?? '',
+		request.page,
+		request.year ?? '',
+		request.genre ?? '',
+		request.format ?? '',
+		request.status ?? '',
+		request.titleLanguage
+	].join('|');
+}
+
+let service: MediaService | undefined;
+let serviceToken: string | undefined;
+
+export function getMediaService(tmdbToken: string | undefined): MediaService {
+	if (!service || serviceToken !== tmdbToken) {
+		service = new MediaService({ tmdbToken });
+		serviceToken = tmdbToken;
+	}
+	return service;
+}
+
+export function providerFor(category: Category): MediaProvider {
+	return PROVIDERS[category];
+}
