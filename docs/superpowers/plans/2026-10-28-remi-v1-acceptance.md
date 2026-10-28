@@ -1,6 +1,6 @@
 # Remi v1 acceptance checklist
 
-Date: 2026-10-28. Status: not run; Phase 0 foundation complete.
+Date: 2026-10-28. Status: not run; Phase 0 and Phase 1 gates verified.
 
 This checklist defines acceptance, not completed verification. Leave an item unchecked until its required evidence exists. Record the tested commit, environment, and evidence when executing it.
 
@@ -19,7 +19,7 @@ References: [specification](../specs/2026-10-28-remi-v1-design.md), [implementat
 
 ## Installation and application health
 
-- [ ] A fresh checkout installs using npm ci and the documented setup steps.
+- [ ] A fresh checkout installs using pnpm install --frozen-lockfile and the documented setup steps.
 - [ ] Development mode works locally.
 - [ ] The built Node server works locally, including environment-variable loading.
 - [ ] The documented LAN workflow permits testing from phones on the same network.

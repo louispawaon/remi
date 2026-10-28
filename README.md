@@ -9,9 +9,9 @@ Requires Node 24 (`.nvmrc`).
 ## Setup
 
 ```sh
-npm ci
+pnpm install --frozen-lockfile
 cp .env.example .env
-npx playwright install chromium
+pnpm exec playwright install chromium
 ```
 
 `TMDB_READ_ACCESS_TOKEN` is optional. Without it, movie and TV search stays disabled with a
@@ -21,24 +21,31 @@ code, so an accidental leak fails the build instead of shipping.
 
 ## Commands
 
-| Command                   | Purpose                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| `npm run dev`             | Development server on `localhost`                       |
-| `npm run dev:lan`         | Development server exposed on the LAN for phone testing |
-| `npm run build`           | Production build via the Node adapter                   |
-| `npm run start`           | Run the built Node server (`PORT`, default 3000)        |
-| `npm run preview`         | Vite preview of the compiled app, not the Node server   |
-| `npm run check`           | Svelte + TypeScript checks                              |
-| `npm run lint`            | Prettier check and ESLint                               |
-| `npm run format`          | Write Prettier formatting                               |
-| `npm run test:unit`       | Vitest, once                                            |
-| `npm run test:unit:watch` | Vitest in watch mode                                    |
-| `npm run test:e2e`        | Playwright browser tests (built server)                 |
-| `npm test`                | Unit and browser tests                                  |
+| Command                | Purpose                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `pnpm dev`             | Development server on `localhost`                       |
+| `pnpm dev:lan`         | Development server exposed on the LAN for phone testing |
+| `pnpm build`           | Production build via the Node adapter                   |
+| `pnpm start`           | Run the built Node server (`PORT`, default 3000)        |
+| `pnpm preview`         | Vite preview of the compiled app, not the Node server   |
+| `pnpm check`           | Svelte + TypeScript checks                              |
+| `pnpm lint`            | Prettier check and ESLint                               |
+| `pnpm format`          | Write Prettier formatting                               |
+| `pnpm test:unit`       | Vitest, once                                            |
+| `pnpm test:unit:watch` | Vitest in watch mode                                    |
+| `pnpm test:e2e`        | Playwright browser tests (built server)                 |
+| `npm test`             | Unit and browser tests                                  |
+
+## Render harness
+
+`pnpm dev`, then open `/dev/render`. It renders the deterministic fixture across grids,
+formats, and resolutions, and can download a PNG or export/import a project. It is
+unavailable in a production build unless `ENABLE_RENDER_HARNESS=1` is set, which the
+automated tests use.
 
 ## Phone testing
 
-`npm run dev:lan` prints a network URL. Open it on a phone on the same network. LAN HTTP is
+`pnpm dev:lan` prints a network URL. Open it on a phone on the same network. LAN HTTP is
 not a secure context, so clipboard, share-sheet, and service-worker APIs are unavailable
 there; use the app's download/open-image fallbacks when testing over plain HTTP.
 

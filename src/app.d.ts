@@ -8,6 +8,10 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	interface Window {
+		__remiHarness?: import('./lib/dev/harness-api').HarnessApi;
+	}
 }
 
 export {};
