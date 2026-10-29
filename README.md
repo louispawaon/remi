@@ -14,7 +14,7 @@ cp .env.example .env
 pnpm exec playwright install chromium
 ```
 
-`TMDB_READ_ACCESS_TOKEN` is the only provider credential; AniList’s public API needs none. It is optional. Without it, movie and TV search stays disabled with a
+`TMDB_READ_ACCESS_TOKEN` is the only provider credential; AniList’s and Deezer’s public APIs need none. It is optional. Without it, movie and TV search stays disabled with a
 setup explanation; the rest of the app works. Credentials are declared in `src/env.ts` and
 read only by server code from `$app/env/private`; that module cannot be imported into client
 code, so an accidental leak fails the build instead of shipping.

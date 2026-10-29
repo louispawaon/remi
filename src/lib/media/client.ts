@@ -1,5 +1,11 @@
 import type { Category } from '#lib/card/types';
-import type { MediaErrorBody, MediaOptions, MediaSearchRequest, MediaSearchResult } from './types';
+import type {
+	MediaErrorBody,
+	MediaOptions,
+	MediaProvider,
+	MediaSearchRequest,
+	MediaSearchResult
+} from './types';
 
 export class MediaClientError extends Error {
 	constructor(
@@ -32,7 +38,7 @@ export function optionsUrl(category: Category): string {
 	return `/api/media/options?${new URLSearchParams({ category })}`;
 }
 
-export function imageUrl(provider: 'anilist' | 'tmdb', path: string): string {
+export function imageUrl(provider: MediaProvider, path: string): string {
 	return `/api/media/image?${new URLSearchParams({ provider, path })}`;
 }
 

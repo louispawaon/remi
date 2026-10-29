@@ -58,6 +58,16 @@ describe('request validation', () => {
 			provider: 'anilist',
 			path: 'https://s4.anilist.co/file/x.jpg'
 		});
+		expect(
+			parseImageRequest(
+				image(
+					'provider=deezer&path=https%3A%2F%2Fcdn-images.dzcdn.net%2Fimages%2Fcover%2Fabc%2Fx.jpg'
+				)
+			)
+		).toEqual({
+			provider: 'deezer',
+			path: 'https://cdn-images.dzcdn.net/images/cover/abc/x.jpg'
+		});
 		expect(() => parseImageRequest(image('provider=other&path=x'))).toThrow(RequestError);
 	});
 });

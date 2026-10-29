@@ -1,5 +1,6 @@
 import { imageUrl } from './client';
 import { imageFormat, sniffDimensions } from './dimensions';
+import type { MediaProvider } from './types';
 
 export const UPLOAD_LIMITS = {
 	maxBytes: 10 * 1024 * 1024,
@@ -132,7 +133,7 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Prom
 
 /** Provider artwork is fetched through the restricted proxy, then normalized like an upload. */
 export async function fetchProviderArtwork(
-	provider: 'anilist' | 'tmdb',
+	provider: MediaProvider,
 	path: string,
 	signal?: AbortSignal,
 	fetcher: typeof fetch = globalThis.fetch

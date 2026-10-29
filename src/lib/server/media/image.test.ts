@@ -20,6 +20,12 @@ describe('resolveImageUrl', () => {
 		expect(resolveImageUrl('tmdb', '/t/p/w500/abc.jpg').href).toBe(
 			'https://image.tmdb.org/t/p/w500/abc.jpg'
 		);
+		expect(
+			resolveImageUrl(
+				'deezer',
+				'https://cdn-images.dzcdn.net/images/cover/abc/1000x1000-000000-80-0-0.jpg'
+			).hostname
+		).toBe('cdn-images.dzcdn.net');
 	});
 
 	it('rejects arbitrary hosts, protocols, credentials, and unapproved paths', () => {
@@ -51,6 +57,21 @@ describe('resolveImageUrl', () => {
 		).toThrow(RequestError);
 		expect(() =>
 			resolveImageUrl('anilist', 'https://s4.anilist.co./file/anilistcdn/x.jpg')
+		).toThrow(RequestError);
+		expect(() => resolveImageUrl('deezer', 'https://evil.example/images/cover/abc/x.jpg')).toThrow(
+			RequestError
+		);
+		expect(() =>
+			resolveImageUrl('deezer', 'http://cdn-images.dzcdn.net/images/cover/abc/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/artist/abc/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/cover/%2e%2e/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/cover/abc/x.jpg?q=1')
 		).toThrow(RequestError);
 	});
 });

@@ -8,6 +8,7 @@ import type {
 import { createAniList } from './anilist';
 import type { MediaAdapter } from './adapter';
 import { TTLCache } from './cache';
+import { createDeezer } from './deezer';
 import { missingTmdbCredentials } from './errors';
 import { createTmdb } from './tmdb';
 
@@ -17,7 +18,8 @@ const PROVIDERS: Record<Category, MediaProvider> = {
 	manhwa: 'anilist',
 	manhua: 'anilist',
 	movie: 'tmdb',
-	tv: 'tmdb'
+	tv: 'tmdb',
+	music: 'deezer'
 };
 
 export interface MediaServiceOptions {
@@ -31,6 +33,7 @@ export class MediaService {
 	readonly #optionsCache: TTLCache<MediaOptions>;
 	readonly #anilist: MediaAdapter;
 	readonly #tmdb: MediaAdapter | undefined;
+	readonly #deezer: MediaAdapter;
 	readonly #searchInFlight = new Map<string, Promise<MediaSearchResult>>();
 	readonly #optionsInFlight = new Map<Category, Promise<MediaOptions>>();
 
@@ -47,6 +50,13 @@ export class MediaService {
 		});
 		this.#anilist = createAniList(options.fetch);
 		this.#tmdb = createTmdb({ token: options.tmdbToken, fetch: options.fetch });
+		this.#deezer = createDeezer(options.fetch);
+	}
+
+	#adapter(provider: MediaProvider): MediaAdapter {
+		if (provider === 'anilist') return this.#anilist;
+		if (provider === 'deezer') return this.#deezer;
+		return this.#tmdb!;
 	}
 
 	async search(request: MediaSearchRequest, signal?: AbortSignal): Promise<MediaSearchResult> {
@@ -60,7 +70,7 @@ export class MediaService {
 		const existing = this.#searchInFlight.get(key);
 		if (existing) return existing;
 
-		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
+		const adapter = this.#adapter(provider);
 		const pending = adapter
 			.search(request)
 			.then((result) => {
@@ -82,7 +92,7 @@ export class MediaService {
 		const existing = this.#optionsInFlight.get(category);
 		if (existing) return existing;
 
-		const adapter = provider === 'anilist' ? this.#anilist : this.#tmdb!;
+		const adapter = this.#adapter(provider);
 		const pending = adapter
 			.options(category)
 			.then((result) => {

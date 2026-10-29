@@ -18,6 +18,12 @@
 			<a href="https://www.themoviedb.org" rel="noreferrer">TMDB</a>. This product uses the TMDB API
 			but is not endorsed or certified by TMDB.
 		</p>
+		<p>
+			Music metadata and artwork come from
+			<a href="https://www.deezer.com" rel="noreferrer">Deezer</a>. Deezer’s public API needs no
+			account or token, and its content is used for personal, non-commercial projects under
+			<a href="https://developers.deezer.com/termsofuse" rel="noreferrer">Deezer’s API terms</a>.
+		</p>
 	</section>
 
 	<section>

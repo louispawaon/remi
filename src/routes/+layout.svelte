@@ -16,9 +16,9 @@
 	}
 
 	const DEFAULT: Meta = {
-		title: 'Remi — media card maker for anime, manga, and movies',
+		title: 'Remi — media card maker for anime, manga, movies, and music',
 		description:
-			'Search anime, manga, manhwa, movies, and TV, arrange the covers on one card, and export it as a single image. Local-first, no account required.'
+			'Search anime, manga, manhwa, movies, TV, songs, and albums, arrange the covers on one card, and export it as a single image. Local-first, no account required.'
 	};
 
 	const PAGES: Record<string, Meta> = {
@@ -26,7 +26,7 @@
 		'/privacy': {
 			title: 'Privacy — Remi',
 			description:
-				'How Remi handles your data: cards and artwork stay in your browser, search terms go to AniList and TMDB.'
+				'How Remi handles your data: cards and artwork stay in your browser, search terms go to AniList, TMDB, and Deezer.'
 		},
 		'/terms': {
 			title: 'Terms — Remi',
@@ -59,6 +59,7 @@
 		image: OG_IMAGE,
 		screenshot: OG_IMAGE
 	});
+	const jsonLdScript = `<script type="application/ld+json">${jsonLd}<${'/'}script>`;
 </script>
 
 <svelte:head>
@@ -90,7 +91,8 @@
 	<meta name="twitter:image" content={OG_IMAGE} />
 	<meta name="twitter:image:alt" content={OG_ALT} />
 	{#if path === '/'}
-		{@html `<script type="application/ld+json">${jsonLd}</script>`}
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- app-generated JSON-LD -->
+		{@html jsonLdScript}
 	{/if}
 </svelte:head>
 

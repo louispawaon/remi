@@ -1,5 +1,10 @@
 import { CATEGORIES, type Category } from '#lib/card/types';
-import { TITLE_LANGUAGES, type MediaSearchRequest, type SearchMode } from '#lib/media/types';
+import {
+	MEDIA_PROVIDERS,
+	TITLE_LANGUAGES,
+	type MediaSearchRequest,
+	type SearchMode
+} from '#lib/media/types';
 import * as v from 'valibot';
 import { RequestError } from './errors';
 
@@ -33,7 +38,7 @@ const searchSchema = v.object({
 const optionsSchema = v.object({ category: v.picklist(CATEGORIES) });
 
 const imageSchema = v.object({
-	provider: v.picklist(['anilist', 'tmdb']),
+	provider: v.picklist(MEDIA_PROVIDERS),
 	path: v.pipe(v.string(), v.minLength(1), v.maxLength(2048))
 });
 

@@ -37,9 +37,16 @@
 	let narrow = $state(false);
 
 	const search = createMediaSearch();
-	const supportsFilters = $derived(editor.addCategory !== 'movie' && editor.addCategory !== 'tv');
+	const supportsFilters = $derived(
+		editor.addCategory !== 'movie' && editor.addCategory !== 'tv' && editor.addCategory !== 'music'
+	);
+	const supportsYear = $derived(options ? options.supportsYear : editor.addCategory !== 'music');
+	const hasFilters = $derived(
+		supportsYear ||
+			Boolean(options && (options.filters.length > 0 || options.titleLanguages.length > 0))
+	);
 	const activeFilterCount = $derived(
-		(year.trim() ? 1 : 0) +
+		(supportsYear && year.trim() ? 1 : 0) +
 			Object.values(filters).filter(Boolean).length +
 			(titleLanguage === 'english' ? 0 : 1)
 	);
@@ -66,7 +73,7 @@
 		const language = titleLanguage;
 		void retry;
 
-		const yearText = currentYear.trim();
+		const yearText = supportsYear ? currentYear.trim() : '';
 		if (yearText && !/^\d{4}$/.test(yearText)) {
 			search.cancel();
 			results = [];
@@ -96,7 +103,7 @@
 				mode: 'search',
 				query: text.trim(),
 				page: currentPage,
-				year: currentYear ? Number(currentYear) : undefined,
+				year: yearText ? Number(yearText) : undefined,
 				genre: supportsFilters ? currentFilters.genre : undefined,
 				format: supportsFilters ? currentFilters.format : undefined,
 				status: supportsFilters ? currentFilters.status : undefined,
@@ -250,7 +257,9 @@
 				class="input"
 				data-testid="search-input"
 				type="search"
-				placeholder="Search titles"
+				placeholder={editor.addCategory === 'music'
+					? 'Search songs, albums or artists'
+					: 'Search titles'}
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;
@@ -262,22 +271,24 @@
 
 	{#snippet filterFields()}
 		<div class="filters">
-			<label class="field stacked">
-				<span class="label">Year</span>
-				<input
-					class="input"
-					type="number"
-					inputmode="numeric"
-					min="1900"
-					max="2100"
-					placeholder="Any"
-					value={year}
-					oninput={(event) => {
-						year = event.currentTarget.value;
-						page = 1;
-					}}
-				/>
-			</label>
+			{#if supportsYear}
+				<label class="field stacked">
+					<span class="label">Year</span>
+					<input
+						class="input"
+						type="number"
+						inputmode="numeric"
+						min="1900"
+						max="2100"
+						placeholder="Any"
+						value={year}
+						oninput={(event) => {
+							year = event.currentTarget.value;
+							page = 1;
+						}}
+					/>
+				</label>
+			{/if}
 
 			{#if options}
 				{#each supportsFilters ? options.filters : [] as filter (filter.key)}
@@ -315,16 +326,18 @@
 		</div>
 	{/snippet}
 
-	{#if narrow}
-		<details class="filters-details">
-			<summary class="label"
-				>Filters{#if activeFilterCount > 0}
-					· {activeFilterCount}{/if}</summary
-			>
+	{#if hasFilters}
+		{#if narrow}
+			<details class="filters-details">
+				<summary class="label"
+					>Filters{#if activeFilterCount > 0}
+						· {activeFilterCount}{/if}</summary
+				>
+				{@render filterFields()}
+			</details>
+		{:else}
 			{@render filterFields()}
-		</details>
-	{:else}
-		{@render filterFields()}
+		{/if}
 	{/if}
 
 	{#if optionsError}

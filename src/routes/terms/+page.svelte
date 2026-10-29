@@ -36,11 +36,13 @@
 		<h2>Third-party metadata and artwork</h2>
 		<p>
 			Titles, dates, genres, descriptions and cover images come from
-			<a href="https://anilist.co" rel="noreferrer">AniList</a> and
-			<a href="https://www.themoviedb.org" rel="noreferrer">TMDB</a>. They are provided by those
+			<a href="https://anilist.co" rel="noreferrer">AniList</a>,
+			<a href="https://www.themoviedb.org" rel="noreferrer">TMDB</a>, and
+			<a href="https://www.deezer.com" rel="noreferrer">Deezer</a>. They are provided by those
 			services under their own terms, may be incomplete or wrong, and can change or disappear at any
-			time. Remi uses the TMDB API but is not endorsed or certified by TMDB. Rights in that metadata
-			and artwork remain with their owners.
+			time. Remi uses the TMDB API but is not endorsed or certified by TMDB, and uses Deezer’s API
+			for personal, non-commercial projects only. Rights in that metadata and artwork remain with
+			their owners.
 		</p>
 	</section>
 

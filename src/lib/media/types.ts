@@ -1,6 +1,6 @@
 import type { Category } from '#lib/card/types';
 
-export const MEDIA_PROVIDERS = ['anilist', 'tmdb'] as const;
+export const MEDIA_PROVIDERS = ['anilist', 'tmdb', 'deezer'] as const;
 export type MediaProvider = (typeof MEDIA_PROVIDERS)[number];
 
 export const SEARCH_MODES = ['search', 'browse'] as const;

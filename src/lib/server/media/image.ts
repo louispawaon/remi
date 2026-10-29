@@ -1,9 +1,11 @@
+import type { MediaProvider } from '#lib/media/types';
 import { MediaError, RequestError, timeoutError } from './errors';
 import { retryAfterSeconds } from './http';
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const ANILIST_HOSTS = new Set(['s4.anilist.co', 'img.anilist.co']);
+const DEEZER_HOST = 'cdn-images.dzcdn.net';
 const ALLOWED_TYPES: Record<string, string> = {
 	'image/png': 'image/png',
 	'image/jpeg': 'image/jpeg',
@@ -12,7 +14,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 };
 
 /** Only provider-owned artwork paths may be fetched; arbitrary URLs are rejected. */
-export function resolveImageUrl(provider: 'anilist' | 'tmdb', value: string): URL {
+export function resolveImageUrl(provider: MediaProvider, value: string): URL {
 	if (provider === 'anilist') {
 		let url: URL;
 		try {
@@ -37,6 +39,34 @@ export function resolveImageUrl(provider: 'anilist' | 'tmdb', value: string): UR
 		}
 		if (url.search || url.hash) {
 			throw new RequestError('AniList image URLs cannot carry a query or fragment.');
+		}
+		return url;
+	}
+
+	if (provider === 'deezer') {
+		let url: URL;
+		try {
+			url = new URL(value);
+		} catch {
+			throw new RequestError('Invalid Deezer image URL.');
+		}
+		if (url.protocol !== 'https:' || url.username || url.password || url.port) {
+			throw new RequestError('Deezer images must be plain HTTPS URLs.');
+		}
+		if (url.hostname !== DEEZER_HOST) {
+			throw new RequestError('Deezer images must come from its CDN.');
+		}
+		let pathname: string;
+		try {
+			pathname = decodeURIComponent(url.pathname);
+		} catch {
+			throw new RequestError('Deezer image path is not approved.');
+		}
+		if (!pathname.startsWith('/images/cover/') || pathname.includes('..')) {
+			throw new RequestError('Deezer image path is not approved.');
+		}
+		if (url.search || url.hash) {
+			throw new RequestError('Deezer image URLs cannot carry a query or fragment.');
 		}
 		return url;
 	}

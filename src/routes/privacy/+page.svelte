@@ -36,10 +36,11 @@
 		<p>
 			When you search, Remi sends your search text, the chosen medium, any filters, the page number
 			and your title-language preference to this app’s server. That server forwards the request to
-			<a href="https://anilist.co" rel="noreferrer">AniList</a> (anime and manga) or
-			<a href="https://www.themoviedb.org" rel="noreferrer">TMDB</a> (movies and TV), plus a request for
-			the cover image when you add a result. Those providers see the request and the network address it
-			came from, as with any web request, and their own privacy policies apply.
+			<a href="https://anilist.co" rel="noreferrer">AniList</a> (anime and manga),
+			<a href="https://www.themoviedb.org" rel="noreferrer">TMDB</a> (movies and TV), or
+			<a href="https://www.deezer.com" rel="noreferrer">Deezer</a> (music), plus a request for the cover
+			image when you add a result. Those providers see the request and the network address it came from,
+			as with any web request, and their own privacy policies apply.
 		</p>
 		<p>
 			The TMDB credential used for movie and TV search is held only on the server. It is never sent

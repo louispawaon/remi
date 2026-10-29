@@ -255,6 +255,58 @@ test('adds a mocked provider result through the search panel', async ({ page }) 
 	await expect(page.locator('.sheet-map')).toContainText('Frieren');
 });
 
+test('searches music without year filters and titles results by artist', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'music',
+				provider: 'deezer',
+				supportsYear: false,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'deezer',
+						providerId: 'track:1',
+						category: 'music',
+						title: { preferred: 'Frank Ocean - Nights', alternatives: [] },
+						year: null,
+						format: 'Blonde',
+						status: null,
+						genres: [],
+						coverPath: 'https://cdn-images.dzcdn.net/images/cover/abc/1000x1000-000000-80-0-0.jpg'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: 1
+			})
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('music');
+	await expect(page.getByLabel('Year')).toHaveCount(0);
+	await page.getByTestId('search-input').fill('frank ocean');
+	await expect(page.getByTestId('result')).toContainText('Frank Ocean - Nights');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.locator('.sheet-map')).toContainText('Frank Ocean - Nights');
+});
+
 test('shows credential guidance when movie discovery is unavailable', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

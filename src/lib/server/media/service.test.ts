@@ -45,6 +45,11 @@ function fetcherMock() {
 				headers: { 'content-type': 'application/json' }
 			});
 		}
+		if (url.includes('api.deezer.com')) {
+			return new Response(JSON.stringify({ data: [], total: 0 }), {
+				headers: { 'content-type': 'application/json' }
+			});
+		}
 		return new Response(
 			JSON.stringify({
 				page: 1,
@@ -168,6 +173,17 @@ describe('MediaService', () => {
 		});
 
 		await expect(service.search(animeRequest)).resolves.toBeTruthy();
+	});
+
+	it('routes music to Deezer without a credential', async () => {
+		const fetcher = fetcherMock();
+		const service = new MediaService({ fetch: fetcher as unknown as typeof fetch });
+
+		await expect(
+			service.search({ ...animeRequest, category: 'music', query: 'blonde' })
+		).resolves.toMatchObject({ results: [] });
+		await expect(service.options('music')).resolves.toMatchObject({ provider: 'deezer' });
+		expect(fetcher).toHaveBeenCalledTimes(2);
 	});
 
 	it('searches TMDB when a token is configured', async () => {

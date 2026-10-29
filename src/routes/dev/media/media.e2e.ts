@@ -73,4 +73,5 @@ test('credits page carries the required attribution', async ({ page }) => {
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credits');
 	await expect(page.getByText(/not endorsed or certified by TMDB/)).toBeVisible();
 	await expect(page.locator('main')).toContainText('needs no account or token');
+	await expect(page.locator('main')).toContainText('Deezer');
 });
