@@ -291,7 +291,7 @@ test('mobile editor keeps all tabs and export reachable without horizontal overf
 
 	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
 	await expect(page.getByTestId('add-upload')).toBeAttached();
-	await expect(page.locator('main.sheet')).toBeHidden();
+	await expect(page.locator('main.sheet')).toBeVisible();
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
 	await expect(page.locator('main.sheet')).toBeVisible();
 	await page.locator('.cell[aria-label^="Slot 01:"]').click();

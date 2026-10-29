@@ -594,10 +594,6 @@
 		.sheet.compact {
 			padding: 6px 14px 2px;
 		}
-		/* A 120px canvas is too small to judge a poster and costs the Add panel a screen band. */
-		.sheet.add {
-			display: none;
-		}
 		.sheet.compact .sheet-head {
 			display: none;
 		}

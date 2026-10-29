@@ -501,6 +501,15 @@
 	.filters-details .filters {
 		padding: 12px 0;
 	}
+	@media (max-width: 900px) {
+		/* The tab already says Add; the heading costs a result row on a phone. */
+		.section-title {
+			display: none;
+		}
+		.panel-body {
+			gap: 10px;
+		}
+	}
 	.filters .field,
 	.filters select {
 		min-width: 0;
