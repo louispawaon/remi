@@ -193,6 +193,7 @@
 		onClose();
 	}}
 >
+	<span class="grabber" aria-hidden="true"></span>
 	<div class="head">
 		<span class="label">Export · PNG</span>
 		<button class="text-action" type="button" onclick={onClose}>Cancel</button>
@@ -282,10 +283,10 @@
 			onclick={savePng}>Save PNG</button
 		>
 		<button class="ghost wide" type="button" disabled={!prepared} onclick={share}>Share…</button>
-		<button class="text-action" type="button" disabled={!prepared} onclick={openImage}
-			>Open image</button
-		>
 	</div>
+	<button class="text-action open-row" type="button" disabled={!prepared} onclick={openImage}
+		>Open image</button
+	>
 
 	<div class="project">
 		<span class="label">Editable project</span>
@@ -298,117 +299,187 @@
 
 <style>
 	.slip {
-		border: 1px solid var(--ink);
-		background: #faf7ee;
-		color: var(--ink);
-		padding: 20px 22px;
-		width: 430px;
+		border: 0;
+		border-radius: 0;
+		background: var(--ink);
+		color: var(--ground);
+		padding: 24px;
+		width: 440px;
 		max-width: calc(100vw - 24px);
 		max-height: calc(100vh - 24px);
 		overflow: auto;
 		font-family: var(--sans);
+		box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.55);
 	}
 	.slip::backdrop {
-		background: rgba(23, 21, 18, 0.38);
+		background: rgba(7, 9, 38, 0.66);
+	}
+	.grabber {
+		display: none;
 	}
 	.head {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 16px;
 	}
-	h2 {
-		font-size: 24px;
-		letter-spacing: -0.02em;
-		font-weight: 500;
-		margin: 8px 0 2px;
+	.head .label {
+		color: var(--ground);
+		opacity: 0.7;
+	}
+	.slip h2 {
+		font-family: var(--display);
+		font-size: 32px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: -0.035em;
+		line-height: 0.94;
+		margin: 14px 0 6px;
 	}
 	.meta {
-		margin: 0 0 14px;
+		margin: 0 0 18px;
+		color: var(--ground);
+		opacity: 0.68;
 	}
 	.choice {
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
 		width: 100%;
 		background: transparent;
 		border: 0;
-		border-top: 1px solid var(--rule);
-		padding: 11px 0;
-		font-size: 13px;
+		border-top: 1px solid color-mix(in srgb, var(--ground) 22%, transparent);
+		padding: 13px 0;
+		font-size: 14px;
+		font-weight: 600;
 		text-align: left;
+		color: var(--ground);
+	}
+	.choice .mono {
+		color: var(--ground);
+		opacity: 0.6;
 	}
 	.choice.on {
-		border-top-color: var(--ink);
+		font-weight: 800;
 	}
 	.choice.on span:first-child::before {
 		content: '● ';
-		color: var(--spot);
-		font-size: 9px;
+		font-size: 10px;
 	}
 	.choice:not(.on) span:first-child::before {
 		content: '○ ';
-		font-size: 9px;
+		font-size: 10px;
+		opacity: 0.5;
 	}
 	.warn {
-		color: var(--spot);
-		font-size: 11px;
-		margin: 14px 0;
+		color: var(--ground);
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1.45;
+		margin: 16px 0;
+		border-left: 3px solid var(--ground);
+		padding-left: 10px;
 	}
 	.status {
-		font-size: 11px;
-		color: var(--muted);
-		margin: 10px 0;
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--ground);
+		opacity: 0.68;
+		margin: 12px 0;
 	}
 	.prep {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 4px;
+		gap: 6px;
 	}
 	.prep-track {
 		width: 100%;
-		height: 2px;
-		background: var(--rule);
+		height: 3px;
+		background: color-mix(in srgb, var(--ground) 18%, transparent);
 		overflow: hidden;
 	}
 	.prep-track span {
 		display: block;
-		height: 2px;
-		background: var(--ink);
+		height: 3px;
+		background: var(--ground);
 		transition: width 0.15s linear;
+	}
+	.open-row {
+		margin-top: 10px;
 	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 10px;
 		align-items: center;
-		margin-top: 12px;
+		margin-top: 16px;
 	}
 	.wide {
 		flex: 1;
-		min-width: 120px;
+		min-width: 130px;
+	}
+	.slip .stamp {
+		background: var(--ground);
+		color: var(--ink);
+		box-shadow: 3px 3px 0 #0c0c0f;
+	}
+	.slip .stamp:hover:not(:disabled) {
+		box-shadow: 4px 4px 0 #0c0c0f;
+	}
+	.slip .ghost {
+		border-color: var(--ground);
+		color: var(--ground);
+	}
+	.slip .ghost:hover:not(:disabled) {
+		background: var(--ground);
+		color: var(--ink);
+	}
+	.slip .text-action {
+		color: var(--ground);
+		text-decoration-color: color-mix(in srgb, var(--ground) 40%, transparent);
+	}
+	.slip .text-action:hover:not(:disabled) {
+		text-decoration-color: var(--ground);
 	}
 	.project {
-		border-top: 1px solid var(--rule);
-		margin-top: 18px;
-		padding-top: 12px;
+		border-top: 1px solid color-mix(in srgb, var(--ground) 22%, transparent);
+		margin-top: 22px;
+		padding-top: 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 10px;
 		align-items: flex-start;
+	}
+	.project .label {
+		color: var(--ground);
+		opacity: 0.6;
 	}
 	.project .meta {
 		margin: 0;
+		color: var(--ground);
+		opacity: 0.6;
 	}
 	@media (max-width: 640px) {
-		.choice {
-			min-height: 44px;
-			align-items: center;
+		.grabber {
+			display: block;
+			width: 36px;
+			height: 5px;
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--ground) 38%, transparent);
+			margin: 8px auto 16px;
 		}
 		.slip {
 			width: 100%;
 			max-width: none;
+			border-radius: 28px 28px 0 0;
 			margin: auto 0 0;
-			padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+			padding: 14px 16px max(20px, env(safe-area-inset-bottom));
+			box-shadow: 0 -6px 0 rgba(0, 0, 0, 0.35);
+		}
+		.choice {
+			min-height: 44px;
+			padding: 8px 0;
 		}
 	}
 </style>
