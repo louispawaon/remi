@@ -21,20 +21,22 @@ code, so an accidental leak fails the build instead of shipping.
 
 ## Commands
 
-| Command                | Purpose                                                 |
-| ---------------------- | ------------------------------------------------------- |
-| `pnpm dev`             | Development server on `localhost`                       |
-| `pnpm dev:lan`         | Development server exposed on the LAN for phone testing |
-| `pnpm build`           | Production build via the Node adapter                   |
-| `pnpm start`           | Run the built Node server (`PORT`, default 3000)        |
-| `pnpm preview`         | Vite preview of the compiled app, not the Node server   |
-| `pnpm check`           | Svelte + TypeScript checks                              |
-| `pnpm lint`            | Prettier check and ESLint                               |
-| `pnpm format`          | Write Prettier formatting                               |
-| `pnpm test:unit`       | Vitest, once                                            |
-| `pnpm test:unit:watch` | Vitest in watch mode                                    |
-| `pnpm test:e2e`        | Playwright browser tests (built server)                 |
-| `pnpm test`            | Unit and browser tests                                  |
+| Command                 | Purpose                                                 |
+| ----------------------- | ------------------------------------------------------- |
+| `pnpm dev`              | Development server on `localhost`                       |
+| `pnpm dev:lan`          | Development server exposed on the LAN for phone testing |
+| `pnpm build`            | Production build via the Node adapter                   |
+| `pnpm build:cloudflare` | Production build via the Cloudflare adapter             |
+| `pnpm release`          | Build for Cloudflare and deploy the Worker              |
+| `pnpm start`            | Run the built Node server (`PORT`, default 3000)        |
+| `pnpm preview`          | Vite preview of the compiled app, not the Node server   |
+| `pnpm check`            | Svelte + TypeScript checks                              |
+| `pnpm lint`             | Prettier check and ESLint                               |
+| `pnpm format`           | Write Prettier formatting                               |
+| `pnpm test:unit`        | Vitest, once                                            |
+| `pnpm test:unit:watch`  | Vitest in watch mode                                    |
+| `pnpm test:e2e`         | Playwright browser tests (built server)                 |
+| `pnpm test`             | Unit and browser tests                                  |
 
 ## Render harness
 
