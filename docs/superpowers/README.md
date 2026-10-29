@@ -8,7 +8,7 @@ These documents preserve the plan agreed in the conversation. They describe inte
 
 1. [Product and architecture specification](specs/2026-10-28-remi-v1-design.md) — scope, stack, interfaces, data, rendering, mobile behavior, and exports.
 2. [Implementation plan](plans/2026-10-28-remi-v1.md) — initialization through delivery, with independently testable phases and exit gates.
-3. [Design direction](design/2026-10-28-remi-direction.md) — locked Catalog world, comps, and rejected alternatives.
+3. [Design direction](design/2026-10-29-remi-club-wall.md) — locked Club Wall world, tokens, content, and the three-direction exploration. The earlier [Catalog direction](design/2026-10-28-remi-direction.md) is superseded.
 4. [Acceptance checklist](plans/2026-10-28-remi-v1-acceptance.md) — evidence required before calling v1 accepted.
 5. [Audit fixes](plans/2026-10-29-audit-fixes.md) — nine verified findings, review follow-ups, and their verification record.
 

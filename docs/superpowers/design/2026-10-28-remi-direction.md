@@ -1,6 +1,6 @@
 # Remi v1 design direction
 
-Date: 2026-10-28. Status: **Catalog** locked and comps approved; production library and editor built. Physical-device acceptance pending.
+Date: 2026-10-28. Status: **Superseded 2026-10-29** by [Club Wall](2026-10-29-remi-club-wall.md). Kept as the record of the direction that was replaced. The Catalog comps and rationale are below.
 
 Product truth: [PRODUCT.md](../../../PRODUCT.md). Scope: library, desktop editor, mobile editor,
 export flow, plus empty/loading/error/saving states. Mode: **Operate**. Scene: laptop and phone
