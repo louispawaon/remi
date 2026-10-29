@@ -3,6 +3,7 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import logo from '#lib/assets/favicon.svg';
 	import { FORMAT_SIZES } from '#lib/card/layout';
 	import { loadCard } from '#lib/library/store';
 	import AddPanel from '#lib/editor/AddPanel.svelte';
@@ -109,14 +110,14 @@
 	</main>
 {:else if !editor}
 	<main class="load-state">
-		<p class="mono">Opening card…</p>
+		<p class="mono">Opening sheet…</p>
 	</main>
 {:else}
 	<div class="editor-app">
 		<header class="bar">
 			<div class="brand">
-				<button class="wordmark" type="button" onclick={() => leave()}>REMI</button>
-				<span class="doc-code">{editor.document.gridSize}×{editor.document.gridSize} GRID</span>
+				<img class="logo" src={logo} alt="" />
+				<button class="wordmark" type="button" onclick={() => leave()}>Remi</button>
 			</div>
 
 			<label class="title-wrap">
@@ -144,7 +145,15 @@
 				<span data-testid="save-status" aria-live="polite"
 					>{statusLabel(editor.status, editor.statusDetail)}</span
 				>
-				<button class="stamp" type="button" onclick={() => (exportOpen = true)}>Export</button>
+				<button class="stamp desktop-export" type="button" onclick={() => (exportOpen = true)}
+					>Export</button
+				>
+				<button
+					class="stamp mobile-export"
+					data-testid="mobile-export"
+					type="button"
+					onclick={() => (exportOpen = true)}>Export</button
+				>
 			</div>
 		</header>
 
@@ -205,12 +214,17 @@
 					<div hidden={editor.tool !== 'arrange'}><ArrangePanel {editor} /></div>
 					<div hidden={editor.tool !== 'style'}><StylePanel {editor} /></div>
 					{#if editor.tool === 'preview'}
-						<p class="hint">Tap a cell to select it, or use Add to place media.</p>
+						<p class="hint">Tap a cell to select it, or use Add to hang a poster.</p>
 					{/if}
 				</div>
 			</aside>
 
-			<main class="sheet" aria-label="Card preview">
+			<main
+				class="sheet"
+				class:compact={editor.tool !== 'preview'}
+				class:add={editor.tool === 'add'}
+				aria-label="Card preview"
+			>
 				<h1 class="visually-hidden">{editor.document.title || 'Untitled card'}</h1>
 				<div class="sheet-head">
 					<span class="mono">
@@ -233,7 +247,7 @@
 					</span>
 				</div>
 
-				<Preview {editor} />
+				<Preview {editor} compact={editor.tool !== 'preview'} />
 
 				<div class="sheet-foot">
 					<span class="mono">{String(editor.document.items.length).padStart(2, '0')} items</span>
@@ -249,7 +263,7 @@
 			<span class="tray-items">
 				{#each editor.unplaced as item (item.id)}
 					<button
-						class="text-action"
+						class="tray-chip"
 						type="button"
 						draggable="true"
 						onclick={() => editor?.beginMove(item.id)}
@@ -259,23 +273,16 @@
 							editor?.beginMove(item.id);
 						}}
 						ondragend={() => editor?.cancelMove()}
-						>{item.titleOverride ?? item.titles.preferred}</button
 					>
+						<span class="tray-name">{item.titleOverride ?? item.titles.preferred}</span>
+						<span class="tray-action">Place</span>
+					</button>
 				{:else}
 					<span class="mono">Nothing waiting</span>
 				{/each}
 			</span>
 			<span class="note">Excluded from PNG</span>
 		</footer>
-
-		<button
-			class="mobile-export stamp"
-			data-testid="mobile-export"
-			type="button"
-			onclick={() => (exportOpen = true)}
-		>
-			Export PNG · {editor.document.format}
-		</button>
 
 		{#if exportOpen}
 			<ExportSlip {editor} onClose={() => (exportOpen = false)} />
@@ -291,36 +298,38 @@
 	}
 	.bar {
 		display: grid;
-		grid-template-columns: 300px 1fr auto;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 20px;
-		padding: 12px 24px;
-		border-bottom: 1px solid var(--ink);
-		background: var(--paper);
+		gap: 24px;
+		padding: 12px 32px;
+		border-bottom: 1px solid var(--rule);
+		background: var(--ground);
 		position: sticky;
 		top: 0;
 		z-index: 10;
 	}
 	.brand {
 		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 2px;
+		align-items: center;
+		gap: 10px;
+		justify-self: start;
+	}
+	.logo {
+		display: block;
+		width: 26px;
+		height: 26px;
+		border-radius: 7px;
 	}
 	.wordmark {
-		font-family: var(--mono);
-		font-size: 12px;
-		letter-spacing: 0.24em;
-		background: none;
-		border: 0;
-		padding: 2px 0;
+		font-family: var(--display);
+		font-size: 20px;
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		text-transform: uppercase;
+		padding: 4px 0;
+		line-height: 1;
 		text-align: left;
-	}
-	.doc-code {
-		font-family: var(--mono);
-		font-size: 9px;
-		letter-spacing: 0.14em;
-		color: var(--muted);
+		justify-self: start;
 	}
 	.title-wrap {
 		min-width: 0;
@@ -328,57 +337,51 @@
 	.title-input {
 		width: 100%;
 		border: 0;
-		border-bottom: 1px solid transparent;
+		border-bottom: 1.5px solid transparent;
 		background: transparent;
-		font-size: 15px;
-		font-weight: 500;
-		padding: 4px 0;
+		font-family: var(--display);
+		font-size: 20px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: -0.02em;
+		padding: 5px 0;
+		color: var(--ink);
 	}
 	.title-input:hover,
 	.title-input:focus {
 		border-bottom-color: var(--ink);
+		outline: none;
 	}
 	.bar-meta {
 		display: flex;
 		align-items: center;
-		gap: 12px;
-		font-family: var(--mono);
-		font-size: 10px;
-		letter-spacing: 0.08em;
+		gap: 10px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
+	.bar-meta .stamp {
+		margin-left: 8px;
+	}
 	.dot {
-		width: 6px;
-		height: 6px;
-		background: var(--spot);
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--ink);
+		flex: none;
 	}
 	.dot.busy {
-		background: var(--ink);
+		background: transparent;
+		border: 1.5px solid var(--ink);
 	}
 	.dot.bad {
-		background: var(--spot);
-		outline: 2px solid var(--spot);
-		outline-offset: 2px;
-	}
-	.banner {
-		display: flex;
-		justify-content: space-between;
-		gap: 16px;
-		align-items: center;
-		flex-wrap: wrap;
-		padding: 8px 24px;
-		border-bottom: 1px solid var(--spot);
-		background: #f7e9e4;
-		font-size: 12px;
-	}
-	.banner-actions {
-		display: flex;
-		gap: 14px;
+		background: var(--danger);
 	}
 	.workspace {
 		flex: 1;
 		display: grid;
-		grid-template-columns: 320px minmax(0, 1fr) 220px;
+		grid-template-columns: 320px minmax(0, 1fr) 240px;
 		min-height: 0;
 	}
 	.panel {
@@ -386,75 +389,117 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		max-height: calc(100vh - 64px);
+		max-height: calc(100vh - 69px);
 	}
 	.tabs {
-		display: flex;
-		border-bottom: 1px solid var(--ink);
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 8px;
+		padding: 12px;
+		border-bottom: 1px solid var(--rule);
 	}
 	.tab {
-		flex: 1;
-		border: 0;
-		border-right: 1px solid var(--rule);
+		border: 1.5px solid var(--rule);
+		border-radius: 999px;
 		background: transparent;
-		padding: 11px 4px;
-		font-family: var(--mono);
-		font-size: 9px;
-		letter-spacing: 0.1em;
+		padding: 0 2px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+		white-space: nowrap;
+		font-family: var(--sans);
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: var(--muted);
+		color: var(--ink-2);
 		min-height: var(--touch);
 	}
 	.tab.on {
-		background: var(--panel);
-		color: var(--ink);
+		background: var(--action);
+		border-color: var(--action);
+		color: var(--on-action);
 	}
 	.tab.mobile-only {
 		display: none;
 	}
 	.panel-scroll {
-		padding: 14px 16px 24px;
+		padding: 18px 16px 28px;
 		overflow: auto;
 	}
 	.sheet {
-		padding: 18px 28px;
+		padding: 20px 32px 24px;
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 14px;
+		min-width: 0;
 	}
 	.sheet-head,
 	.sheet-foot {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		max-width: 540px;
+		max-width: 560px;
 		width: 100%;
 		margin: 0 auto;
 	}
 	.zoom {
 		display: flex;
-		gap: 3px;
+		gap: 4px;
+	}
+	.zoom .seg-btn {
+		min-height: 32px;
+		font-size: 10px;
+		padding: 0 11px;
 	}
 	.tray {
-		border-top: 1px solid var(--ink);
+		border-top: 1px solid var(--rule);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
-		padding: 10px 24px;
+		gap: 20px;
+		padding: 12px 32px;
 		flex-wrap: wrap;
+		min-height: 56px;
 	}
 	.tray-items {
 		display: flex;
-		gap: 14px;
+		gap: 8px;
 		flex-wrap: wrap;
 	}
+	.tray-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		border: 1.5px solid var(--rule);
+		border-radius: 999px;
+		padding: 6px 6px 6px 14px;
+		font-size: 12px;
+		font-weight: 600;
+		max-width: 280px;
+	}
+	.tray-chip:hover {
+		border-color: var(--ink);
+	}
+	.tray-name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.tray-action {
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		background: var(--action);
+		color: var(--on-action);
+		border-radius: 999px;
+		padding: 5px 9px;
+	}
 	.note {
-		font-family: var(--mono);
-		font-size: 9px;
-		letter-spacing: 0.14em;
-		color: var(--spot);
+		color: var(--ink-2);
 	}
 	.slotmap-wrap {
 		display: contents;
@@ -463,17 +508,30 @@
 		display: none;
 	}
 	.hint {
-		font-size: 11px;
+		font-size: 12px;
 		line-height: 1.5;
-		color: var(--muted);
+		color: var(--ink-2);
+		margin: 0;
 	}
 	.load-state {
-		padding: 48px 24px;
+		padding: 48px 32px;
 		max-width: 680px;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
 	}
-	@media (max-width: 1100px) {
+	@media (max-width: 1200px) {
 		.workspace {
-			grid-template-columns: 280px minmax(0, 1fr) 180px;
+			grid-template-columns: 300px minmax(0, 1fr) 210px;
+		}
+	}
+	@media (max-width: 1000px) {
+		.workspace {
+			grid-template-columns: 280px minmax(0, 1fr);
+		}
+		.slotmap-wrap {
+			display: none;
 		}
 	}
 	@media (max-width: 900px) {
@@ -482,66 +540,92 @@
 			padding: 10px 16px;
 			gap: 8px;
 		}
-		.doc-code,
-		.zoom,
-		.tray,
-		.sheet-head {
-			display: none;
+		.wordmark {
+			font-size: 18px;
+		}
+		.logo {
+			width: 24px;
+			height: 24px;
 		}
 		.title-wrap {
 			grid-column: 1 / -1;
 			grid-row: 2;
 		}
 		.title-input {
-			font-size: 14px;
+			font-size: 17px;
 		}
 		.bar-meta {
 			grid-column: 2;
 			grid-row: 1;
 		}
-		.bar-meta .stamp {
+		.bar-meta .desktop-export {
 			display: none;
+		}
+		.bar-meta .mobile-export {
+			display: inline-flex;
+			min-height: 44px;
+			padding: 0 14px;
+			font-size: 11px;
+			letter-spacing: 0.08em;
 		}
 		.workspace {
 			display: flex;
 			flex-direction: column;
 			min-height: 0;
 		}
-		.slotmap-wrap {
-			display: none;
-		}
 		.sheet {
 			order: 1;
-			padding: 12px 14px 8px;
+			padding: 14px 14px 6px;
 			overflow: visible;
+			gap: 10px;
+		}
+		.sheet-head {
+			padding: 0 2px;
+		}
+		.sheet-head > .mono {
+			display: none;
+		}
+		.sheet-head {
+			justify-content: flex-end;
 		}
 		.sheet-foot {
+			display: none;
+		}
+		.sheet.compact {
+			padding: 6px 14px 2px;
+		}
+		.sheet.add :global(.preview-frame.compact) {
+			max-width: 120px;
+		}
+		.sheet.compact .sheet-head {
 			display: none;
 		}
 		.panel {
 			order: 2;
 			border-right: 0;
-			border-top: 1px solid var(--ink);
+			border-top: 1px solid var(--rule);
 			max-height: none;
 			flex: 1;
 		}
 		.tab.mobile-only {
 			display: block;
 		}
-		.panel-scroll {
-			padding: 12px 16px 90px;
+		.tabs {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			background: var(--ground-deep);
+			padding: 4px;
+			border-radius: 999px;
+			gap: 2px;
 		}
-		.mobile-export {
-			display: block;
-			position: sticky;
-			bottom: 0;
-			width: 100%;
-			min-height: 56px;
-			padding: 16px;
-			padding-bottom: max(16px, env(safe-area-inset-bottom));
+		.tab {
 			border: 0;
-			border-top: 1px solid var(--ink);
-			z-index: 20;
+			background: transparent;
+		}
+		.panel-scroll {
+			padding: 16px 16px 32px;
+		}
+		.tray {
+			display: none;
 		}
 	}
 </style>
