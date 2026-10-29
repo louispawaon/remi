@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { randomId } from '#lib/card/document';
 	import { ADD_CATEGORIES, type CardItem, type Category } from '#lib/card/types';
@@ -34,9 +34,23 @@
 	let uploadError = $state<string | null>(null);
 	let retry = $state(0);
 	let optionsToken = 0;
+	let narrow = $state(false);
 
 	const search = createMediaSearch();
 	const supportsFilters = $derived(editor.addCategory !== 'movie' && editor.addCategory !== 'tv');
+	const activeFilterCount = $derived(
+		(year.trim() ? 1 : 0) +
+			Object.values(filters).filter(Boolean).length +
+			(titleLanguage === 'english' ? 0 : 1)
+	);
+
+	onMount(() => {
+		const query = window.matchMedia('(max-width: 900px)');
+		const sync = () => (narrow = query.matches);
+		sync();
+		query.addEventListener('change', sync);
+		return () => query.removeEventListener('change', sync);
+	});
 
 	$effect(() => {
 		const category = editor.addCategory;
@@ -246,58 +260,72 @@
 		</label>
 	</div>
 
-	<div class="filters">
-		<label class="field stacked">
-			<span class="label">Year</span>
-			<input
-				class="input"
-				type="number"
-				inputmode="numeric"
-				min="1900"
-				max="2100"
-				placeholder="Any"
-				value={year}
-				oninput={(event) => {
-					year = event.currentTarget.value;
-					page = 1;
-				}}
-			/>
-		</label>
+	{#snippet filterFields()}
+		<div class="filters">
+			<label class="field stacked">
+				<span class="label">Year</span>
+				<input
+					class="input"
+					type="number"
+					inputmode="numeric"
+					min="1900"
+					max="2100"
+					placeholder="Any"
+					value={year}
+					oninput={(event) => {
+						year = event.currentTarget.value;
+						page = 1;
+					}}
+				/>
+			</label>
 
-		{#if options}
-			{#each supportsFilters ? options.filters : [] as filter (filter.key)}
-				<label class="field stacked">
-					<span class="label">{filter.label}</span>
-					<select
-						value={filters[filter.key] ?? ''}
-						onchange={(event) => setFilter(filter.key, event.currentTarget.value)}
-					>
-						<option value="">Any</option>
-						{#each filter.options as option (option.value)}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</label>
-			{/each}
+			{#if options}
+				{#each supportsFilters ? options.filters : [] as filter (filter.key)}
+					<label class="field stacked">
+						<span class="label">{filter.label}</span>
+						<select
+							value={filters[filter.key] ?? ''}
+							onchange={(event) => setFilter(filter.key, event.currentTarget.value)}
+						>
+							<option value="">Any</option>
+							{#each filter.options as option (option.value)}
+								<option value={option.value}>{option.label}</option>
+							{/each}
+						</select>
+					</label>
+				{/each}
 
-			{#if options.titleLanguages.length > 0}
-				<label class="field stacked">
-					<span class="label">Title language</span>
-					<select
-						value={titleLanguage}
-						onchange={(event) => {
-							titleLanguage = event.currentTarget.value;
-							page = 1;
-						}}
-					>
-						{#each options.titleLanguages as language (language.value)}
-							<option value={language.value}>{language.label}</option>
-						{/each}
-					</select>
-				</label>
+				{#if options.titleLanguages.length > 0}
+					<label class="field stacked">
+						<span class="label">Title language</span>
+						<select
+							value={titleLanguage}
+							onchange={(event) => {
+								titleLanguage = event.currentTarget.value;
+								page = 1;
+							}}
+						>
+							{#each options.titleLanguages as language (language.value)}
+								<option value={language.value}>{language.label}</option>
+							{/each}
+						</select>
+					</label>
+				{/if}
 			{/if}
-		{/if}
-	</div>
+		</div>
+	{/snippet}
+
+	{#if narrow}
+		<details class="filters-details">
+			<summary class="label"
+				>Filters{#if activeFilterCount > 0}
+					· {activeFilterCount}{/if}</summary
+			>
+			{@render filterFields()}
+		</details>
+	{:else}
+		{@render filterFields()}
+	{/if}
 
 	{#if optionsError}
 		<div class="error-block" role="status">
@@ -444,6 +472,34 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
+	}
+	.filters-details {
+		border-top: 1px solid var(--rule);
+		border-bottom: 1px solid var(--rule);
+	}
+	.filters-details summary {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		min-height: 44px;
+		cursor: pointer;
+		list-style: none;
+	}
+	.filters-details summary::-webkit-details-marker {
+		display: none;
+	}
+	.filters-details summary::after {
+		content: '▾';
+		font-size: 10px;
+	}
+	.filters-details[open] summary::after {
+		content: '▴';
+	}
+	.filters-details[open] summary {
+		border-bottom: 1px solid var(--rule);
+	}
+	.filters-details .filters {
+		padding: 12px 0;
 	}
 	.filters .field,
 	.filters select {
