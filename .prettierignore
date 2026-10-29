@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Design working folder (comps, shots, temporary covers)
+design-pivot/

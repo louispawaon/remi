@@ -26,3 +26,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 # Playwright
 test-results
+
+# Local design working folder (comps, shots, temporary covers)
+design-pivot/
