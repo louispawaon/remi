@@ -1,10 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import node from '@sveltejs/adapter-node';
-import cloudflare from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
-
-// Node stays the default so `pnpm start` and the Playwright suite run unchanged.
-const adapter = process.env.ADAPTER === 'cloudflare' ? cloudflare() : node();
 
 export default defineConfig({
 	plugins: [
@@ -14,7 +10,7 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter
+			adapter: node()
 		})
 	],
 	test: {
