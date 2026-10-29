@@ -10,7 +10,7 @@
 	/>
 </svelte:head>
 
-<main>
+<main class="prose-page">
 	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Privacy</h1>
 	<p class="meta">
@@ -96,55 +96,3 @@
 		<a class="text-action" href={resolve('/credits')}>Credits</a>
 	</footer>
 </main>
-
-<style>
-	main {
-		max-width: 680px;
-		margin: 0 auto;
-		padding: 48px 24px 80px;
-		font-family: system-ui, sans-serif;
-		line-height: 1.6;
-		color: #171512;
-		background: #f1eee4;
-		min-height: 100vh;
-	}
-	.back {
-		display: inline-block;
-		margin-bottom: 12px;
-	}
-	h1 {
-		font-size: 40px;
-		letter-spacing: -0.03em;
-		margin: 0 0 8px;
-	}
-	.meta {
-		font-family: var(--mono);
-		font-size: 10px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: #6e675a;
-		margin: 0 0 24px;
-	}
-	h2 {
-		font-size: 12px;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		margin: 32px 0 8px;
-	}
-	p {
-		margin: 0 0 10px;
-	}
-	a {
-		color: inherit;
-	}
-	code {
-		font-size: 0.9em;
-	}
-	.page-foot {
-		display: flex;
-		gap: 20px;
-		border-top: 1px solid #c9c2b2;
-		margin-top: 40px;
-		padding-top: 12px;
-	}
-</style>

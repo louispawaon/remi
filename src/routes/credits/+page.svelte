@@ -6,7 +6,7 @@
 	<title>Credits — Remi</title>
 </svelte:head>
 
-<main>
+<main class="prose-page">
 	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Credits</h1>
 
@@ -43,37 +43,3 @@
 		</p>
 	</section>
 </main>
-
-<style>
-	main {
-		max-width: 680px;
-		margin: 0 auto;
-		padding: 48px 24px 80px;
-		font-family: system-ui, sans-serif;
-		line-height: 1.6;
-		color: #171512;
-		background: #f1eee4;
-		min-height: 100vh;
-	}
-	.back {
-		display: inline-block;
-		margin-bottom: 12px;
-	}
-	h1 {
-		font-size: 40px;
-		letter-spacing: -0.03em;
-		margin: 0 0 24px;
-	}
-	h2 {
-		font-size: 12px;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		margin: 32px 0 8px;
-	}
-	a {
-		color: inherit;
-	}
-	code {
-		font-size: 0.9em;
-	}
-</style>
