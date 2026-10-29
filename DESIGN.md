@@ -65,24 +65,44 @@ Scale: **44 / 34 / 28 / 22 / 18 / 15 / 13 / 11**. Seven steps. Display tracking
 - Margins: 16 mobile, 32 desktop. Spacing: 4, 8, 12, 16, 20, 24, 32, 40, 56.
 - Radius: **0** for the poster and the wall; **capsule** for every control
   (tabs, buttons, chips, inputs, selects). Two radii only.
-- Depth is a hard black offset: `6px 6px 0` on a poster mount, `3px 3px 0` on a
-  primary action, `2px 2px 0` on a quiet sticker. No soft content shadows.
+- Depth is a hard black offset: `6px 6px 0` on an editor poster mount and
+  `8px 8px 0` on a home poster, `3px 3px 0` on a primary action, `2px 2px 0`
+  on a quiet sticker. No soft content shadows.
 - The export slip is butter paper with cobalt type, square on desktop and
   28px-top-rounded on a phone with a grabber. It is the only light surface.
 - Poster mounts use a 1.5px butter-at-22% edge; the black offset is the lip.
 
 ## Composition
 
-### Desktop
+### Home (desktop)
 
-Sticky header: wordmark, editable title, save state, Export. Workspace:
-320px tool rail, the poster plate centred at up to 560px, 240px sheet map.
-Footer: unplaced tray with Place pills and the exclusion note. The library is a
-4-up wall of fixed 360px matted tiles (3 at 1200px, 2 at 900px, 1 on a phone),
-each with its title, meta and action row. No card is enlarged; every title and
-action row shares a baseline.
+Sticky header: wordmark and a New sheet stamp. The first screen is the hero:
+the display headline and one-sentence lead on the left, the latest sheet
+mounted at up to 460px on the right with a butter Latest tag, tilted −1.4deg
+and carried by an 8px hard black offset. The wall label sits under the poster:
+state, sheet title, meta and the Open / Rename / Duplicate / Delete row. A rule
+and `Your wall` begin the rest of the collection: 4-up fixed-height matted
+tiles (3 at 1200px, 2 at 900px, 1 at 600px), each with title, meta and action
+row, closed by a New sheet tile. The wall appears only with two or more sheets;
+one sheet is the whole home page. With no sheets, the poster slot becomes the
+**sample wall**: eight authored type posters around a butter free-space centre,
+tagged Sample and titled Your first wall.
 
-### Mobile
+### Home (mobile)
+
+Same order, one column: headline, lead, the CTA pair, then the latest sheet or
+sample wall at up to 430px, then the wall label. The category proof rail is
+hidden under 600px because the lead already names them, and the sticky header
+keeps a 44px New sheet pill. The poster is the first thing the thumb reaches;
+the wall is a 1-up poster feed with the create tile last.
+
+### Editor (desktop)
+
+Header: wordmark, editable title, save state, Export. Workspace: 320px tool
+rail, the poster plate centred at up to 560px, 240px sheet map. Footer:
+unplaced tray with Place pills and the exclusion note.
+
+### Editor (mobile)
 
 Header: wordmark, title, and a header Export pill. A populated card opens on
 Arrange with a 200px live preview, one segmented tab capsule, then the control
@@ -102,7 +122,18 @@ content; the page scrolls.
 - **Switch** — 46×26 capsule; on is butter-filled with a cobalt knob.
 - **Field** — label above or left; filled `ground-deep` pill with a butter
   chevron for selects; search has a magnifier and a native clear ✕.
-- **Poster mount** — black sheet, 1.5px butter/22 edge, 6px hard black offset.
+- **Poster mount** — black sheet, 1.5px butter/22 edge, 6px hard black offset in the editor and 8px on the home page.
+- **Poster tag** — rotated butter capsule with a 2px hard offset; `Latest` on
+  the hero sheet, `Sample` on the empty-state wall.
+- **Wall label** — display title, meta and the management row, set directly
+  under the hero poster and aligned to its mount. The tag carries Latest or
+  Sample, so the label does not repeat it.
+- **Sample wall** — a 3×3 black mat of authored type posters around a butter
+  free-space tile, used only before the first sheet. Decorative and aria-hidden;
+  the wall label carries the meaning.
+- **New sheet tile** — a black mount with a butter cross and butter pill; the
+  last tile in the wall, and the only other New sheet entry besides the header
+  and hero.
 - **Slot tag** — butter pill with a two-digit cobalt code; selected cell only.
 - **Sheet map** — quiet 12px slot rows; selected code is a butter pill.
 - **Tray** — unplaced items as capsule chips with a butter Place tag.
@@ -122,6 +153,12 @@ content; the page scrolls.
 - Unplaced items stay visible and are explicitly excluded from PNG output.
 - Format changes never move items; grid changes reflow in order; overflow stays
   in the tray.
+- The latest sheet is the hero. Its poster opens the sheet; the wall label
+  carries the same management actions as a wall card, so no sheet loses its
+  controls by being featured.
+- The hero poster lands once in 620ms, settling from −3.2deg to −1.4deg
+  (mobile −0.8deg); reduced motion keeps the final tilt. Wall posters lift 2px
+  and deepen the hard offset on hover or keyboard focus.
 - The signature is **the hang**: a new placement compresses the mount
   (10px → 4px → 6px), presses the sheet 1.5%, flashes a 10% butter wash and
   stamps the slot tag in 240ms, with a light haptic where the platform allows.
@@ -131,7 +168,10 @@ content; the page scrolls.
 
 Empty library, loading, searching (skeleton rows), provider unavailable (with
 the credentials path), saving, save failed, conflict, export preparing, export
-error, export ready. Every state is cobalt, butter and plain language.
+error, export ready. Every state is cobalt, butter and plain language. On the
+home page the empty state is the sample wall and the hero CTA; loading keeps the
+poster's 4:5 mount with `Opening the wall…`; a library error is a black panel
+with a 1.5px danger border and a single Refresh action.
 
 ## Responsive and accessibility
 
@@ -141,6 +181,11 @@ error, export ready. Every state is cobalt, butter and plain language.
 - Safe-area insets respected; the mobile header and export sheet clear the home
   indicator.
 - No page-level horizontal overflow at 320, 390, 768, 1440 or 1920px.
+- Home type steps 78 / 56 / 50 / 32px. The 320px floor is 32px: `EVERYTHING`
+  must fit the 288px column without breaking the word.
+- Home hero poster: 460px desktop, 430px tablet, full width on a phone. The
+  wall is 4/3/2/1 columns and the sample wall's text is sized in container
+  units so the wall stays legible at 320px.
 - Reduced motion: no press, no wash; the tag appears.
 - Butter on cobalt is ~8:1; ink-2 ~5.3:1; ink-3 ~4.7:1. Danger is used for
   failures, not decoration.
@@ -156,8 +201,9 @@ work." No exclamation marks, no fandom slang, no dashboard verbs.
 
 Fonts are OFL, self-hosted. Production imagery comes from AniList/TMDB or user
 uploads. The comps used 26 AniList covers locally for judging the design; the working
-folder is not tracked and the covers are not shipped in the app. Every shipped raster keeps
-its source record.
+folder is not tracked and the covers are not shipped in the app. The empty-state
+sample wall is authored type in the app with invented titles; it ships no
+third-party artwork. Every shipped raster keeps its source record.
 
 ## Open decisions
 

@@ -397,7 +397,7 @@ test('brings the card back into view when moving on mobile', async ({ browser })
 
 test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await page.goto('/');
-	await page.getByRole('heading', { name: 'Library' }).waitFor();
+	await page.getByRole('heading', { level: 1 }).waitFor();
 	let results = await new AxeBuilder({ page }).analyze();
 	expect(results.violations).toEqual([]);
 
@@ -533,7 +533,7 @@ test('imports a .remi project through a mobile file picker', async ({ browser })
 
 	try {
 		await page.goto('/');
-		await page.getByRole('heading', { name: 'Library' }).waitFor();
+		await page.getByRole('heading', { level: 1 }).waitFor();
 		await page.getByTestId('import-input').setInputFiles(path);
 		await page.waitForURL(/\/editor\//);
 		await page.waitForSelector('[data-testid="title"]');
