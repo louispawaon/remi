@@ -1,6 +1,6 @@
 import { coverCrop } from './crop';
 import { captionHeight, type CardLayout, type Rect } from './layout';
-import { truncateText, wrapText } from './text';
+import { wrapText } from './text';
 import type { CardDocument, CardItem, FontChoice } from './types';
 
 export type DrawableArtwork = HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas;
@@ -11,16 +11,19 @@ export interface DrawCardInput {
 	resolveArtwork: (id: string) => DrawableArtwork | undefined;
 }
 
-const FONT_STACKS: Record<FontChoice, string> = {
-	sans: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-	serif: 'Georgia, "Times New Roman", serif',
-	display: '"Avenir Next", "Trebuchet MS", system-ui, sans-serif'
+const FONTS: Record<FontChoice, { stack: string; weight: number }> = {
+	sans: { stack: '"Archivo", system-ui, sans-serif', weight: 700 },
+	serif: { stack: 'Georgia, "Times New Roman", serif', weight: 600 },
+	display: { stack: '"Archivo Expanded", "Archivo", system-ui, sans-serif', weight: 800 }
 };
+
+/** The exported card keeps one fixed caption ink, whatever the card colours are. */
+const CAPTION_INK = '#f6ebc0';
 
 export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): void {
 	const { document: doc, layout, resolveArtwork } = input;
 	const measure = (text: string) => ctx.measureText(text).width;
-	const font = FONT_STACKS[doc.appearance.font];
+	const font = FONTS[doc.appearance.font];
 
 	ctx.save();
 	ctx.fillStyle = doc.appearance.background;
@@ -30,9 +33,13 @@ export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): v
 
 	if (doc.appearance.titleVisible && doc.title.trim() !== '') {
 		ctx.fillStyle = doc.appearance.foreground;
-		ctx.font = `600 ${layout.titleFontSize}px ${font}`;
-		const title = truncateText(doc.title, layout.heading.width, measure);
-		ctx.fillText(title, layout.heading.x, layout.heading.y + layout.heading.height / 2);
+		ctx.font = `${font.weight} ${layout.titleFontSize}px ${font.stack}`;
+		const lines = wrapText(doc.title.toLocaleUpperCase(), layout.heading.width, measure, 2);
+		const lineHeight = layout.titleFontSize * 0.92;
+		const centre = layout.heading.y + layout.heading.height / 2;
+		lines.forEach((line, index) => {
+			ctx.fillText(line, layout.heading.x, centre + (index - (lines.length - 1) / 2) * lineHeight);
+		});
 	}
 
 	for (let index = 0; index < layout.cells.length; index++) {
@@ -63,7 +70,7 @@ function drawItem(
 	item: CardItem,
 	doc: CardDocument,
 	layout: CardLayout,
-	font: string,
+	font: { stack: string; weight: number },
 	resolveArtwork: DrawCardInput['resolveArtwork'],
 	measure: (text: string) => number
 ) {
@@ -109,13 +116,13 @@ function drawTextTile(
 	title: string,
 	color: string,
 	layout: CardLayout,
-	font: string,
+	font: { stack: string; weight: number },
 	measure: (text: string) => number
 ) {
 	const fontSize = layout.caption.fontSize * 1.2;
 	const lineHeight = fontSize * 1.3;
 	ctx.fillStyle = color;
-	ctx.font = `600 ${fontSize}px ${font}`;
+	ctx.font = `${font.weight} ${fontSize}px ${font.stack}`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
@@ -136,17 +143,17 @@ function drawCaption(
 	rect: Rect,
 	title: string,
 	layout: CardLayout,
-	font: string,
+	font: { stack: string; weight: number },
 	measure: (text: string) => number
 ) {
 	const height = captionHeight(layout);
 	const top = rect.y + rect.height - height;
 
-	ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
+	ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
 	ctx.fillRect(rect.x, top, rect.width, height);
 
-	ctx.fillStyle = '#ffffff';
-	ctx.font = `500 ${layout.caption.fontSize}px ${font}`;
+	ctx.fillStyle = CAPTION_INK;
+	ctx.font = `${font.weight === 800 ? 700 : 600} ${layout.caption.fontSize}px ${font.stack}`;
 	ctx.textBaseline = 'middle';
 
 	const lines = wrapText(
@@ -169,15 +176,17 @@ function drawFreeSpace(
 	rect: Rect,
 	layout: CardLayout,
 	doc: CardDocument,
-	font: string
+	font: { stack: string; weight: number }
 ) {
+	const unit = Math.max(1, layout.caption.fontSize * 0.08);
 	ctx.save();
-	ctx.globalAlpha = 0.06;
+	ctx.strokeStyle = doc.appearance.foreground;
+	ctx.globalAlpha = 0.28;
+	ctx.lineWidth = unit * 1.4;
+	ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+	ctx.globalAlpha = 0.7;
 	ctx.fillStyle = doc.appearance.foreground;
-	ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
-	ctx.globalAlpha = 0.8;
-	ctx.fillStyle = doc.appearance.foreground;
-	ctx.font = `700 ${layout.caption.fontSize * 1.2}px ${font}`;
+	ctx.font = `${font.weight} ${layout.caption.fontSize * 0.95}px ${font.stack}`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.fillText('FREE', rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -191,9 +200,9 @@ function drawBlank(
 	foreground: string
 ) {
 	ctx.save();
-	ctx.globalAlpha = 0.14;
+	ctx.globalAlpha = 0.2;
 	ctx.strokeStyle = foreground;
-	ctx.lineWidth = 2 * layout.resolution;
+	ctx.lineWidth = 1.5 * layout.resolution;
 	ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 	ctx.restore();
 }

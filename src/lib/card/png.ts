@@ -30,7 +30,17 @@ export async function renderCard(
 	});
 
 	options.onProgress?.('fonts');
-	await globalThis.document.fonts?.ready;
+	const fonts = globalThis.document.fonts;
+	if (fonts) {
+		// Canvas only loads a face once something asks for it; the export may be
+		// the first thing on the page to use the display cut.
+		await Promise.all([
+			fonts.load('700 56px "Archivo"'),
+			fonts.load('800 56px "Archivo Expanded"'),
+			fonts.load('600 56px Georgia')
+		]).catch(() => undefined);
+		await fonts.ready;
+	}
 	abortIfNeeded(options.signal);
 
 	const canvas = globalThis.document.createElement('canvas');

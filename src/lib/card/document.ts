@@ -41,9 +41,9 @@ export function createDefaultDocument(id: string, now: string): CardDocument {
 		freeSpace: true,
 		appearance: {
 			titleVisible: true,
-			background: '#12100e',
-			foreground: '#f4efe6',
-			font: 'sans'
+			background: '#0c0c0f',
+			foreground: '#f6ebc0',
+			font: 'display'
 		},
 		items: [],
 		slots,

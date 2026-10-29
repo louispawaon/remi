@@ -117,9 +117,9 @@ export function createFixtureDocument(options: FixtureOptions = {}): CardDocumen
 		freeSpace,
 		appearance: {
 			titleVisible: true,
-			background: '#12100e',
-			foreground: '#f4efe6',
-			font: 'sans'
+			background: '#0c0c0f',
+			foreground: '#f6ebc0',
+			font: 'display'
 		},
 		items: items.map((item) => structuredClone(item)),
 		slots,
