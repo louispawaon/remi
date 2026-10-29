@@ -617,6 +617,7 @@
 			padding: 4px;
 			border-radius: 999px;
 			gap: 2px;
+			margin-top: 10px;
 		}
 		.tab {
 			border: 0;
