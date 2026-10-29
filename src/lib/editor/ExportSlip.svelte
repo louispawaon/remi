@@ -27,6 +27,9 @@
 	let token = 0;
 	let objectUrl: string | null = null;
 	let controller: AbortController | null = null;
+	let dragOffset = $state(0);
+	let dragging = $state(false);
+	let dragStartY = 0;
 
 	$effect(() => {
 		const selected = resolution;
@@ -106,7 +109,17 @@
 
 	onMount(() => {
 		dialog?.showModal();
+		const html = document.documentElement;
+		const body = document.body;
+		const previous = { html: html.style.overflow, body: body.style.overflow };
+		// Native dialogs leave the page scrollable behind the mobile sheet.
+		if (window.matchMedia('(max-width: 640px)').matches) {
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+		}
 		return () => {
+			html.style.overflow = previous.html;
+			body.style.overflow = previous.body;
 			if (objectUrl) URL.revokeObjectURL(objectUrl);
 		};
 	});
@@ -139,6 +152,41 @@
 
 	function savePng() {
 		if (prepared) download(prepared.blob, filename('png'));
+	}
+
+	function startDrag(event: PointerEvent) {
+		if (event.pointerType === 'mouse') return;
+		dragging = true;
+		dragStartY = event.clientY;
+		try {
+			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+		} catch {
+			// The pointer can already be gone on a fast fling; the gesture still works.
+		}
+	}
+
+	function moveDrag(event: PointerEvent) {
+		if (!dragging) return;
+		dragOffset = Math.max(0, event.clientY - dragStartY);
+	}
+
+	function endDrag() {
+		if (!dragging) return;
+		dragging = false;
+		if (dragOffset > 90) onClose();
+		else dragOffset = 0;
+	}
+
+	function backdropClose(event: MouseEvent) {
+		// Keyboard activation reports no pointer detail; never treat it as an outside tap.
+		if (event.detail === 0 || !dialog) return;
+		const rect = dialog.getBoundingClientRect();
+		const inside =
+			event.clientX >= rect.left &&
+			event.clientX <= rect.right &&
+			event.clientY >= rect.top &&
+			event.clientY <= rect.bottom;
+		if (!inside) onClose();
 	}
 
 	function openImage() {
@@ -187,13 +235,25 @@
 	bind:this={dialog}
 	data-testid="export-dialog"
 	class="slip"
+	class:dragging
+	style={`transform: translateY(${dragOffset}px)`}
 	aria-labelledby="export-title"
+	onclick={backdropClose}
 	oncancel={(event) => {
 		event.preventDefault();
 		onClose();
 	}}
 >
-	<span class="grabber" aria-hidden="true"></span>
+	<div
+		class="handle"
+		aria-hidden="true"
+		onpointerdown={startDrag}
+		onpointermove={moveDrag}
+		onpointerup={endDrag}
+		onpointercancel={endDrag}
+	>
+		<span class="grabber"></span>
+	</div>
 	<div class="head">
 		<span class="label">Export · PNG</span>
 		<button class="text-action" type="button" onclick={onClose}>Cancel</button>
@@ -308,12 +368,18 @@
 		max-width: calc(100vw - 24px);
 		max-height: calc(100vh - 24px);
 		overflow: auto;
+		overscroll-behavior: contain;
 		font-family: var(--sans);
 		box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.55);
+		transition: transform 0.18s ease;
+	}
+	.slip.dragging {
+		transition: none;
 	}
 	.slip::backdrop {
 		background: rgba(7, 9, 38, 0.66);
 	}
+	.handle,
 	.grabber {
 		display: none;
 	}
@@ -461,17 +527,25 @@
 		opacity: 0.6;
 	}
 	@media (max-width: 640px) {
+		.handle {
+			display: block;
+			margin: -14px -16px 10px;
+			padding: 10px 0 12px;
+			touch-action: none;
+			cursor: grab;
+		}
 		.grabber {
 			display: block;
 			width: 36px;
 			height: 5px;
 			border-radius: 999px;
 			background: color-mix(in srgb, var(--ground) 38%, transparent);
-			margin: 8px auto 16px;
+			margin: 0 auto;
 		}
 		.slip {
 			width: 100%;
 			max-width: none;
+			max-height: 88dvh;
 			border-radius: 28px 28px 0 0;
 			margin: auto 0 0;
 			padding: 14px 16px max(20px, env(safe-area-inset-bottom));

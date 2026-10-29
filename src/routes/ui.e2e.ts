@@ -302,6 +302,28 @@ test('mobile editor keeps all tabs and export reachable without horizontal overf
 	await context.close();
 });
 
+test('closes the export sheet from the backdrop', async ({ page }) => {
+	await seedFixture(page);
+	await openExport(page);
+	await page.mouse.click(10, 10);
+	await expect(page.getByTestId('export-dialog')).toBeHidden();
+});
+
+test('dismisses the mobile export sheet by dragging its handle', async ({ browser }) => {
+	const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	const page = await context.newPage();
+	await seedFixture(page);
+	await page.getByTestId('mobile-export').click();
+	await expect(page.getByTestId('export-dialog')).toBeVisible();
+
+	const handle = page.locator('.handle');
+	await handle.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', clientY: 300 });
+	await handle.dispatchEvent('pointermove', { pointerId: 1, pointerType: 'touch', clientY: 420 });
+	await handle.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', clientY: 420 });
+	await expect(page.getByTestId('export-dialog')).toBeHidden();
+	await context.close();
+});
+
 test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await page.goto('/');
 	await page.getByRole('heading', { name: 'Library' }).waitFor();
