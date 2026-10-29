@@ -105,11 +105,14 @@ test('saves a pending edit before following browser Back', async ({ page }) => {
 		const input = document.querySelector<HTMLInputElement>('[data-testid=title]')!;
 		input.value = 'Saved before Back';
 		input.dispatchEvent(new Event('input', { bubbles: true }));
+	});
+	await expect(page.getByTestId('save-status')).toHaveText('Unsaved changes');
+	await page.evaluate(() => {
 		setTimeout(() => (window as unknown as { releaseWrite: () => void }).releaseWrite(), 200);
 		history.back();
 	});
 	await expect(page).toHaveURL(/\/$/);
-	await page.getByRole('heading', { name: 'Library' }).waitFor();
+	await page.getByRole('heading', { level: 1 }).waitFor();
 	expect((await readDocument(page, id)).title).toBe('Saved before Back');
 });
 
