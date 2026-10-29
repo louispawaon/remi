@@ -216,7 +216,7 @@
 </script>
 
 <section class="panel-body" aria-label="Add media">
-	<h2 class="section-title">Add</h2>
+	<h2 class="section-title">Find a poster</h2>
 
 	<div class="search-row">
 		<label class="category-field">
@@ -236,7 +236,7 @@
 				class="input"
 				data-testid="search-input"
 				type="search"
-				placeholder="Search by title"
+				placeholder="Search titles"
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;
@@ -314,7 +314,7 @@
 	{/if}
 
 	<div class="results-head">
-		<span class="label">Search results</span>
+		<span class="label">Results</span>
 		<span class="mono"
 			>{loading
 				? 'Loading…'
@@ -346,18 +346,16 @@
 								src={imageUrl(result.provider, result.coverPath)}
 								alt=""
 								loading="lazy"
-								width="38"
-								height="56"
+								width="44"
+								height="62"
 							/>
 						{:else}
-							<span class="no-poster">NO POSTER</span>
+							<span class="no-poster">NO ART</span>
 						{/if}
 					</div>
 					<div class="result-text">
 						<span class="result-title">{result.title.preferred}</span>
-						<span class="meta">
-							{[result.year, result.format].filter(Boolean).join(' · ')}
-						</span>
+						<span class="meta">{[result.year, result.format].filter(Boolean).join(' · ')}</span>
 						{#if result.title.alternatives.length > 0}
 							<span class="alt">{result.title.alternatives[0]}</span>
 						{/if}
@@ -378,14 +376,17 @@
 	{#if results.length > 0}
 		<div class="pager">
 			<button
-				class="ghost"
+				class="ghost pager-btn"
 				type="button"
 				disabled={page <= 1 || loading}
 				onclick={() => (page = Math.max(1, page - 1))}>Previous</button
 			>
 			<span class="mono">Page {page}</span>
-			<button class="ghost" type="button" disabled={!hasNext || loading} onclick={() => (page += 1)}
-				>Next</button
+			<button
+				class="ghost pager-btn"
+				type="button"
+				disabled={!hasNext || loading}
+				onclick={() => (page += 1)}>Next</button
 			>
 		</div>
 	{/if}
@@ -413,44 +414,23 @@
 	.panel-body {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 14px;
 	}
 	.search-row {
 		display: flex;
+		gap: 8px;
 		align-items: stretch;
-		border: 1px solid var(--ink);
-		background: var(--paper);
-	}
-	.search-row:focus-within {
-		outline: 2px solid var(--spot);
-		outline-offset: 1px;
 	}
 	.category-field {
-		flex: none;
+		flex: 0 0 106px;
 		display: flex;
-		align-items: center;
-		border-right: 1px solid var(--rule);
-		background: var(--panel);
 	}
 	.category-field select {
-		appearance: none;
-		border: 0;
-		background: transparent;
-		height: 40px;
-		padding: 0 26px 0 10px;
-		font-family: var(--mono);
-		font-size: 10px;
+		width: 100%;
+		font-size: 11px;
+		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		cursor: pointer;
-		background-image:
-			linear-gradient(45deg, transparent 50%, var(--ink) 50%),
-			linear-gradient(135deg, var(--ink) 50%, transparent 50%);
-		background-position:
-			calc(100% - 14px) 18px,
-			calc(100% - 9px) 18px;
-		background-size: 5px 5px;
-		background-repeat: no-repeat;
 	}
 	.title-field {
 		flex: 1;
@@ -458,20 +438,21 @@
 		min-width: 0;
 	}
 	.title-field .input {
-		border: 0;
-		height: 40px;
-		padding: 0 10px;
-		font-size: 13px;
+		width: 100%;
 	}
 	.filters {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 8px;
+		gap: 10px;
+	}
+	.filters .field,
+	.filters select {
+		min-width: 0;
 	}
 	.field.stacked {
 		flex-direction: column;
 		align-items: stretch;
-		gap: 3px;
+		gap: 6px;
 	}
 	.field select {
 		width: 100%;
@@ -480,7 +461,7 @@
 	.pager {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: baseline;
 		gap: 8px;
 	}
 	.results {
@@ -489,88 +470,104 @@
 		margin: 0;
 		display: flex;
 		flex-direction: column;
-		max-height: 340px;
+		max-height: 380px;
 		overflow: auto;
+		border-top: 1px solid var(--rule);
 	}
 	.result {
 		display: grid;
-		grid-template-columns: 38px 1fr auto;
-		gap: 9px;
+		grid-template-columns: 44px minmax(0, 1fr) auto;
+		gap: 10px;
 		align-items: center;
-		padding: 7px 0;
-		border-top: 1px solid var(--rule);
+		padding: 10px 0;
+		border-bottom: 1px solid var(--rule);
 	}
 	.poster {
-		width: 38px;
-		min-height: 56px;
-		background: #0d0c0b;
+		width: 44px;
+		height: 62px;
+		background: var(--card);
+		border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
 	}
 	.poster img {
 		display: block;
-		width: 38px;
-		height: 56px;
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
 	}
 	.no-poster {
-		font-family: var(--mono);
-		font-size: 7px;
-		color: var(--muted);
+		font-size: 8px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		color: var(--ink-3);
 		text-align: center;
 	}
 	.result-text {
 		display: flex;
 		flex-direction: column;
-		gap: 1px;
+		gap: 2px;
 		min-width: 0;
 	}
 	.result-title {
-		font-size: 12px;
-		font-weight: 500;
+		font-size: 13px;
+		font-weight: 600;
 		line-height: 1.25;
 	}
+	.result .meta {
+		font-size: 11px;
+		letter-spacing: 0.08em;
+	}
 	.alt {
-		font-size: 10px;
-		color: var(--muted);
+		font-size: 11px;
+		color: var(--ink-3);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 	.add {
-		min-height: 30px;
-		padding: 5px 9px;
+		min-height: 34px;
+		padding: 0 14px;
+		font-size: 11px;
+		box-shadow: 2px 2px 0 var(--card);
 	}
 	.skeleton {
 		display: grid;
-		grid-template-columns: 38px 1fr;
-		gap: 8px;
+		grid-template-columns: 44px 1fr;
+		gap: 10px;
 		align-items: center;
 	}
 	.skel-art {
-		width: 38px;
-		height: 56px;
-		background: var(--panel);
+		width: 44px;
+		height: 62px;
+		background: rgba(12, 12, 15, 0.55);
 	}
 	.skel-line {
-		height: 8px;
+		height: 10px;
 		width: 70%;
-		background: var(--panel);
+		background: rgba(246, 235, 192, 0.22);
 	}
 	.skeleton .mono {
 		grid-column: 1 / -1;
 	}
 	.pager {
 		border-top: 1px solid var(--rule);
-		padding-top: 8px;
+		padding-top: 10px;
+		align-items: center;
+	}
+	.pager-btn {
+		min-height: 34px;
+		font-size: 10px;
+		padding: 0 12px;
 	}
 	.upload {
 		border-top: 1px solid var(--rule);
-		padding-top: 10px;
+		padding-top: 14px;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 10px;
 		align-items: flex-start;
 	}
 	.file-label {
@@ -582,19 +579,36 @@
 	.error-block {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		border: 1px solid var(--spot);
-		padding: 8px;
+		gap: 8px;
+		align-items: flex-start;
+		background: var(--card);
+		border-left: 3px solid var(--danger);
+		padding: 10px 12px;
+	}
+	.error-block .error-text {
+		margin: 0;
 	}
 	.notice {
-		color: var(--muted);
-		font-size: 11px;
+		color: var(--ink-2);
+		font-size: 12px;
 		margin: 0;
 	}
 	.hint {
-		font-size: 10px;
+		font-size: 12px;
 		line-height: 1.5;
-		color: var(--muted);
+		color: var(--ink-2);
 		margin: 0;
+	}
+	@media (max-width: 900px) {
+		.category-field {
+			flex-basis: 118px;
+		}
+		.add {
+			min-height: 44px;
+			padding: 0 16px;
+		}
+		.pager-btn {
+			min-height: 44px;
+		}
 	}
 </style>
