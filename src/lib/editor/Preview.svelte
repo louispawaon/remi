@@ -4,12 +4,15 @@
 	import { renderCard } from '#lib/card/png';
 	import type { EditorState } from './editor-state.svelte';
 
-	let { editor }: { editor: EditorState } = $props();
+	let { editor, compact = false }: { editor: EditorState; compact?: boolean } = $props();
 
 	let host = $state<HTMLDivElement>();
 	let layout = $state<CardLayout | null>(null);
 	let renderError = $state<string | null>(null);
 	let overIndex = $state<number | null>(null);
+	let hang = $state(false);
+	let hangTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastFilled: number | null = null;
 	let token = 0;
 
 	$effect(() => {
@@ -45,8 +48,26 @@
 		};
 	});
 
+	$effect(() => {
+		const filled = editor.document.slots.filter(Boolean).length;
+		if (lastFilled !== null && filled > lastFilled) press();
+		lastFilled = filled;
+	});
+
+	function press() {
+		hang = false;
+		if (hangTimer) clearTimeout(hangTimer);
+		void Promise.resolve().then(() => (hang = true));
+		if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(8);
+		hangTimer = setTimeout(() => {
+			hang = false;
+			hangTimer = null;
+		}, 300);
+	}
+
 	onDestroy(() => {
 		token += 1;
+		if (hangTimer) clearTimeout(hangTimer);
 	});
 
 	function cellStyle(cell: Rect, current: CardLayout): string {
@@ -102,13 +123,15 @@
 	}
 </script>
 
-<div class="preview-frame">
+<div class="preview-frame" class:compact>
 	<div
 		class="plate"
+		class:hang
 		class:actual={editor.zoom === 'actual'}
 		style={layout ? `aspect-ratio:${layout.width} / ${layout.height}` : undefined}
 	>
 		<div bind:this={host} class="canvas-host"></div>
+		<span class="wash" aria-hidden="true"></span>
 
 		{#if layout}
 			<div class="cells">
@@ -151,11 +174,11 @@
 
 	{#if editor.selectedItemId}
 		<p class="selected-note">
-			<span class="mono">SELECTED</span>
+			<span class="mono">Selected</span>
 			{editor.selectedItem?.titleOverride ?? editor.selectedItem?.titles.preferred}
 		</p>
 	{:else}
-		<p class="selected-note"><span class="mono">SELECTED</span> none</p>
+		<p class="selected-note"><span class="mono">Selected</span> none</p>
 	{/if}
 </div>
 
@@ -163,29 +186,45 @@
 	.preview-frame {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 12px;
 		width: 100%;
 		overflow: auto;
 	}
 	.plate {
 		position: relative;
 		width: 100%;
-		max-width: 540px;
+		max-width: 560px;
 		margin: 0 auto;
-		border: 1px solid var(--ink);
-		background: #0d0c0b;
+		background: var(--card);
+		border: 1.5px solid color-mix(in srgb, var(--ink) 22%, transparent);
+		box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.55);
 	}
 	.plate.actual {
 		width: 1080px;
 		max-width: none;
 	}
+	.plate.hang {
+		animation: hang 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.plate.hang .wash {
+		animation: wash 220ms ease-out;
+	}
 	.canvas-host {
 		width: 100%;
 		line-height: 0;
 	}
+	.wash {
+		position: absolute;
+		inset: 0;
+		background: var(--ink);
+		opacity: 0;
+		pointer-events: none;
+		z-index: 2;
+	}
 	.cells {
 		position: absolute;
 		inset: 0;
+		z-index: 1;
 	}
 	.cell {
 		position: absolute;
@@ -205,42 +244,113 @@
 		cursor: grabbing;
 	}
 	.cell.dragging {
-		opacity: 0.4;
+		opacity: 0.35;
 	}
 	.cell:focus-visible {
-		outline: 3px solid var(--spot);
+		outline: 3px solid var(--ink);
 		outline-offset: -4px;
 	}
 	.cell.selected {
-		box-shadow: inset 0 0 0 2px var(--spot);
+		box-shadow: inset 0 0 0 2px var(--ink);
 	}
 	.cell.target {
-		box-shadow: inset 0 0 0 1px var(--rule);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 35%, transparent);
 	}
 	.cell.over {
-		box-shadow: inset 0 0 0 2px var(--spot);
-		background: rgba(194, 59, 34, 0.08);
+		box-shadow: inset 0 0 0 3px var(--ink);
+		background: color-mix(in srgb, var(--ink) 14%, transparent);
 	}
 	.cell-code {
 		position: absolute;
-		top: 0;
-		left: 0;
-		background: var(--spot);
-		color: #fff;
-		font-family: var(--mono);
-		font-size: 9px;
-		padding: 2px 4px;
-		line-height: 1.2;
+		top: 6px;
+		left: 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 22px;
+		height: 22px;
+		padding: 0 7px;
+		background: var(--action);
+		color: var(--on-action);
+		font-family: var(--sans);
+		font-size: 10px;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.06em;
+		border-radius: 999px;
+		animation: stamp 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 	}
 	.selected-note {
 		margin: 0;
 		text-align: center;
 		font-size: 12px;
-		color: var(--muted);
+		font-weight: 500;
+		color: var(--ink-2);
 		min-height: 18px;
+	}
+	.selected-note .mono {
+		margin-right: 8px;
 	}
 	.render-error {
 		padding: 12px;
-		background: var(--paper);
+		background: var(--card);
+	}
+	@keyframes hang {
+		0% {
+			transform: scale(1);
+		}
+		22% {
+			transform: scale(0.982);
+		}
+		55% {
+			transform: scale(1.004);
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+	@keyframes wash {
+		0% {
+			opacity: 0.16;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+	@keyframes stamp {
+		0% {
+			transform: scale(0.6);
+			opacity: 0;
+		}
+		65% {
+			transform: scale(1.12);
+			opacity: 1;
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+	@media (max-width: 900px) {
+		.preview-frame.compact {
+			max-width: 200px;
+			margin: 0 auto;
+		}
+		.preview-frame.compact .selected-note {
+			display: none;
+		}
+		.preview-frame.compact .plate {
+			box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.plate.hang {
+			animation: none;
+		}
+		.plate.hang .wash {
+			animation: none;
+		}
+		.cell-code {
+			animation: none;
+		}
 	}
 </style>
