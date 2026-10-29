@@ -155,7 +155,10 @@
 	</div>
 
 	<p class="hint">
-		Drag a cell onto another to move or swap it, or select a slot and choose a cell.
+		<span class="pointer"
+			>Drag a cell onto another to move or swap it, or select an item and use Move.</span
+		>
+		<span class="touch">Tap a cell, then use Move to place it in another slot.</span>
 	</p>
 </section>
 
@@ -272,15 +275,19 @@
 		color: var(--ink-2);
 		margin: 0;
 	}
+	.touch {
+		display: none;
+	}
 	@media (max-width: 900px) {
+		/* The card is the slot picker on mobile; the 25-row list is redundant scroll. */
 		.slots {
-			display: flex;
-			max-height: none;
-			overflow: visible;
+			display: none;
 		}
-		.slot {
-			min-height: 44px;
-			font-size: 12px;
+		.touch {
+			display: inline;
+		}
+		.pointer {
+			display: none;
 		}
 	}
 </style>

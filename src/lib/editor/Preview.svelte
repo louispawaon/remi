@@ -10,10 +10,19 @@
 	let layout = $state<CardLayout | null>(null);
 	let renderError = $state<string | null>(null);
 	let overIndex = $state<number | null>(null);
+	let frame = $state<HTMLDivElement>();
 	let hang = $state(false);
 	let hangTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastFilled: number | null = null;
 	let token = 0;
+
+	// A pending move can start from a panel far below the card on a phone.
+	$effect(() => {
+		const moving = editor.movingItemId;
+		if (!moving || !frame) return;
+		if (!window.matchMedia('(max-width: 900px)').matches) return;
+		frame.scrollIntoView({ block: 'center', behavior: 'smooth' });
+	});
 
 	$effect(() => {
 		const snapshot = editor.record;
@@ -123,7 +132,7 @@
 	}
 </script>
 
-<div class="preview-frame" class:compact>
+<div class="preview-frame" class:compact bind:this={frame}>
 	<div
 		class="plate"
 		class:hang
@@ -332,8 +341,7 @@
 	}
 	@media (max-width: 900px) {
 		.preview-frame.compact {
-			max-width: 200px;
-			margin: 0 auto;
+			max-width: none;
 		}
 		.preview-frame.compact .selected-note {
 			display: none;

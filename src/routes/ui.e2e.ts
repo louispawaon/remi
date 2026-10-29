@@ -294,7 +294,7 @@ test('mobile editor keeps all tabs and export reachable without horizontal overf
 	await expect(page.locator('main.sheet')).toBeHidden();
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
 	await expect(page.locator('main.sheet')).toBeVisible();
-	await page.locator('.panel .slot').first().click();
+	await page.locator('.cell[aria-label^="Slot 01:"]').click();
 	await page.getByTestId('tabs').getByRole('button', { name: 'Style' }).click();
 	await expect(page.getByLabel('Crop horizontal position')).toBeVisible();
 
@@ -323,6 +323,23 @@ test('dismisses the mobile export sheet by dragging its handle', async ({ browse
 	await handle.dispatchEvent('pointermove', { pointerId: 1, pointerType: 'touch', clientY: 420 });
 	await handle.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', clientY: 420 });
 	await expect(page.getByTestId('export-dialog')).toBeHidden();
+	await context.close();
+});
+
+test('brings the card back into view when moving on mobile', async ({ browser }) => {
+	const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	const page = await context.newPage();
+	await seedFixture(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
+
+	const first = page.locator('.cell[aria-label^="Slot 01:"]');
+	await first.click();
+	await page.evaluate(() => window.scrollTo(0, 500));
+	await page.getByRole('button', { name: 'Move', exact: true }).click();
+	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(50);
+
+	await page.locator('.cell[aria-label^="Slot 02:"]').click();
+	await expect(first).toHaveAttribute('aria-label', /^Slot 01: 나 혼자만 레벨업/);
 	await context.close();
 });
 
