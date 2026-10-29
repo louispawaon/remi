@@ -2,10 +2,6 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<svelte:head>
-	<title>Credits — Remi</title>
-</svelte:head>
-
 <main class="prose-page">
 	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Credits</h1>

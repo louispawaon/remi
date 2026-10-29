@@ -2,14 +2,6 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<svelte:head>
-	<title>Terms — Remi</title>
-	<meta
-		name="description"
-		content="The terms for using Remi, a local-first card maker that stores your work in your browser."
-	/>
-</svelte:head>
-
 <main class="prose-page">
 	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Terms</h1>

@@ -2,14 +2,6 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<svelte:head>
-	<title>Privacy — Remi</title>
-	<meta
-		name="description"
-		content="How Remi handles your data: cards and artwork stay in your browser, search terms go to AniList and TMDB."
-	/>
-</svelte:head>
-
 <main class="prose-page">
 	<a class="back text-action" href={resolve('/')}>← Remi library</a>
 	<h1>Privacy</h1>
