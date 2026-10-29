@@ -97,6 +97,25 @@ describe('computeLayout', () => {
 		expect(square.footer.y).toBe(1080 - 80);
 	});
 
+	it('gives the grid the heading reserve when the title is off', () => {
+		for (const format of FORMATS) {
+			const withTitle = computeLayout({ gridSize: 5, format, freeSpace: true, resolution: 1 });
+			const headless = computeLayout({
+				gridSize: 5,
+				format,
+				freeSpace: true,
+				resolution: 1,
+				headless: true
+			});
+			expect(headless.heading.height).toBe(0);
+			expect(headless.grid.y).toBeLessThanOrEqual(withTitle.grid.y);
+			if (format !== '9:16') {
+				expect(headless.grid.y).toBeLessThan(withTitle.grid.y);
+				expect(headless.grid.height).toBeGreaterThan(withTitle.grid.height);
+			}
+		}
+	});
+
 	it('gives captions room for two lines inside each cell', () => {
 		for (const format of FORMATS) {
 			const layout = computeLayout({ gridSize: 5, format, freeSpace: true, resolution: 1 });

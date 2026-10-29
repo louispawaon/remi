@@ -56,6 +56,8 @@ export interface LayoutInput {
 	format: Format;
 	freeSpace: boolean;
 	resolution: Resolution;
+	/** No title band: the grid takes the heading reserve. */
+	headless?: boolean;
 }
 
 export function captionHeight(layout: CardLayout): number {
@@ -68,7 +70,9 @@ export function computeLayout(input: LayoutInput): CardLayout {
 	const topInset =
 		input.format === '9:16'
 			? LAYOUT_METRICS.storyTopReserve
-			: margin + LAYOUT_METRICS.headingReserve;
+			: input.headless
+				? margin
+				: margin + LAYOUT_METRICS.headingReserve;
 	const bottomInset =
 		input.format === '9:16'
 			? LAYOUT_METRICS.storyBottomReserve
@@ -117,7 +121,7 @@ export function computeLayout(input: LayoutInput): CardLayout {
 			x: margin,
 			y: margin,
 			width: standardWidth - margin * 2,
-			height: LAYOUT_METRICS.headingReserve
+			height: input.headless ? 0 : LAYOUT_METRICS.headingReserve
 		},
 		footer: {
 			x: margin,
