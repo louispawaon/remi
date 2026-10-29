@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import logo from '#lib/assets/favicon.svg';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { CardSummary } from '#lib/library/types';
@@ -145,7 +146,8 @@
 
 	function meta(card: Row) {
 		const date = new Date(card.updatedAt);
-		return `${card.gridSize}×${card.gridSize} · ${card.format} · ${date.toLocaleDateString(
+		const waiting = card.unplacedCount > 0 ? ` · ${card.unplacedCount} waiting` : '';
+		return `${card.gridSize}×${card.gridSize} · ${card.format} · ${card.itemCount} items${waiting} · ${date.toLocaleDateString(
 			undefined,
 			{
 				month: 'short',
@@ -153,6 +155,18 @@
 			}
 		)}`;
 	}
+
+	const summary = $derived.by(() => {
+		if (cards.length === 0) return '';
+		const today = new Date().toDateString();
+		const editedToday = cards.filter(
+			(card) => new Date(card.updatedAt).toDateString() === today
+		).length;
+		const sheets = `${cards.length} ${cards.length === 1 ? 'sheet' : 'sheets'}`;
+		return editedToday > 0
+			? `${sheets} · ${editedToday} edited today`
+			: `${sheets} · last edited ${new Date(cards[0].updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+	});
 </script>
 
 <svelte:head>
@@ -161,14 +175,13 @@
 
 <div class="library-app">
 	<header class="bar">
-		<div class="brand">
-			<span class="wordmark">REMI</span>
-			<span class="doc-code">{String(cards.length).padStart(2, '0')} CARDS</span>
-		</div>
-		<div class="doc-title">Library</div>
+		<a class="brand" href={resolve('/')} aria-label="Remi library">
+			<img class="logo" src={logo} alt="" />
+			<span class="wordmark">Remi</span>
+		</a>
 		<div class="actions">
 			<label class="ghost file-label">
-				{importing ? 'Importing…' : 'Import project'}
+				{importing ? 'Importing…' : 'Import'}
 				<input
 					class="visually-hidden"
 					data-testid="import-input"
@@ -185,13 +198,16 @@
 				disabled={creating}
 				onclick={create}
 			>
-				{creating ? 'Making…' : 'New card'}
+				{creating ? 'Making…' : 'New sheet'}
 			</button>
 		</div>
 	</header>
 
 	<main>
-		<h1 class="visually-hidden">Library</h1>
+		<div class="title-block">
+			<h1 class="display">Library</h1>
+			{#if summary}<p class="summary">{summary}</p>{/if}
+		</div>
 
 		{#if error}
 			<div class="error-block" role="alert">
@@ -201,7 +217,7 @@
 		{/if}
 
 		{#if loading}
-			<div class="grid" aria-hidden="true">
+			<div class="wall" aria-hidden="true">
 				{#each [1, 2, 3, 4] as cell (cell)}
 					<div class="skeleton-card">
 						<div class="skeleton-art"></div>
@@ -211,15 +227,20 @@
 			</div>
 		{:else if cards.length === 0}
 			<section class="empty">
-				<div class="empty-grid" aria-hidden="true">
-					{#each Array.from({ length: 9 }, (_, index) => index) as cell (cell)}<span></span>{/each}
+				<div class="empty-wall" aria-hidden="true">
+					{#each Array.from({ length: 25 }, (_, index) => index) as cell (cell)}
+						<span class:lit={cell === 12}></span>
+					{/each}
 				</div>
-				<p>No cards yet.</p>
-				<button class="stamp" type="button" onclick={create}>Make the first card</button>
-				<p class="label">Or import a .remi project</p>
+				<div class="empty-copy">
+					<p class="empty-title display">No sheets yet.</p>
+					<p class="empty-line">Make a wall of the things you love, then export it as one image.</p>
+					<button class="stamp" type="button" onclick={create}>Make the first sheet</button>
+					<p class="label">Or import a .remi project</p>
+				</div>
 			</section>
 		{:else}
-			<div class="grid">
+			<div class="wall">
 				{#each cards as card (card.id)}
 					<article class="sheet-card" data-testid="card">
 						<a
@@ -230,59 +251,61 @@
 							{#if card.url}
 								<img class="art" src={card.url} alt="" loading="lazy" />
 							{:else}
-								<span class="art blank">NO THUMB</span>
+								<span class="art blank">NO IMAGE</span>
 							{/if}
 						</a>
 
-						{#if renamingId === card.id}
-							<form
-								class="rename"
-								onsubmit={(event) => {
-									event.preventDefault();
-									void commitRename();
-								}}
-							>
-								<label class="visually-hidden" for={`rename-${card.id}`}>Card title</label>
-								<input
-									id={`rename-${card.id}`}
-									class="input"
-									type="text"
-									bind:value={renameValue}
-									onkeydown={(event) => {
-										if (event.key === 'Escape') renamingId = null;
+						<div class="card-body">
+							{#if renamingId === card.id}
+								<form
+									class="rename"
+									onsubmit={(event) => {
+										event.preventDefault();
+										void commitRename();
 									}}
-								/>
-								<div class="rename-actions">
-									<button class="text-action" type="submit">Save</button>
-									<button class="text-action" type="button" onclick={() => (renamingId = null)}
-										>Cancel</button
-									>
-								</div>
-							</form>
-						{:else}
-							<h2>{card.title}</h2>
-							<p class="meta">{meta(card)}</p>
-						{/if}
+								>
+									<label class="visually-hidden" for={`rename-${card.id}`}>Card title</label>
+									<input
+										id={`rename-${card.id}`}
+										class="input"
+										type="text"
+										bind:value={renameValue}
+										onkeydown={(event) => {
+											if (event.key === 'Escape') renamingId = null;
+										}}
+									/>
+									<div class="rename-actions">
+										<button class="stamp small" type="submit">Save</button>
+										<button class="text-action" type="button" onclick={() => (renamingId = null)}
+											>Cancel</button
+										>
+									</div>
+								</form>
+							{:else}
+								<h2 class="display">{card.title}</h2>
+								<p class="meta">{meta(card)}</p>
+							{/if}
 
-						<div class="card-actions">
-							<a class="text-action" href={resolve('/editor/[id]', { id: card.id })}>Open</a>
-							<button class="text-action" type="button" onclick={() => startRename(card)}
-								>Rename</button
-							>
-							<button class="text-action" type="button" onclick={() => duplicate(card.id)}
-								>Duplicate</button
-							>
-							<button
-								class="text-action delete"
-								class:confirming={deletingId === card.id}
-								type="button"
-								onclick={() => remove(card.id)}
-								onblur={() => {
-									if (deletingId === card.id) deletingId = null;
-								}}
-							>
-								{deletingId === card.id ? 'Confirm delete' : 'Delete'}
-							</button>
+							<div class="card-actions">
+								<a class="text-action" href={resolve('/editor/[id]', { id: card.id })}>Open</a>
+								<button class="text-action" type="button" onclick={() => startRename(card)}
+									>Rename</button
+								>
+								<button class="text-action" type="button" onclick={() => duplicate(card.id)}
+									>Duplicate</button
+								>
+								<button
+									class="text-action delete"
+									class:confirming={deletingId === card.id}
+									type="button"
+									onclick={() => remove(card.id)}
+									onblur={() => {
+										if (deletingId === card.id) deletingId = null;
+									}}
+								>
+									{deletingId === card.id ? 'Confirm delete' : 'Delete'}
+								</button>
+							</div>
 						</div>
 					</article>
 				{/each}
@@ -306,45 +329,218 @@
 		flex-direction: column;
 	}
 	.bar {
-		display: grid;
-		grid-template-columns: 300px 1fr auto;
+		display: flex;
 		align-items: center;
-		gap: 24px;
-		padding: 14px 24px;
-		border-bottom: 1px solid var(--ink);
+		gap: 14px;
+		padding: 18px 32px;
+		border-bottom: 1px solid var(--rule);
 	}
 	.brand {
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
+		align-items: center;
+		gap: 10px;
+		text-decoration: none;
+		flex: none;
+	}
+	.logo {
+		display: block;
+		width: 30px;
+		height: 30px;
+		border-radius: 8px;
 	}
 	.wordmark {
-		font-family: var(--mono);
-		font-size: 12px;
-		letter-spacing: 0.24em;
+		font-family: var(--display);
+		font-size: 22px;
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		text-transform: uppercase;
+		text-decoration: none;
+		line-height: 1;
 	}
-	.doc-code {
-		font-family: var(--mono);
-		font-size: 9px;
-		letter-spacing: 0.14em;
-		color: var(--muted);
-	}
-	.doc-title {
-		font-size: 15px;
-		font-weight: 500;
+
+	.actions {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+		margin-left: auto;
+		flex-wrap: wrap;
 	}
 	main {
 		flex: 1;
 		width: 100%;
-		max-width: 1280px;
+		max-width: 1440px;
 		margin: 0 auto;
-		padding: 32px 40px 48px;
+		padding: 40px 32px 64px;
 	}
-	.actions {
+	.title-block {
 		display: flex;
-		gap: 8px;
-		align-items: center;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 24px;
 		flex-wrap: wrap;
+		margin-bottom: 40px;
+	}
+	h1 {
+		font-size: 56px;
+		margin: 0;
+	}
+	.summary {
+		margin: 0 0 6px;
+		font-size: 13px;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--ink-2);
+	}
+	.wall {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 40px 28px;
+		align-items: start;
+	}
+	.sheet-card {
+		min-width: 0;
+	}
+
+	.art-link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 360px;
+		background: var(--card);
+		border: 1.5px solid color-mix(in srgb, var(--ink) 22%, transparent);
+		box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.55);
+		overflow: hidden;
+	}
+	.art {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+	.art.blank {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		color: var(--ink-3);
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+	}
+	.card-body {
+		min-width: 0;
+		padding-top: 18px;
+	}
+	h2 {
+		font-size: 18px;
+		margin: 0 0 8px;
+		overflow-wrap: anywhere;
+		min-height: 2em;
+	}
+	.meta {
+		margin: 0;
+	}
+	.card-actions {
+		display: flex;
+		gap: 18px;
+		flex-wrap: wrap;
+		align-items: center;
+		margin-top: 14px;
+	}
+	.card-actions .text-action {
+		padding: 0;
+		line-height: 1;
+	}
+	.delete.confirming {
+		color: var(--danger);
+		text-decoration-color: var(--danger);
+	}
+	.rename {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.rename-actions {
+		display: flex;
+		gap: 14px;
+		align-items: center;
+	}
+	.stamp.small {
+		min-height: 36px;
+		padding: 0 16px;
+		font-size: 11px;
+	}
+	.empty {
+		display: grid;
+		grid-template-columns: 280px minmax(0, 1fr);
+		gap: 48px;
+		align-items: center;
+		padding: 48px 0 64px;
+		max-width: 820px;
+		margin: 0 auto;
+	}
+	.empty-wall {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 5px;
+		width: 280px;
+	}
+	.empty-wall span {
+		aspect-ratio: 1;
+		background: var(--card);
+		border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+	}
+	.empty-wall span.lit {
+		background: var(--action);
+		border-color: var(--action);
+	}
+	.empty-copy {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 14px;
+	}
+	.empty-title {
+		font-size: 28px;
+		margin: 0;
+	}
+	.empty-line {
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.45;
+		color: var(--ink-2);
+		max-width: 34ch;
+	}
+	.empty .label {
+		margin: 4px 0 0;
+	}
+	.skeleton-card {
+		min-width: 0;
+	}
+	.skeleton-art {
+		aspect-ratio: 4 / 5;
+		background: rgba(12, 12, 15, 0.55);
+		margin-bottom: 18px;
+	}
+	.skeleton-line {
+		display: block;
+		height: 10px;
+		width: 60%;
+		background: rgba(246, 235, 192, 0.22);
+	}
+	.error-block {
+		display: flex;
+		gap: 18px;
+		align-items: center;
+		background: var(--card);
+		border-left: 3px solid var(--danger);
+		padding: 12px 16px;
+		margin-bottom: 24px;
+	}
+	.error-block .error-text {
+		margin: 0;
 	}
 	.file-label {
 		display: inline-flex;
@@ -352,189 +548,74 @@
 		justify-content: center;
 		cursor: pointer;
 	}
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 18px;
-	}
-	.sheet-card {
-		border: 1px solid var(--rule);
-		padding: 10px;
-		display: flex;
-		flex-direction: column;
-	}
-	.art-link {
-		display: block;
-		border: 1px solid var(--ink);
-		background: #0d0c0b;
-		height: 300px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-bottom: 10px;
-		overflow: hidden;
-	}
-	.art {
-		display: block;
-		height: 100%;
-		width: auto;
-		max-width: 100%;
-		object-fit: contain;
-	}
-	.art.blank {
-		color: var(--muted);
-		font-family: var(--mono);
-		font-size: 9px;
-		width: 100%;
-	}
-	h2 {
-		font-size: 13px;
-		margin: 0 0 3px;
-		font-weight: 500;
-	}
-	.meta {
-		margin: 0;
-	}
-	.card-actions {
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
-		align-items: center;
-		margin-top: 8px;
-	}
-	.card-actions .text-action {
-		display: inline-flex;
-		align-items: center;
-		min-height: 24px;
-		padding: 0;
-		line-height: 1;
-	}
-	.delete.confirming {
-		color: var(--spot);
-	}
-	.rename {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	.rename-actions {
-		display: flex;
-		gap: 10px;
-	}
-	.empty {
-		padding: 64px 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 12px;
-		text-align: center;
-	}
-	.empty p {
-		margin: 0;
-	}
-	.empty-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 20px);
-		gap: 4px;
-	}
-	.empty-grid span {
-		width: 20px;
-		height: 20px;
-		border: 1px solid var(--rule);
-	}
-	.empty-grid span:nth-child(5) {
-		background: var(--spot);
-		border-color: var(--spot);
-	}
-	.skeleton-card {
-		border: 1px solid var(--rule);
-		padding: 10px;
-	}
-	.skeleton-art {
-		height: 300px;
-		background: var(--panel);
-		margin-bottom: 10px;
-	}
-	.skeleton-line {
-		display: block;
-		height: 8px;
-		width: 60%;
-		background: var(--panel);
-	}
-	.error-block {
-		border: 1px solid var(--spot);
-		padding: 10px 12px;
-		margin-bottom: 16px;
-		display: flex;
-		gap: 14px;
-		align-items: center;
-	}
-	.error-block .error-text {
-		margin: 0;
-	}
 	.foot {
 		border-top: 1px solid var(--rule);
-		padding: 12px 24px;
+		padding: 18px 32px;
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		align-items: center;
+		gap: 16px;
 		flex-wrap: wrap;
 	}
 	.foot-links {
 		display: flex;
-		gap: 16px;
+		gap: 20px;
 	}
-	@media (max-width: 1100px) {
-		.grid {
+	@media (max-width: 1200px) {
+		.wall {
 			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+		h1 {
+			font-size: 44px;
 		}
 	}
 	@media (max-width: 900px) {
 		.bar {
-			grid-template-columns: 1fr auto;
-			padding: 12px 16px;
+			padding: 14px 16px;
+			gap: 10px;
 		}
-		.doc-title {
-			display: none;
+		.logo {
+			width: 26px;
+			height: 26px;
 		}
 		main {
-			padding: 22px 16px 32px;
+			padding: 28px 16px 48px;
 		}
-		.grid {
+		.title-block {
+			margin-bottom: 28px;
+		}
+		h1 {
+			font-size: 38px;
+		}
+		.wall {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 12px;
-		}
-		.art-link,
-		.skeleton-art {
-			height: 210px;
-		}
-	}
-	@media (max-width: 520px) {
-		.grid {
-			grid-template-columns: 1fr;
-		}
-		.sheet-card {
-			display: grid;
-			grid-template-columns: 96px minmax(0, 1fr);
-			gap: 2px 12px;
-			align-items: start;
 		}
 		.art-link {
-			grid-row: 1 / span 3;
-			height: 120px;
-			margin-bottom: 0;
+			height: 300px;
 		}
-		.skeleton-art {
-			height: 120px;
+		.empty {
+			grid-template-columns: 1fr;
+			gap: 28px;
+			padding: 28px 0 48px;
+			margin: 0;
 		}
-		h2,
-		.meta,
-		.card-actions,
-		.rename {
-			grid-column: 2;
+		.empty-wall {
+			width: 190px;
 		}
-		.card-actions {
-			margin-top: 4px;
+		.foot {
+			padding: 16px;
+		}
+	}
+	@media (max-width: 600px) {
+		.wall {
+			grid-template-columns: 1fr;
+			gap: 32px;
+		}
+		.actions {
+			gap: 8px;
+		}
+		.actions .ghost {
+			padding: 0 12px;
 		}
 	}
 </style>
