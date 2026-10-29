@@ -66,9 +66,9 @@
 		</span>
 	</div>
 
-	<div class="field">
+	<div class="field stacked face-field">
 		<span>Face</span>
-		<span class="seg">
+		<span class="seg face-seg">
 			<button
 				type="button"
 				class="seg-btn"
@@ -96,7 +96,7 @@
 	<div class="field">
 		<span>Ground</span>
 		<span class="colors">
-			{#each ['#12100e', '#22402f', '#7a2e2a', '#e7dcc3'] as color (color)}
+			{#each ['#0c0c0f', '#1b29ce', '#5a1a1a', '#f6ebc0'] as color (color)}
 				<button
 					type="button"
 					class="swatch"
@@ -119,7 +119,7 @@
 	<div class="field">
 		<span>Ink</span>
 		<span class="colors">
-			{#each ['#f4efe6', '#ffffff', '#171512'] as color (color)}
+			{#each ['#f6ebc0', '#ffffff', '#0c0c0f'] as color (color)}
 				<button
 					type="button"
 					class="swatch"
@@ -244,52 +244,56 @@
 	.panel-body {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 12px;
 	}
 	.colors {
 		display: flex;
 		align-items: center;
-		gap: 4px;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
 	.swatch {
-		width: 20px;
-		height: 20px;
-		border: 1px solid var(--ink);
+		width: 26px;
+		height: 26px;
+		border: 1.5px solid var(--ink);
+		border-radius: 50%;
 		padding: 0;
 	}
 	.swatch.on {
-		outline: 1px solid var(--spot);
-		outline-offset: 2px;
+		outline: 2px solid var(--ink);
+		outline-offset: 3px;
 	}
 	.colors input[type='color'] {
-		width: 26px;
-		height: 24px;
-		padding: 0;
-		border: 1px solid var(--rule);
-		background: transparent;
+		width: 30px;
+		height: 30px;
 	}
 	.item-block {
 		border-top: 1px solid var(--rule);
-		padding-top: 10px;
+		padding-top: 14px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 12px;
 	}
-	.field.stacked {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 4px;
+	.item-block .section-title {
+		margin: 0;
 	}
 	.full-title {
 		margin: 0;
-		font-size: 11px;
+		font-size: 12px;
 		line-height: 1.4;
-		color: var(--muted);
+		color: var(--ink-2);
+	}
+	.face-seg {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.face-seg .seg-btn {
+		padding: 0 4px;
 	}
 	.crop {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 8px;
 	}
 	.crop-head {
 		display: flex;
@@ -298,33 +302,20 @@
 	}
 	.crop-row {
 		display: grid;
-		grid-template-columns: 82px 1fr;
-		gap: 8px;
+		grid-template-columns: 84px 1fr;
+		gap: 10px;
 		align-items: center;
-		font-size: 11px;
+		font-size: 12px;
+		font-weight: 500;
 	}
 	.crop-row input[type='range'] {
 		width: 100%;
-		accent-color: var(--spot);
 	}
 	.row-actions {
 		display: flex;
-		gap: 10px;
+		gap: 14px;
 		align-items: center;
 		flex-wrap: wrap;
-	}
-	@media (max-width: 900px) {
-		.swatch {
-			width: 32px;
-			height: 32px;
-		}
-		.colors input[type='color'] {
-			width: 44px;
-			height: 44px;
-		}
-		.crop-row input[type='range'] {
-			height: 44px;
-		}
 	}
 	.file-label {
 		display: inline-flex;
@@ -333,9 +324,22 @@
 		cursor: pointer;
 	}
 	.hint {
-		font-size: 10px;
+		font-size: 12px;
 		line-height: 1.5;
-		color: var(--muted);
+		color: var(--ink-2);
 		margin: 0;
+	}
+	@media (max-width: 900px) {
+		.swatch {
+			width: 38px;
+			height: 38px;
+		}
+		.colors input[type='color'] {
+			width: 44px;
+			height: 44px;
+		}
+		.crop-row input[type='range'] {
+			height: 44px;
+		}
 	}
 </style>
