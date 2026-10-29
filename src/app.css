@@ -72,6 +72,49 @@ body {
 	color: var(--ground);
 }
 
+/* Scrollbars are part of the room: a quiet butter rail, not a browser default. */
+@supports (-moz-appearance: none) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in srgb, var(--ink) 48%, transparent) transparent;
+	}
+	.slip {
+		scrollbar-color: color-mix(in srgb, var(--ground) 45%, transparent) transparent;
+	}
+}
+
+*::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+	background-color: color-mix(in srgb, var(--ink) 48%, transparent);
+	border: 2px solid transparent;
+	border-radius: 999px;
+	background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background-color: var(--ink);
+}
+
+*::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+.slip::-webkit-scrollbar-thumb {
+	background-color: color-mix(in srgb, var(--ground) 45%, transparent);
+}
+
+.slip::-webkit-scrollbar-thumb:hover {
+	background-color: var(--ground);
+}
+
 button,
 input,
 select,

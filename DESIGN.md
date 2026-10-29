@@ -71,6 +71,9 @@ Scale: **44 / 34 / 28 / 22 / 18 / 15 / 13 / 11**. Seven steps. Display tracking
 - The export slip is butter paper with cobalt type, square on desktop and
   28px-top-rounded on a phone with a grabber. It is the only light surface.
 - Poster mounts use a 1.5px butter-at-22% edge; the black offset is the lip.
+- Scrollbars are a 6px butter-at-48% capsule on a transparent track, filling to
+  solid butter on hover. The export slip swaps the thumb to cobalt. Firefox
+  gets the same pair through `scrollbar-color`; the browser default never shows.
 
 ## Composition
 
