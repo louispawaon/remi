@@ -169,10 +169,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Library — Remi</title>
-</svelte:head>
-
 <div class="library-app">
 	<header class="bar">
 		<a class="brand" href={resolve('/')} aria-label="Remi library">
@@ -205,7 +201,13 @@
 
 	<main>
 		<div class="title-block">
-			<h1 class="display">Library</h1>
+			<div class="title-copy">
+				<h1 class="display">Library</h1>
+				<p class="intro">
+					A media card maker for anime, manga, movies, and TV. Search covers, hang them on one
+					sheet, and export it as a single image.
+				</p>
+			</div>
 			{#if summary}<p class="summary">{summary}</p>{/if}
 		</div>
 
@@ -383,6 +385,16 @@
 	h1 {
 		font-size: 56px;
 		margin: 0;
+	}
+	.title-copy {
+		max-width: 62ch;
+	}
+	.intro {
+		margin: 10px 0 0;
+		font-size: 15px;
+		line-height: 1.45;
+		color: var(--ink-2);
+		max-width: 58ch;
 	}
 	.summary {
 		margin: 0 0 6px;
