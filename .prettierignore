@@ -10,3 +10,4 @@ bun.lockb
 
 # Design working folder (comps, shots, temporary covers)
 design-pivot/
+.impeccable/
