@@ -1,9 +1,16 @@
 import type { CardRecord } from '#lib/card/types';
 import { canvasToPng, renderCard } from '#lib/card/png';
 
-/** Small library thumbnail; only the cards a caller asks for are rendered. */
+/** Small library thumbnail; the sheet label carries the title, so the art stays clean. */
 export async function createThumbnail(record: CardRecord, maxWidth = 360): Promise<Blob> {
-	const { canvas } = await renderCard(record, 1);
+	const preview: CardRecord = {
+		...record,
+		document: {
+			...record.document,
+			appearance: { ...record.document.appearance, titleVisible: false }
+		}
+	};
+	const { canvas } = await renderCard(preview, 1);
 	const scale = Math.min(1, maxWidth / canvas.width);
 	const thumbnail = document.createElement('canvas');
 	thumbnail.width = Math.max(1, Math.round(canvas.width * scale));
