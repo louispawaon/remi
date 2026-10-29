@@ -7,7 +7,7 @@
 
 <aside class="sheet-map" aria-label="Slots">
 	<div class="map-head">
-		<h2 class="section-title">Slots</h2>
+		<h2 class="section-title">Sheet map</h2>
 		<span class="mono">{editor.document.gridSize}×{editor.document.gridSize}</span>
 	</div>
 
@@ -28,7 +28,7 @@
 				<span class="code">{String(index + 1).padStart(2, '0')}</span>
 				<span class="name">
 					{#if isFreeSpaceCell(editor.document, index)}
-						FREE
+						Free space
 					{:else if item}
 						{item.titleOverride ?? item.titles.preferred}
 					{:else}
@@ -48,7 +48,7 @@
 <style>
 	.sheet-map {
 		border-left: 1px solid var(--rule);
-		padding: 16px 14px;
+		padding: 20px 16px;
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
@@ -57,22 +57,30 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
+		gap: 8px;
+	}
+	.map-head .section-title {
+		margin: 0;
 	}
 	.rows {
 		overflow: auto;
 		min-height: 0;
+		margin-top: 8px;
 	}
 	.row {
 		display: flex;
-		gap: 8px;
+		gap: 10px;
+		align-items: center;
 		width: 100%;
 		border: 0;
 		background: transparent;
-		padding: 2px 0;
-		font-family: var(--mono);
-		font-size: 9px;
+		padding: 3px 0;
+		font-family: var(--sans);
+		font-size: 12px;
+		font-weight: 500;
 		text-align: left;
-		color: var(--muted);
+		color: var(--ink-2);
+		min-height: 26px;
 	}
 	.row:not(:disabled):hover {
 		color: var(--ink);
@@ -81,15 +89,25 @@
 		color: var(--ink);
 	}
 	.row.selected .code {
-		color: var(--spot);
+		background: var(--action);
+		color: var(--on-action);
 	}
 	.row:disabled {
-		opacity: 0.5;
+		opacity: 0.45;
 		cursor: default;
 	}
 	.code {
-		width: 18px;
+		width: 26px;
+		height: 20px;
 		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		font-size: 10px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
 	}
 	.name {
 		white-space: nowrap;
@@ -100,7 +118,12 @@
 		display: flex;
 		justify-content: space-between;
 		border-top: 1px solid var(--rule);
-		padding-top: 8px;
-		margin-top: 8px;
+		padding-top: 10px;
+		margin-top: 10px;
+	}
+	@media (max-width: 900px) {
+		.row {
+			min-height: 40px;
+		}
 	}
 </style>
