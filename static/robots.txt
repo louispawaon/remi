@@ -1,3 +1,7 @@
-# allow crawling everything by default
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /editor/
+Disallow: /dev/
+Disallow: /api/
+
+Sitemap: https://remi.project1of1.com/sitemap.xml
