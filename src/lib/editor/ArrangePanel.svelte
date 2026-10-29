@@ -163,69 +163,83 @@
 	.panel-body {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 14px;
 	}
 	.move-banner {
 		display: flex;
 		justify-content: space-between;
-		gap: 10px;
+		gap: 12px;
 		align-items: center;
-		border: 1px solid var(--spot);
-		padding: 8px 10px;
+		background: var(--card);
+		color: var(--ink);
+		border-left: 3px solid var(--ink);
+		padding: 10px 12px;
 		font-size: 12px;
+		line-height: 1.4;
 	}
 	.selected-block {
 		border-top: 1px solid var(--rule);
 		border-bottom: 1px solid var(--rule);
-		padding: 10px 0;
+		padding: 14px 0;
 	}
 	.selected-title {
-		font-size: 13px;
-		margin: 0 0 6px;
+		font-size: 14px;
+		font-weight: 600;
+		margin: 0 0 10px;
 	}
 	.row-actions {
 		display: flex;
-		gap: 10px;
+		gap: 14px;
 		flex-wrap: wrap;
 		align-items: center;
 	}
 	.slots {
-		display: flex;
+		display: none;
 		flex-direction: column;
-		max-height: 280px;
-		overflow: auto;
 		border-top: 1px solid var(--rule);
 		border-bottom: 1px solid var(--rule);
-		padding: 4px 0;
+		padding: 6px 0;
 	}
 	.slot {
 		display: flex;
-		gap: 8px;
+		gap: 10px;
+		align-items: center;
 		width: 100%;
 		border: 0;
 		background: transparent;
 		padding: 3px 0;
-		font-family: var(--mono);
-		font-size: 9px;
-		color: var(--muted);
+		font-family: var(--sans);
+		font-size: 11px;
+		font-weight: 500;
+		color: var(--ink-2);
 		text-align: left;
+		min-height: 28px;
 	}
 	.slot:not(:disabled):hover,
 	.slot.selected {
 		color: var(--ink);
 	}
+	.code {
+		width: 26px;
+		height: 20px;
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		font-size: 10px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
 	.slot.selected .code {
-		color: var(--spot);
+		background: var(--action);
+		color: var(--on-action);
 	}
 	.slot.empty .name {
-		color: var(--rule);
+		color: var(--ink-3);
 	}
 	.slot:disabled {
-		opacity: 0.5;
-	}
-	.code {
-		width: 18px;
-		flex: none;
+		opacity: 0.45;
 	}
 	.name {
 		white-space: nowrap;
@@ -235,29 +249,38 @@
 	.tray-block {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 10px;
 	}
 	.tray-head,
 	.tray-row {
 		display: flex;
 		justify-content: space-between;
-		gap: 10px;
+		gap: 12px;
 		align-items: center;
 	}
+	.tray-head .section-title {
+		margin: 0;
+	}
 	.tray-row .name {
-		font-size: 12px;
+		font-size: 13px;
+		font-weight: 500;
 		white-space: normal;
 	}
+	.hint {
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--ink-2);
+		margin: 0;
+	}
 	@media (max-width: 900px) {
+		.slots {
+			display: flex;
+			max-height: none;
+			overflow: visible;
+		}
 		.slot {
 			min-height: 44px;
-			padding: 8px 0;
+			font-size: 12px;
 		}
-	}
-	.hint {
-		font-size: 10px;
-		line-height: 1.5;
-		color: var(--muted);
-		margin: 0;
 	}
 </style>
