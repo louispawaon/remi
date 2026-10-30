@@ -10,6 +10,7 @@ import type { MediaAdapter } from './adapter';
 import { TTLCache } from './cache';
 import { createDeezer } from './deezer';
 import { missingTmdbCredentials } from './errors';
+import { createTheGamesDb } from './thegamesdb';
 import { createTmdb } from './tmdb';
 
 const PROVIDERS: Record<Category, MediaProvider> = {
@@ -19,11 +20,13 @@ const PROVIDERS: Record<Category, MediaProvider> = {
 	manhua: 'anilist',
 	movie: 'tmdb',
 	tv: 'tmdb',
+	game: 'thegamesdb',
 	music: 'deezer'
 };
 
 export interface MediaServiceOptions {
 	tmdbToken?: string;
+	theGamesDbKey?: string;
 	fetch?: typeof fetch;
 	now?: () => number;
 }
@@ -34,6 +37,7 @@ export class MediaService {
 	readonly #anilist: MediaAdapter;
 	readonly #tmdb: MediaAdapter | undefined;
 	readonly #deezer: MediaAdapter;
+	readonly #theGamesDb: MediaAdapter;
 	readonly #searchInFlight = new Map<string, Promise<MediaSearchResult>>();
 	readonly #optionsInFlight = new Map<Category, Promise<MediaOptions>>();
 
@@ -51,11 +55,13 @@ export class MediaService {
 		this.#anilist = createAniList(options.fetch);
 		this.#tmdb = createTmdb({ token: options.tmdbToken, fetch: options.fetch });
 		this.#deezer = createDeezer(options.fetch);
+		this.#theGamesDb = createTheGamesDb({ key: options.theGamesDbKey, fetch: options.fetch });
 	}
 
 	#adapter(provider: MediaProvider): MediaAdapter {
 		if (provider === 'anilist') return this.#anilist;
 		if (provider === 'deezer') return this.#deezer;
+		if (provider === 'thegamesdb') return this.#theGamesDb;
 		return this.#tmdb!;
 	}
 
@@ -142,12 +148,16 @@ function searchKey(request: MediaSearchRequest): string {
 }
 
 let service: MediaService | undefined;
-let serviceToken: string | undefined;
+let serviceKey: string | undefined;
 
-export function getMediaService(tmdbToken: string | undefined): MediaService {
-	if (!service || serviceToken !== tmdbToken) {
-		service = new MediaService({ tmdbToken });
-		serviceToken = tmdbToken;
+export function getMediaService(
+	tmdbToken: string | undefined,
+	theGamesDbKey?: string
+): MediaService {
+	const key = `${tmdbToken ?? ''}|${theGamesDbKey ?? ''}`;
+	if (!service || serviceKey !== key) {
+		service = new MediaService({ tmdbToken, theGamesDbKey });
+		serviceKey = key;
 	}
 	return service;
 }

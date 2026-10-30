@@ -34,6 +34,14 @@ export function missingTmdbCredentials(): MediaError {
 	);
 }
 
+export function missingTheGamesDbKey(): MediaError {
+	return new MediaError(
+		'provider_credentials_missing',
+		'Game search needs a TheGamesDB public API key. Add THEGAMESDB_API_KEY to .env and restart.',
+		503
+	);
+}
+
 export function upstreamError(provider: string, status: number, retryAfter?: number): MediaError {
 	if (status === 401 || status === 403) {
 		return new MediaError(

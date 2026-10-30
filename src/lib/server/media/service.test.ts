@@ -50,6 +50,16 @@ function fetcherMock() {
 				headers: { 'content-type': 'application/json' }
 			});
 		}
+		if (url.includes('api.thegamesdb.net')) {
+			return new Response(
+				JSON.stringify({
+					data: { count: 0, games: [] },
+					include: {},
+					pages: { next: null }
+				}),
+				{ headers: { 'content-type': 'application/json' } }
+			);
+		}
 		return new Response(
 			JSON.stringify({
 				page: 1,
@@ -184,6 +194,31 @@ describe('MediaService', () => {
 		).resolves.toMatchObject({ results: [] });
 		await expect(service.options('music')).resolves.toMatchObject({ provider: 'deezer' });
 		expect(fetcher).toHaveBeenCalledTimes(2);
+	});
+
+	it('routes games to TheGamesDB without touching TMDB', async () => {
+		const fetcher = fetcherMock();
+		const service = new MediaService({
+			theGamesDbKey: 'key',
+			fetch: fetcher as unknown as typeof fetch
+		});
+
+		await expect(
+			service.search({ ...animeRequest, category: 'game', query: 'sonic' })
+		).resolves.toMatchObject({ results: [] });
+		await expect(service.options('game')).resolves.toMatchObject({ provider: 'thegamesdb' });
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it('reports a missing TheGamesDB key for games', async () => {
+		const service = new MediaService({ fetch: fetcherMock() as unknown as typeof fetch });
+
+		await expect(
+			service.search({ ...animeRequest, category: 'game', query: 'sonic' })
+		).rejects.toMatchObject({ code: 'provider_credentials_missing' });
+		await expect(service.options('game')).rejects.toMatchObject({
+			code: 'provider_credentials_missing'
+		});
 	});
 
 	it('searches TMDB when a token is configured', async () => {

@@ -12,8 +12,8 @@ The delivery target is local desktop operation and phone access on the same netw
 
 ### Included
 
-- Anime, manga, manhwa, manhua, movies, TV, and music (songs and albums), mixed within one
-  card.
+- Anime, manga, manhwa, manhua, movies, TV, games, and music (songs and albums), mixed
+  within one card.
 - Paginated search, supported filters, and title-language preferences.
 - Local card creation, renaming, duplication, reopening, deletion, and autosave.
 - Guided editing: titles, colors, curated fonts, image replacement, crop positioning, reordering, and shuffling.
@@ -98,13 +98,14 @@ The image interface accepts provider identifiers and validated paths, not arbitr
 - AniList supplies anime and manga-origin categories. One unfiltered manga query covers manga, manhwa, and manhua; country filters hid matches.
 - TMDB supplies movies and TV. Do not promise perfect cross-provider classification or deduplication.
 - Deezer supplies music. One search covers songs and albums, needs no credential, and supports no year or genre filter.
+- TheGamesDB supplies games across platforms. It needs a server-side public API key and supports no year or genre filter.
 - AniList supports combinations of title, year, genre, format, and status where applicable.
 - TMDB title search supports title and year.
 - Search is title-first; supported filters are applied by the provider, never to the current result page.
 
 Debounce search, cancel stale requests, cache bounded results briefly, and respect upstream rate-limit responses. Distinguish unavailable credentials, provider outages, and retryable limits.
 
-Missing TMDB credentials disable movie/TV discovery with a setup explanation; the rest of the editor remains usable. Music needs no credential. Include the required TMDB and Deezer attribution in Credits.
+Missing TMDB or TheGamesDB credentials disable movie/TV or game discovery with a setup explanation; the rest of the editor remains usable. Music needs no credential. Include the required TMDB, TheGamesDB, and Deezer attribution in Credits.
 
 ## Artwork handling
 

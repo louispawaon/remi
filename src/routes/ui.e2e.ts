@@ -307,6 +307,59 @@ test('searches music without year filters and titles results by artist', async (
 	await expect(page.locator('.sheet-map')).toContainText('Frank Ocean - Nights');
 });
 
+test('searches games without year filters and shows the platform', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'game',
+				provider: 'thegamesdb',
+				supportsYear: false,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'thegamesdb',
+						providerId: '53',
+						category: 'game',
+						title: { preferred: 'Sonic the Hedgehog', alternatives: [] },
+						year: 1991,
+						format: 'Sega Genesis',
+						status: null,
+						genres: [],
+						coverPath: 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: 1
+			})
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('game');
+	await expect(page.getByLabel('Year')).toHaveCount(0);
+	await page.getByTestId('search-input').fill('sonic');
+	await expect(page.getByTestId('result')).toContainText('Sonic the Hedgehog');
+	await expect(page.getByTestId('result')).toContainText('Sega Genesis');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.locator('.sheet-map')).toContainText('Sonic the Hedgehog');
+});
+
 test('shows credential guidance when movie discovery is unavailable', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

@@ -26,6 +26,10 @@ describe('resolveImageUrl', () => {
 				'https://cdn-images.dzcdn.net/images/cover/abc/1000x1000-000000-80-0-0.jpg'
 			).hostname
 		).toBe('cdn-images.dzcdn.net');
+		expect(
+			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg')
+				.hostname
+		).toBe('cdn.thegamesdb.net');
 	});
 
 	it('rejects arbitrary hosts, protocols, credentials, and unapproved paths', () => {
@@ -72,6 +76,18 @@ describe('resolveImageUrl', () => {
 		).toThrow(RequestError);
 		expect(() =>
 			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/cover/abc/x.jpg?q=1')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('thegamesdb', 'https://evil.example/images/large/boxart/front/53-1.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('thegamesdb', 'http://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/small/boxart/front/53-1.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/%2e%2e/x.jpg')
 		).toThrow(RequestError);
 	});
 });

@@ -220,7 +220,7 @@
 					</label>
 				</div>
 				<ul class="proof" aria-label="Media categories">
-					{#each ['Anime', 'Manga', 'Movies', 'TV', 'Music'] as category (category)}
+					{#each ['Anime', 'Manga', 'Movies', 'TV', 'Games', 'Music'] as category (category)}
 						<li>{category}</li>
 					{/each}
 				</ul>

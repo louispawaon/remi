@@ -68,6 +68,19 @@ describe('request validation', () => {
 			provider: 'deezer',
 			path: 'https://cdn-images.dzcdn.net/images/cover/abc/x.jpg'
 		});
+		expect(
+			parseImageRequest(
+				image(
+					'provider=thegamesdb&path=https%3A%2F%2Fcdn.thegamesdb.net%2Fimages%2Flarge%2Fboxart%2Ffront%2F53-1.jpg'
+				)
+			)
+		).toEqual({
+			provider: 'thegamesdb',
+			path: 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg'
+		});
+		expect(parseSearchRequest(search('category=game&mode=search&query=sonic')).category).toBe(
+			'game'
+		);
 		expect(() => parseImageRequest(image('provider=other&path=x'))).toThrow(RequestError);
 	});
 });

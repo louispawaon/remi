@@ -38,9 +38,14 @@
 
 	const search = createMediaSearch();
 	const supportsFilters = $derived(
-		editor.addCategory !== 'movie' && editor.addCategory !== 'tv' && editor.addCategory !== 'music'
+		editor.addCategory !== 'movie' &&
+			editor.addCategory !== 'tv' &&
+			editor.addCategory !== 'music' &&
+			editor.addCategory !== 'game'
 	);
-	const supportsYear = $derived(options ? options.supportsYear : editor.addCategory !== 'music');
+	const supportsYear = $derived(
+		options ? options.supportsYear : editor.addCategory !== 'music' && editor.addCategory !== 'game'
+	);
 	const hasFilters = $derived(
 		supportsYear ||
 			Boolean(options && (options.filters.length > 0 || options.titleLanguages.length > 0))
@@ -259,7 +264,9 @@
 				type="search"
 				placeholder={editor.addCategory === 'music'
 					? 'Search songs, albums or artists'
-					: 'Search titles'}
+					: editor.addCategory === 'game'
+						? 'Search games'
+						: 'Search titles'}
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;
@@ -660,7 +667,7 @@
 		gap: 8px;
 		align-items: flex-start;
 		background: var(--card);
-		border-left: 3px solid var(--danger);
+		border: 1.5px solid var(--danger);
 		padding: 10px 12px;
 	}
 	.error-block .error-text {

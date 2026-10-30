@@ -6,6 +6,7 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const ANILIST_HOSTS = new Set(['s4.anilist.co', 'img.anilist.co']);
 const DEEZER_HOST = 'cdn-images.dzcdn.net';
+const THEGAMESDB_HOST = 'cdn.thegamesdb.net';
 const ALLOWED_TYPES: Record<string, string> = {
 	'image/png': 'image/png',
 	'image/jpeg': 'image/jpeg',
@@ -67,6 +68,34 @@ export function resolveImageUrl(provider: MediaProvider, value: string): URL {
 		}
 		if (url.search || url.hash) {
 			throw new RequestError('Deezer image URLs cannot carry a query or fragment.');
+		}
+		return url;
+	}
+
+	if (provider === 'thegamesdb') {
+		let url: URL;
+		try {
+			url = new URL(value);
+		} catch {
+			throw new RequestError('Invalid TheGamesDB image URL.');
+		}
+		if (url.protocol !== 'https:' || url.username || url.password || url.port) {
+			throw new RequestError('TheGamesDB images must be plain HTTPS URLs.');
+		}
+		if (url.hostname !== THEGAMESDB_HOST) {
+			throw new RequestError('TheGamesDB images must come from its CDN.');
+		}
+		let pathname: string;
+		try {
+			pathname = decodeURIComponent(url.pathname);
+		} catch {
+			throw new RequestError('TheGamesDB image path is not approved.');
+		}
+		if (!pathname.startsWith('/images/large/boxart/') || pathname.includes('..')) {
+			throw new RequestError('TheGamesDB image path is not approved.');
+		}
+		if (url.search || url.hash) {
+			throw new RequestError('TheGamesDB image URLs cannot carry a query or fragment.');
 		}
 		return url;
 	}
