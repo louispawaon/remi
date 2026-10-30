@@ -258,32 +258,6 @@
 			<div class="slotmap-wrap"><SlotMap {editor} /></div>
 		</div>
 
-		<footer class="tray">
-			<span class="label">Unplaced · {String(editor.unplaced.length).padStart(2, '0')}</span>
-			<span class="tray-items">
-				{#each editor.unplaced as item (item.id)}
-					<button
-						class="tray-chip"
-						type="button"
-						draggable="true"
-						onclick={() => editor?.beginMove(item.id)}
-						ondragstart={(event) => {
-							event.dataTransfer?.setData('text/plain', item.id);
-							if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-							editor?.beginMove(item.id);
-						}}
-						ondragend={() => editor?.cancelMove()}
-					>
-						<span class="tray-name">{item.titleOverride ?? item.titles.preferred}</span>
-						<span class="tray-action">Place</span>
-					</button>
-				{:else}
-					<span class="mono">Nothing waiting</span>
-				{/each}
-			</span>
-			<span class="note">Excluded from PNG</span>
-		</footer>
-
 		{#if exportOpen}
 			<ExportSlip {editor} onClose={() => (exportOpen = false)} />
 		{/if}
@@ -454,53 +428,6 @@
 		font-size: 10px;
 		padding: 0 11px;
 	}
-	.tray {
-		border-top: 1px solid var(--rule);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 20px;
-		padding: 12px 32px;
-		flex-wrap: wrap;
-		min-height: 56px;
-	}
-	.tray-items {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-	.tray-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		border: 1.5px solid var(--rule);
-		border-radius: 999px;
-		padding: 6px 6px 6px 14px;
-		font-size: 12px;
-		font-weight: 600;
-		max-width: 280px;
-	}
-	.tray-chip:hover {
-		border-color: var(--ink);
-	}
-	.tray-name {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.tray-action {
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		background: var(--action);
-		color: var(--on-action);
-		border-radius: 999px;
-		padding: 5px 9px;
-	}
-	.note {
-		color: var(--ink-2);
-	}
 	.slotmap-wrap {
 		display: contents;
 	}
@@ -621,9 +548,6 @@
 		}
 		.panel-scroll {
 			padding: 16px 16px 32px;
-		}
-		.tray {
-			display: none;
 		}
 	}
 </style>
