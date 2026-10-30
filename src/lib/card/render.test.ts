@@ -69,15 +69,27 @@ describe('card footer', () => {
 		expect(footer!.y).toBeGreaterThan(layout.grid.y + layout.grid.height);
 	});
 
-	it('keeps the same bottom offset on stories as on other formats', () => {
-		const gaps = (['4:5', '3:4', '9:16', '1:1'] as const).map((format) => {
+	it.each(['4:5', '3:4', '9:16', '1:1'] as const)(
+		'prints the link just under the %s grid',
+		(format) => {
 			const { ctx, texts } = fakeContext();
 			const layout = layoutFor(format);
 			drawCard(ctx, { document: card(format), layout, resolveArtwork: () => undefined });
+
 			const footer = texts.find((entry) => entry.text === CARD_FOOTER)!;
-			return layout.height - footer.y;
-		});
-		expect(new Set(gaps)).toEqual(new Set([64]));
+			const gridBottom = layout.grid.y + layout.grid.height;
+			expect(footer.y).toBeGreaterThan(gridBottom);
+			expect(footer.y - gridBottom).toBeLessThanOrEqual(40);
+		}
+	);
+
+	it('keeps the story credit above the Instagram safe area', () => {
+		const { ctx, texts } = fakeContext();
+		const layout = layoutFor('9:16');
+		drawCard(ctx, { document: card('9:16'), layout, resolveArtwork: () => undefined });
+
+		const footer = texts.find((entry) => entry.text === CARD_FOOTER)!;
+		expect(footer.y).toBeLessThan(1920 - 240);
 	});
 
 	it('omits the link when the render opts out', () => {

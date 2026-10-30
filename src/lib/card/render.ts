@@ -208,9 +208,8 @@ function drawFreeSpace(
 
 function drawFooter(ctx: CanvasRenderingContext2D, layout: CardLayout, color: string): void {
 	const size = Math.round(layout.caption.fontSize * 0.8);
-	// One bottom offset for every format so the credit sits at the same distance from the edge.
-	const y =
-		layout.height - (LAYOUT_METRICS.margin + LAYOUT_METRICS.footerReserve / 2) * layout.resolution;
+	// Sit the credit right under the grid so tall formats do not push it to the edge.
+	const y = layout.grid.y + layout.grid.height + LAYOUT_METRICS.gap * layout.resolution + size / 2;
 
 	ctx.save();
 	ctx.globalAlpha = 0.55;
