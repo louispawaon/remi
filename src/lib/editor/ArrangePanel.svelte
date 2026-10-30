@@ -175,7 +175,7 @@
 		align-items: center;
 		background: var(--card);
 		color: var(--ink);
-		border-left: 3px solid var(--ink);
+		border: 1.5px solid var(--ink);
 		padding: 10px 12px;
 		font-size: 12px;
 		line-height: 1.4;
@@ -193,8 +193,12 @@
 	.row-actions {
 		display: flex;
 		gap: 14px;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
+		justify-content: flex-end;
+	}
+	.row-actions .text-action {
+		white-space: nowrap;
 	}
 	.slots {
 		display: none;
@@ -254,8 +258,7 @@
 		flex-direction: column;
 		gap: 10px;
 	}
-	.tray-head,
-	.tray-row {
+	.tray-head {
 		display: flex;
 		justify-content: space-between;
 		gap: 12px;
@@ -264,10 +267,18 @@
 	.tray-head .section-title {
 		margin: 0;
 	}
+	.tray-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 120px;
+		gap: 12px;
+		align-items: center;
+		min-height: 44px;
+	}
 	.tray-row .name {
 		font-size: 13px;
 		font-weight: 500;
 		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.hint {
 		font-size: 12px;
