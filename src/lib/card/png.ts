@@ -8,6 +8,8 @@ export type RenderStage = 'fonts' | 'artwork' | 'drawing' | 'encoding';
 export interface RenderOptions {
 	signal?: AbortSignal;
 	onProgress?: (stage: RenderStage, completed?: number, total?: number) => void;
+	/** Set false to omit the printed credit line (library thumbnails). */
+	footer?: boolean;
 }
 
 export interface RenderedCard {
@@ -73,7 +75,12 @@ export async function renderCard(
 
 		abortIfNeeded(options.signal);
 		options.onProgress?.('drawing');
-		drawCard(context, { document, layout, resolveArtwork: (id) => bitmaps.get(id) });
+		drawCard(context, {
+			document,
+			layout,
+			resolveArtwork: (id) => bitmaps.get(id),
+			footer: options.footer
+		});
 	} finally {
 		for (const bitmap of bitmaps.values()) bitmap.close();
 	}

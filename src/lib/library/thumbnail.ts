@@ -10,7 +10,7 @@ export async function createThumbnail(record: CardRecord, maxWidth = 360): Promi
 			appearance: { ...record.document.appearance, titleVisible: false }
 		}
 	};
-	const { canvas } = await renderCard(preview, 1);
+	const { canvas } = await renderCard(preview, 1, { footer: false });
 	const scale = Math.min(1, maxWidth / canvas.width);
 	const thumbnail = document.createElement('canvas');
 	thumbnail.width = Math.max(1, Math.round(canvas.width * scale));

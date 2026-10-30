@@ -1,5 +1,5 @@
 import { coverCrop } from './crop';
-import { captionHeight, type CardLayout, type Rect } from './layout';
+import { captionHeight, LAYOUT_METRICS, type CardLayout, type Rect } from './layout';
 import { wrapText } from './text';
 import type { CardDocument, CardItem, FontChoice } from './types';
 
@@ -9,7 +9,12 @@ export interface DrawCardInput {
 	document: CardDocument;
 	layout: CardLayout;
 	resolveArtwork: (id: string) => DrawableArtwork | undefined;
+	/** Library thumbnails skip the footer line; it is unreadable at their size. */
+	footer?: boolean;
 }
+
+/** Printed on every exported sheet. */
+export const CARD_FOOTER = 'REMI.PROJECT1OF1.COM';
 
 const FONTS: Record<FontChoice, { stack: string; weight: number }> = {
 	sans: { stack: '"Archivo", system-ui, sans-serif', weight: 700 },
@@ -63,6 +68,10 @@ export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): v
 		const item = doc.items.find((candidate) => candidate.id === itemId);
 		if (!item) throw new Error(`Unknown item in slot: ${itemId}`);
 		drawItem(ctx, rect, item, doc, layout, font, resolveArtwork, measure);
+	}
+
+	if (input.footer !== false) {
+		drawFooter(ctx, layout, doc.appearance.foreground);
 	}
 
 	ctx.restore();
@@ -194,6 +203,22 @@ function drawFreeSpace(
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.fillText('FREE', rect.x + rect.width / 2, rect.y + rect.height / 2);
+	ctx.restore();
+}
+
+function drawFooter(ctx: CanvasRenderingContext2D, layout: CardLayout, color: string): void {
+	const size = Math.round(layout.caption.fontSize * 0.8);
+	// One bottom offset for every format so the credit sits at the same distance from the edge.
+	const y =
+		layout.height - (LAYOUT_METRICS.margin + LAYOUT_METRICS.footerReserve / 2) * layout.resolution;
+
+	ctx.save();
+	ctx.globalAlpha = 0.55;
+	ctx.fillStyle = color;
+	ctx.font = `600 ${size}px ${FONTS.sans.stack}`;
+	ctx.textAlign = 'left';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(CARD_FOOTER, layout.footer.x, y);
 	ctx.restore();
 }
 
