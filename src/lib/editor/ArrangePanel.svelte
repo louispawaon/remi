@@ -86,17 +86,19 @@
 					To tray
 				</button>
 				{#if removeArmed}
-					<button
-						class="text-action"
-						type="button"
-						onclick={() => {
-							editor.removeSelectedItem();
-							removeArmed = false;
-						}}>Confirm remove</button
-					>
-					<button class="text-action" type="button" onclick={() => (removeArmed = false)}
-						>Keep</button
-					>
+					<span class="remove-actions">
+						<button
+							class="text-action"
+							type="button"
+							onclick={() => {
+								editor.removeSelectedItem();
+								removeArmed = false;
+							}}>Confirm remove</button
+						>
+						<button class="text-action" type="button" onclick={() => (removeArmed = false)}
+							>Keep</button
+						>
+					</span>
 				{:else}
 					<button class="text-action" type="button" onclick={() => (removeArmed = true)}
 						>Remove item</button
@@ -192,13 +194,18 @@
 	}
 	.row-actions {
 		display: flex;
-		gap: 14px;
-		flex-wrap: nowrap;
+		gap: 8px 14px;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: flex-end;
 	}
 	.row-actions .text-action {
 		white-space: nowrap;
+	}
+	.remove-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 14px;
 	}
 	.slots {
 		display: none;

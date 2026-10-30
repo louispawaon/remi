@@ -400,6 +400,13 @@ test('mobile editor keeps all tabs and export reachable without horizontal overf
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
 	await expect(page.locator('main.sheet')).toBeVisible();
 	await page.locator('.cell[aria-label^="Slot 01:"]').click();
+	await page.getByRole('button', { name: 'Remove item' }).click();
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+		)
+	).toBe(true);
+	await page.getByRole('button', { name: 'Keep' }).click();
 	await page.getByTestId('tabs').getByRole('button', { name: 'Style' }).click();
 	await expect(page.getByLabel('Crop horizontal position')).toBeVisible();
 
