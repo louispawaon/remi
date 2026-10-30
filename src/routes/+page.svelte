@@ -200,8 +200,8 @@
 					<span>One sheet.</span>
 				</h1>
 				<p class="lead">
-					Search anime, manga, movies, TV and music. Hang the covers on a card, then export the wall
-					as one image.
+					Search for the covers you want, hang them on one sheet, and export the wall as a single
+					image.
 				</p>
 				<div class="hero-actions">
 					<button class="stamp hero-stamp" type="button" disabled={creating} onclick={create}>
@@ -421,7 +421,6 @@
 	</main>
 
 	<footer class="foot">
-		<p class="foot-note label">Local-first. Nothing leaves this device.</p>
 		<nav class="foot-links" aria-label="Footer">
 			<a class="text-action" href={resolve('/credits')}>Credits</a>
 			<a class="text-action" href={resolve('/privacy')}>Privacy</a>
@@ -864,13 +863,10 @@
 		padding: 18px 32px;
 		padding-bottom: max(18px, env(safe-area-inset-bottom));
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-end;
 		align-items: center;
 		gap: 16px;
 		flex-wrap: wrap;
-	}
-	.foot-note {
-		margin: 0;
 	}
 	.foot-links {
 		display: flex;
