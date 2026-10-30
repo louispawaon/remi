@@ -136,6 +136,7 @@
 	<div
 		class="plate"
 		class:hang
+		class:transparent={editor.document.appearance.background === 'transparent'}
 		class:actual={editor.zoom === 'actual'}
 		style={layout ? `aspect-ratio:${layout.width} / ${layout.height}` : undefined}
 	>
@@ -211,6 +212,16 @@
 	.plate.actual {
 		width: 1080px;
 		max-width: none;
+	}
+	.plate.transparent {
+		background-color: #e9e6dc;
+		background-image:
+			linear-gradient(45deg, #c9c4b4 25%, transparent 25%, transparent 75%, #c9c4b4 75%),
+			linear-gradient(45deg, #c9c4b4 25%, transparent 25%, transparent 75%, #c9c4b4 75%);
+		background-size: 18px 18px;
+		background-position:
+			0 0,
+			9px 9px;
 	}
 	.plate.hang {
 		animation: hang 260ms cubic-bezier(0.2, 0.8, 0.2, 1);

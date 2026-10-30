@@ -455,6 +455,28 @@ test('brings the card back into view when moving on mobile', async ({ browser })
 	await context.close();
 });
 
+test('exports a transparent card background', async ({ page }) => {
+	await seedFixture(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Style' }).click();
+	await page.getByRole('button', { name: 'Transparent background' }).click();
+	await expect(page.locator('.plate')).toHaveClass(/transparent/);
+
+	await openExport(page);
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+	const download = page.waitForEvent('download');
+	await page.getByTestId('save-png').click();
+	const bytes = readFileSync((await (await download).path())!);
+	const alpha = await page.evaluate(async (base64) => {
+		const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob();
+		const bitmap = await createImageBitmap(blob);
+		const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+		const context = canvas.getContext('2d')!;
+		context.drawImage(bitmap, 0, 0);
+		return context.getImageData(2, 2, 1, 1).data[3];
+	}, bytes.toString('base64'));
+	expect(alpha).toBe(0);
+});
+
 test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await page.goto('/');
 	await page.getByRole('heading', { level: 1 }).waitFor();

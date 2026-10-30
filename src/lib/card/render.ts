@@ -26,8 +26,12 @@ export function drawCard(ctx: CanvasRenderingContext2D, input: DrawCardInput): v
 	const font = FONTS[doc.appearance.font];
 
 	ctx.save();
-	ctx.fillStyle = doc.appearance.background;
-	ctx.fillRect(0, 0, layout.width, layout.height);
+	if (doc.appearance.background === 'transparent') {
+		ctx.clearRect(0, 0, layout.width, layout.height);
+	} else {
+		ctx.fillStyle = doc.appearance.background;
+		ctx.fillRect(0, 0, layout.width, layout.height);
+	}
 	ctx.textAlign = 'left';
 	ctx.textBaseline = 'middle';
 

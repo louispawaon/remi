@@ -96,6 +96,14 @@
 	<div class="field">
 		<span>Ground</span>
 		<span class="colors">
+			<button
+				type="button"
+				class="swatch transparent"
+				class:on={editor.document.appearance.background === 'transparent'}
+				aria-pressed={editor.document.appearance.background === 'transparent'}
+				aria-label="Transparent background"
+				onclick={() => editor.setAppearance({ background: 'transparent' })}
+			></button>
 			{#each ['#0c0c0f', '#1b29ce', '#5a1a1a', '#f6ebc0'] as color (color)}
 				<button
 					type="button"
@@ -110,7 +118,9 @@
 			<input
 				type="color"
 				aria-label="Custom background colour"
-				value={editor.document.appearance.background}
+				value={editor.document.appearance.background === 'transparent'
+					? '#0c0c0f'
+					: editor.document.appearance.background}
 				oninput={(event) => editor.setAppearance({ background: event.currentTarget.value })}
 			/>
 		</span>
@@ -258,6 +268,22 @@
 		border: 1.5px solid var(--ink);
 		border-radius: 50%;
 		padding: 0;
+	}
+	.swatch.transparent {
+		background-color: var(--ink);
+		background-image:
+			linear-gradient(
+				45deg,
+				var(--ground) 25%,
+				transparent 25%,
+				transparent 75%,
+				var(--ground) 75%
+			),
+			linear-gradient(45deg, var(--ground) 25%, transparent 25%, transparent 75%, var(--ground) 75%);
+		background-size: 8px 8px;
+		background-position:
+			0 0,
+			4px 4px;
 	}
 	.swatch.on {
 		outline: 2px solid var(--ink);
