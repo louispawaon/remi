@@ -41,7 +41,7 @@
 
 	<div class="map-foot">
 		<span class="mono">{editor.unplaced.length} unplaced</span>
-		<span class="mono">{editor.document.items.length} items</span>
+		<span class="mono" data-testid="item-count">{editor.document.items.length} items</span>
 	</div>
 </aside>
 

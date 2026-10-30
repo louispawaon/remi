@@ -76,7 +76,7 @@ test('changes format and grid without losing items, and keeps per-format crops',
 	page
 }) => {
 	await seedFixture(page);
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('08 items');
+	await expect(page.getByTestId('item-count')).toContainText('8 items');
 
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
 	await page.locator('.sheet-map .row').first().click();
@@ -102,12 +102,12 @@ test('changes format and grid without losing items, and keeps per-format crops',
 
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
 	await page.getByRole('button', { name: '3', exact: true }).click();
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('08 items');
+	await expect(page.getByTestId('item-count')).toContainText('8 items');
 	await expect(page.locator('.sheet-map .row')).toHaveCount(9);
 
 	await page.getByRole('button', { name: '5', exact: true }).click();
 	await expect(page.locator('.sheet-map .row')).toHaveCount(25);
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('08 items');
+	await expect(page.getByTestId('item-count')).toContainText('8 items');
 });
 
 test('selects a cell by keyboard, moves an item, and removes it without losing the rest', async ({
@@ -125,11 +125,11 @@ test('selects a cell by keyboard, moves an item, and removes it without losing t
 	await page.getByRole('button', { name: 'Move', exact: true }).click();
 	await page.locator('.cell[aria-label^="Slot 07:"]').click();
 	await expect(page.locator('.sheet-map .row').nth(0)).toContainText('— blank —');
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('08 items');
+	await expect(page.getByTestId('item-count')).toContainText('8 items');
 
 	await page.getByRole('button', { name: 'Remove item' }).click();
 	await page.getByRole('button', { name: 'Confirm remove' }).click();
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('07 items');
+	await expect(page.getByTestId('item-count')).toContainText('7 items');
 });
 
 test('drags a placed cell onto another to swap their items', async ({ page }) => {
@@ -160,7 +160,7 @@ test('uploads artwork, saves it, and exports standard and 2x PNG files', async (
 		mimeType: 'image/png',
 		buffer: PNG
 	});
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('01 items');
+	await expect(page.getByTestId('item-count')).toContainText('1 items');
 	await expect(page.getByTestId('save-status')).toHaveText('Saved', { timeout: 6000 });
 
 	await openExport(page);
@@ -245,7 +245,7 @@ test('adds a mocked provider result through the search panel', async ({ page }) 
 	await expect(page.getByTestId('result')).toHaveCount(1);
 	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
 
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('01 items');
+	await expect(page.getByTestId('item-count')).toContainText('1 items');
 	await expect(page.locator('.sheet-map')).toContainText('Frieren');
 	await expect(page.getByTestId('save-status')).toHaveText('Saved', { timeout: 8000 });
 
@@ -552,7 +552,7 @@ test('shows an export error, then recovers on retry', async ({ page }) => {
 		mimeType: 'image/png',
 		buffer: PNG
 	});
-	await expect(page.locator('.sheet-foot .mono').first()).toContainText('01 items');
+	await expect(page.getByTestId('item-count')).toContainText('1 items');
 
 	await page.evaluate(() => {
 		const target = window as unknown as { __restoreToBlob?: () => void };

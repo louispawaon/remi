@@ -248,11 +248,6 @@
 				</div>
 
 				<Preview {editor} compact={editor.tool !== 'preview'} />
-
-				<div class="sheet-foot">
-					<span class="mono">{String(editor.document.items.length).padStart(2, '0')} items</span>
-					<span class="mono">{String(editor.unplaced.length).padStart(2, '0')} unplaced</span>
-				</div>
 			</main>
 
 			<div class="slotmap-wrap"><SlotMap {editor} /></div>
@@ -410,8 +405,7 @@
 		gap: 14px;
 		min-width: 0;
 	}
-	.sheet-head,
-	.sheet-foot {
+	.sheet-head {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -514,9 +508,6 @@
 		}
 		.sheet-head {
 			justify-content: flex-end;
-		}
-		.sheet-foot {
-			display: none;
 		}
 		.sheet.compact {
 			padding: 6px 14px 2px;
