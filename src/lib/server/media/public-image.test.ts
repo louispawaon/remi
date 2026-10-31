@@ -119,8 +119,23 @@ describe('proxyPublicImage', () => {
 		).rejects.toBeInstanceOf(RequestError);
 	});
 
-	it('rejects unsupported types, oversized bodies, and fake images', async () => {
-		const html = transport(response(200, { 'content-type': 'text/html' }, [JPEG]));
+	it('trusts image signatures over the declared content type', async () => {
+		const octet = transport(response(200, { 'content-type': 'application/octet-stream' }, [JPEG]));
+		const octetResult = await proxyPublicImage(new URL('https://example.com/a'), signal, octet);
+		expect(octetResult.headers.get('content-type')).toBe('image/jpeg');
+
+		const mislabeled = transport(response(200, { 'content-type': 'image/png' }, [JPEG]));
+		const mislabeledResult = await proxyPublicImage(
+			new URL('https://example.com/a'),
+			signal,
+			mislabeled
+		);
+		expect(mislabeledResult.headers.get('content-type')).toBe('image/jpeg');
+	});
+
+	it('rejects HTML, oversized bodies, and fake images', async () => {
+		const htmlBytes = new TextEncoder().encode('<!DOCTYPE html><html></html>');
+		const html = transport(response(200, { 'content-type': 'image/jpeg' }, [htmlBytes]));
 		await expect(
 			proxyPublicImage(new URL('https://example.com/a'), signal, html)
 		).rejects.toMatchObject({ code: 'image_rejected' });

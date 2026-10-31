@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ArtworkError, normalizeArtwork, validateArtworkSource } from './artwork';
+import {
+	ArtworkError,
+	PROVIDER_ARTWORK_MAX_BYTES,
+	normalizeArtwork,
+	validateArtworkSource
+} from './artwork';
 import { imageUrl } from './client';
 
 describe('upload validation', () => {
@@ -18,6 +23,14 @@ describe('upload validation', () => {
 			/10 MiB/
 		);
 		expect(() => validateArtworkSource({ type: 'image/png', size: 0 })).toThrow(/empty/);
+	});
+
+	it('allows larger provider artwork than uploads', () => {
+		const size = 15 * 1024 * 1024;
+		expect(() => validateArtworkSource({ type: 'image/png', size })).toThrow(/10 MiB/);
+		expect(() =>
+			validateArtworkSource({ type: 'image/png', size }, PROVIDER_ARTWORK_MAX_BYTES)
+		).not.toThrow();
 	});
 
 	it('builds encoded image proxy urls', () => {

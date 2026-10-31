@@ -1,7 +1,7 @@
 import type { MediaProvider } from '#lib/media/types';
 import { MediaError, RequestError, timeoutError } from './errors';
 import { retryAfterSeconds } from './http';
-import { ALLOWED_TYPES, MAX_IMAGE_BYTES, matchesSignature } from './image-utils';
+import { ALLOWED_TYPES, MAX_IMAGE_BYTES, MAX_IMAGE_MIB, matchesSignature } from './image-utils';
 import { validatePublicImageUrl } from './public-image';
 
 export { MAX_IMAGE_BYTES };
@@ -157,7 +157,7 @@ export async function proxyImage(
 
 	const declared = Number(response.headers.get('content-length'));
 	if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES) {
-		throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+		throw new MediaError('image_too_large', `That image is larger than ${MAX_IMAGE_MIB} MiB.`, 413);
 	}
 
 	const body = response.body;
@@ -174,7 +174,11 @@ export async function proxyImage(
 			total += value.byteLength;
 			if (total > MAX_IMAGE_BYTES) {
 				await reader.cancel();
-				throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+				throw new MediaError(
+					'image_too_large',
+					`That image is larger than ${MAX_IMAGE_MIB} MiB.`,
+					413
+				);
 			}
 			chunks.push(value);
 		}

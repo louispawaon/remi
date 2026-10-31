@@ -4,7 +4,7 @@ import { request as httpsRequest } from 'node:https';
 import { BlockList, isIP } from 'node:net';
 import type { LookupFunction } from 'node:net';
 import { MediaError, RequestError, timeoutError } from './errors';
-import { ALLOWED_TYPES, MAX_IMAGE_BYTES, matchesSignature } from './image-utils';
+import { MAX_IMAGE_BYTES, MAX_IMAGE_MIB, sniffImageType } from './image-utils';
 
 const MAX_REDIRECTS = 2;
 const USER_AGENT = 'remi/1.0';
@@ -236,23 +236,18 @@ async function fetchImage(
 		throw new MediaError('provider_unavailable', 'The image host rejected the request.');
 	}
 
-	const contentType = (header(response.headers, 'content-type') ?? '')
-		.split(';')[0]
-		.trim()
-		.toLowerCase();
-	const type = ALLOWED_TYPES[contentType];
-	if (!type) {
-		await close(response.body);
-		throw new MediaError('image_rejected', 'The image host returned an unsupported file type.');
-	}
-
 	const declared = Number(header(response.headers, 'content-length'));
 	if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES) {
 		await close(response.body);
-		throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+		throw new MediaError('image_too_large', `That image is larger than ${MAX_IMAGE_MIB} MiB.`, 413);
 	}
 
-	const bytes = await readBody(response.body, type);
+	const bytes = await readBody(response.body);
+	const type = sniffImageType(bytes);
+	if (!type) {
+		throw new MediaError('image_rejected', 'The image host returned bytes that are not an image.');
+	}
+
 	return new Response(bytes as unknown as BodyInit, {
 		headers: {
 			'content-type': type,
@@ -263,13 +258,17 @@ async function fetchImage(
 	});
 }
 
-async function readBody(body: AsyncIterable<Uint8Array>, type: string): Promise<Uint8Array> {
+async function readBody(body: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
 	const chunks: Uint8Array[] = [];
 	let total = 0;
 	for await (const chunk of body) {
 		total += chunk.byteLength;
 		if (total > MAX_IMAGE_BYTES) {
-			throw new MediaError('image_too_large', 'That image is larger than 10 MiB.', 413);
+			throw new MediaError(
+				'image_too_large',
+				`That image is larger than ${MAX_IMAGE_MIB} MiB.`,
+				413
+			);
 		}
 		chunks.push(chunk);
 	}
@@ -278,9 +277,6 @@ async function readBody(body: AsyncIterable<Uint8Array>, type: string): Promise<
 	for (const chunk of chunks) {
 		bytes.set(chunk, offset);
 		offset += chunk.byteLength;
-	}
-	if (!matchesSignature(type, bytes)) {
-		throw new MediaError('image_rejected', 'The image host returned bytes that are not an image.');
 	}
 	return bytes;
 }

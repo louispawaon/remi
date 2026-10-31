@@ -16,7 +16,10 @@ export const GET: RequestHandler = async ({ url, request, fetch }) => {
 		const cached = await edge?.default.match(key);
 		if (cached) return cached;
 
-		const signal = AbortSignal.any([request.signal, AbortSignal.timeout(8000)]);
+		const signal = AbortSignal.any([
+			request.signal,
+			AbortSignal.timeout(provider === 'podcastindex' ? 15_000 : 8_000)
+		]);
 		const response =
 			provider === 'podcastindex'
 				? await proxyPublicImage(target, signal)

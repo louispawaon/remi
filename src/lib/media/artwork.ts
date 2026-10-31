@@ -9,6 +9,9 @@ export const UPLOAD_LIMITS = {
 	maxEdge: 1600
 } as const;
 
+/** Provider artwork is downloaded, then normalized to the stored contract. */
+export const PROVIDER_ARTWORK_MAX_BYTES = 20 * 1024 * 1024;
+
 export const ALLOWED_UPLOAD_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
 export type ArtworkErrorCode =
@@ -32,12 +35,18 @@ export interface NormalizedArtwork {
 }
 
 /** Cheap checks before any bytes are decoded. */
-export function validateArtworkSource(source: { type: string; size: number }): void {
+export function validateArtworkSource(
+	source: { type: string; size: number },
+	maxBytes = UPLOAD_LIMITS.maxBytes
+): void {
 	if (!ALLOWED_UPLOAD_TYPES.includes(source.type as (typeof ALLOWED_UPLOAD_TYPES)[number])) {
 		throw new ArtworkError('Use a PNG, JPEG, or WebP image.', 'unsupported_type');
 	}
-	if (source.size > UPLOAD_LIMITS.maxBytes) {
-		throw new ArtworkError('That image is larger than 10 MiB.', 'too_large');
+	if (source.size > maxBytes) {
+		throw new ArtworkError(
+			`That image is larger than ${Math.floor(maxBytes / (1024 * 1024))} MiB.`,
+			'too_large'
+		);
 	}
 	if (source.size === 0) {
 		throw new ArtworkError('That file is empty.', 'decode_failed');
@@ -47,10 +56,11 @@ export function validateArtworkSource(source: { type: string; size: number }): v
 /** Normalize to the stored contract: max 1600 px long edge, max 8 MiB, transparency kept. */
 export async function normalizeArtwork(
 	blob: Blob,
-	declaredType?: string
+	declaredType?: string,
+	maxBytes = UPLOAD_LIMITS.maxBytes
 ): Promise<NormalizedArtwork> {
 	const type = declaredType ?? blob.type;
-	validateArtworkSource({ type, size: blob.size });
+	validateArtworkSource({ type, size: blob.size }, maxBytes);
 
 	let header = new Uint8Array(await blob.slice(0, 65_536).arrayBuffer());
 	const format = imageFormat(header);
@@ -151,5 +161,5 @@ export async function fetchProviderArtwork(
 	}
 
 	const blob = await response.blob();
-	return normalizeArtwork(blob, blob.type);
+	return normalizeArtwork(blob, blob.type, PROVIDER_ARTWORK_MAX_BYTES);
 }

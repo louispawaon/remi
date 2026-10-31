@@ -1,4 +1,5 @@
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_MIB = Math.floor(MAX_IMAGE_BYTES / (1024 * 1024));
 
 export const ALLOWED_TYPES: Record<string, string> = {
 	'image/png': 'image/png',
@@ -6,6 +7,16 @@ export const ALLOWED_TYPES: Record<string, string> = {
 	'image/jpg': 'image/jpeg',
 	'image/webp': 'image/webp'
 };
+
+export type ImageType = 'image/png' | 'image/jpeg' | 'image/webp';
+
+/** Provider CDNs sometimes mislabel the bytes; the signature is the source of truth. */
+export function sniffImageType(bytes: Uint8Array): ImageType | null {
+	if (matchesSignature('image/png', bytes)) return 'image/png';
+	if (matchesSignature('image/jpeg', bytes)) return 'image/jpeg';
+	if (matchesSignature('image/webp', bytes)) return 'image/webp';
+	return null;
+}
 
 export function matchesSignature(type: string, bytes: Uint8Array): boolean {
 	if (type === 'image/png') {
