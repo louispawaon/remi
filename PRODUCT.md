@@ -1,18 +1,18 @@
 # Remi — product requirements
 
 Remi is a media card maker: search anime, manga, manhwa, manhua, movies, TV, games,
-songs, and albums, arrange them into a customizable grid, and export the result as a PNG
-or a complete editable project. It runs locally, works on phones on the same network, and
-needs no accounts.
+songs, albums, and podcasts, arrange them into a customizable grid, and export the result
+as a PNG or a complete editable project. It runs locally, works on phones on the same
+network, and needs no accounts.
 
 The binding specification is [docs/superpowers/specs/2026-10-28-remi-v1-design.md](docs/superpowers/specs/2026-10-28-remi-v1-design.md).
 This file is the short brief for implementation work; if they disagree, the specification wins.
 
 ## Included
 
-- Eight categories mixed within one card, with paginated search, provider filters, and
+- Nine categories mixed within one card, with paginated search, provider filters, and
   title-language preference. Music is one category covering songs and albums; Games is
-  one category covering every platform.
+  one category covering every platform; Podcasts is one category covering shows.
 - A local library: create, rename, duplicate, reopen, delete, autosave.
 - Guided editing: titles, colors, three curated fonts, image replacement, crop position,
   reorder, shuffle.

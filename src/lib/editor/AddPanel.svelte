@@ -41,10 +41,15 @@
 		editor.addCategory !== 'movie' &&
 			editor.addCategory !== 'tv' &&
 			editor.addCategory !== 'music' &&
-			editor.addCategory !== 'game'
+			editor.addCategory !== 'game' &&
+			editor.addCategory !== 'podcast'
 	);
 	const supportsYear = $derived(
-		options ? options.supportsYear : editor.addCategory !== 'music' && editor.addCategory !== 'game'
+		options
+			? options.supportsYear
+			: editor.addCategory !== 'music' &&
+					editor.addCategory !== 'game' &&
+					editor.addCategory !== 'podcast'
 	);
 	const hasFilters = $derived(
 		supportsYear ||
@@ -266,7 +271,9 @@
 					? 'Search songs, albums or artists'
 					: editor.addCategory === 'game'
 						? 'Search games'
-						: 'Search titles'}
+						: editor.addCategory === 'podcast'
+							? 'Search podcasts'
+							: 'Search titles'}
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;

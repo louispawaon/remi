@@ -42,6 +42,14 @@ export function missingTheGamesDbKey(): MediaError {
 	);
 }
 
+export function missingPodcastIndexCredentials(): MediaError {
+	return new MediaError(
+		'provider_credentials_missing',
+		'Podcast search needs a Podcast Index API key and secret. Add PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET to .env and restart.',
+		503
+	);
+}
+
 export function upstreamError(provider: string, status: number, retryAfter?: number): MediaError {
 	if (status === 401 || status === 403) {
 		return new MediaError(

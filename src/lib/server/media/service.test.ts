@@ -60,6 +60,11 @@ function fetcherMock() {
 				{ headers: { 'content-type': 'application/json' } }
 			);
 		}
+		if (url.includes('api.podcastindex.org')) {
+			return new Response(JSON.stringify({ status: 'true', feeds: [], count: 0 }), {
+				headers: { 'content-type': 'application/json' }
+			});
+		}
 		return new Response(
 			JSON.stringify({
 				page: 1,
@@ -217,6 +222,34 @@ describe('MediaService', () => {
 			service.search({ ...animeRequest, category: 'game', query: 'sonic' })
 		).rejects.toMatchObject({ code: 'provider_credentials_missing' });
 		await expect(service.options('game')).rejects.toMatchObject({
+			code: 'provider_credentials_missing'
+		});
+	});
+
+	it('routes podcasts to Podcast Index with credentials', async () => {
+		const fetcher = fetcherMock();
+		const service = new MediaService({
+			podcastIndexKey: 'key',
+			podcastIndexSecret: 'secret',
+			fetch: fetcher as unknown as typeof fetch
+		});
+
+		await expect(
+			service.search({ ...animeRequest, category: 'podcast', query: 'serial' })
+		).resolves.toMatchObject({ results: [] });
+		await expect(service.options('podcast')).resolves.toMatchObject({
+			provider: 'podcastindex'
+		});
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it('reports missing Podcast Index credentials', async () => {
+		const service = new MediaService({ fetch: fetcherMock() as unknown as typeof fetch });
+
+		await expect(
+			service.search({ ...animeRequest, category: 'podcast', query: 'serial' })
+		).rejects.toMatchObject({ code: 'provider_credentials_missing' });
+		await expect(service.options('podcast')).rejects.toMatchObject({
 			code: 'provider_credentials_missing'
 		});
 	});

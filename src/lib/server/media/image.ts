@@ -1,18 +1,14 @@
 import type { MediaProvider } from '#lib/media/types';
 import { MediaError, RequestError, timeoutError } from './errors';
 import { retryAfterSeconds } from './http';
+import { ALLOWED_TYPES, MAX_IMAGE_BYTES, matchesSignature } from './image-utils';
+import { validatePublicImageUrl } from './public-image';
 
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export { MAX_IMAGE_BYTES };
 
 const ANILIST_HOSTS = new Set(['s4.anilist.co', 'img.anilist.co']);
 const DEEZER_HOST = 'cdn-images.dzcdn.net';
 const THEGAMESDB_HOST = 'cdn.thegamesdb.net';
-const ALLOWED_TYPES: Record<string, string> = {
-	'image/png': 'image/png',
-	'image/jpeg': 'image/jpeg',
-	'image/jpg': 'image/jpeg',
-	'image/webp': 'image/webp'
-};
 
 /** Only provider-owned artwork paths may be fetched; arbitrary URLs are rejected. */
 export function resolveImageUrl(provider: MediaProvider, value: string): URL {
@@ -98,6 +94,10 @@ export function resolveImageUrl(provider: MediaProvider, value: string): URL {
 			throw new RequestError('TheGamesDB image URLs cannot carry a query or fragment.');
 		}
 		return url;
+	}
+
+	if (provider === 'podcastindex') {
+		return validatePublicImageUrl(value);
 	}
 
 	if (!value.startsWith('/t/p/')) {
@@ -209,27 +209,4 @@ export async function proxyImage(
 			'x-content-type-options': 'nosniff'
 		}
 	});
-}
-
-function matchesSignature(type: string, bytes: Uint8Array): boolean {
-	if (type === 'image/png') {
-		const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-		return signature.every((byte, index) => bytes[index] === byte);
-	}
-	if (type === 'image/jpeg') {
-		return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-	}
-	if (type === 'image/webp') {
-		return (
-			bytes[0] === 0x52 &&
-			bytes[1] === 0x49 &&
-			bytes[2] === 0x46 &&
-			bytes[3] === 0x46 &&
-			bytes[8] === 0x57 &&
-			bytes[9] === 0x45 &&
-			bytes[10] === 0x42 &&
-			bytes[11] === 0x50
-		);
-	}
-	return false;
 }

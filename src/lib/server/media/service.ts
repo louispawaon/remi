@@ -10,6 +10,7 @@ import type { MediaAdapter } from './adapter';
 import { TTLCache } from './cache';
 import { createDeezer } from './deezer';
 import { missingTmdbCredentials } from './errors';
+import { createPodcastIndex } from './podcastindex';
 import { createTheGamesDb } from './thegamesdb';
 import { createTmdb } from './tmdb';
 
@@ -21,12 +22,15 @@ const PROVIDERS: Record<Category, MediaProvider> = {
 	movie: 'tmdb',
 	tv: 'tmdb',
 	game: 'thegamesdb',
-	music: 'deezer'
+	music: 'deezer',
+	podcast: 'podcastindex'
 };
 
 export interface MediaServiceOptions {
 	tmdbToken?: string;
 	theGamesDbKey?: string;
+	podcastIndexKey?: string;
+	podcastIndexSecret?: string;
 	fetch?: typeof fetch;
 	now?: () => number;
 }
@@ -38,6 +42,7 @@ export class MediaService {
 	readonly #tmdb: MediaAdapter | undefined;
 	readonly #deezer: MediaAdapter;
 	readonly #theGamesDb: MediaAdapter;
+	readonly #podcastIndex: MediaAdapter;
 	readonly #searchInFlight = new Map<string, Promise<MediaSearchResult>>();
 	readonly #optionsInFlight = new Map<Category, Promise<MediaOptions>>();
 
@@ -56,12 +61,19 @@ export class MediaService {
 		this.#tmdb = createTmdb({ token: options.tmdbToken, fetch: options.fetch });
 		this.#deezer = createDeezer(options.fetch);
 		this.#theGamesDb = createTheGamesDb({ key: options.theGamesDbKey, fetch: options.fetch });
+		this.#podcastIndex = createPodcastIndex({
+			key: options.podcastIndexKey,
+			secret: options.podcastIndexSecret,
+			fetch: options.fetch,
+			now: options.now
+		});
 	}
 
 	#adapter(provider: MediaProvider): MediaAdapter {
 		if (provider === 'anilist') return this.#anilist;
 		if (provider === 'deezer') return this.#deezer;
 		if (provider === 'thegamesdb') return this.#theGamesDb;
+		if (provider === 'podcastindex') return this.#podcastIndex;
 		return this.#tmdb!;
 	}
 
@@ -152,11 +164,18 @@ let serviceKey: string | undefined;
 
 export function getMediaService(
 	tmdbToken: string | undefined,
-	theGamesDbKey?: string
+	theGamesDbKey?: string,
+	podcastIndexKey?: string,
+	podcastIndexSecret?: string
 ): MediaService {
-	const key = `${tmdbToken ?? ''}|${theGamesDbKey ?? ''}`;
+	const key = `${tmdbToken ?? ''}|${theGamesDbKey ?? ''}|${podcastIndexKey ?? ''}|${podcastIndexSecret ?? ''}`;
 	if (!service || serviceKey !== key) {
-		service = new MediaService({ tmdbToken, theGamesDbKey });
+		service = new MediaService({
+			tmdbToken,
+			theGamesDbKey,
+			podcastIndexKey,
+			podcastIndexSecret
+		});
 		serviceKey = key;
 	}
 	return service;

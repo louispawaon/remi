@@ -14,10 +14,13 @@ cp .env.example .env
 pnpm exec playwright install chromium
 ```
 
-`TMDB_READ_ACCESS_TOKEN` and `THEGAMESDB_API_KEY` are the provider credentials; AniList’s and Deezer’s public APIs need none. Both are optional. Without it, movie and TV search stays disabled with a
-setup explanation; the rest of the app works. Credentials are declared in `src/env.ts` and
-read only by server code from `$app/env/private`; that module cannot be imported into client
-code, so an accidental leak fails the build instead of shipping.
+`TMDB_READ_ACCESS_TOKEN`, `THEGAMESDB_API_KEY`, and `PODCASTINDEX_API_KEY` with
+`PODCASTINDEX_API_SECRET` are the provider credentials; AniList’s and Deezer’s public APIs need
+none. All are optional. Quote any value containing `#` or spaces in `.env`; the env parsers
+treat an unquoted `#` as the start of a comment. Without them, the matching categories explain the setup step and the
+rest of the app works. Credentials are declared in `src/env.ts` and read only by server code
+from `$app/env/private`; that module cannot be imported into client code, so an accidental
+leak fails the build instead of shipping.
 
 ## Commands
 

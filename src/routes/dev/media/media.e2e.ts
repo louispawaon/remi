@@ -75,4 +75,5 @@ test('credits page carries the required attribution', async ({ page }) => {
 	await expect(page.locator('main')).toContainText('needs no account or token');
 	await expect(page.locator('main')).toContainText('Deezer');
 	await expect(page.locator('main')).toContainText('TheGamesDB');
+	await expect(page.locator('main')).toContainText('Podcast Index');
 });

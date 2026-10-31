@@ -81,6 +81,15 @@ describe('request validation', () => {
 		expect(parseSearchRequest(search('category=game&mode=search&query=sonic')).category).toBe(
 			'game'
 		);
+		expect(
+			parseImageRequest(image('provider=podcastindex&path=https%3A%2F%2Fcdn.example.com%2Fart.jpg'))
+		).toEqual({
+			provider: 'podcastindex',
+			path: 'https://cdn.example.com/art.jpg'
+		});
+		expect(parseSearchRequest(search('category=podcast&mode=search&query=serial')).category).toBe(
+			'podcast'
+		);
 		expect(() => parseImageRequest(image('provider=other&path=x'))).toThrow(RequestError);
 	});
 });

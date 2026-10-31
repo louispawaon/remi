@@ -8,12 +8,21 @@ export const CATEGORIES = [
 	'movie',
 	'tv',
 	'game',
-	'music'
+	'music',
+	'podcast'
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 /** Offered by the add panel. Manga search covers manhwa and manhua too. */
-export const ADD_CATEGORIES = ['anime', 'manga', 'movie', 'tv', 'game', 'music'] as const;
+export const ADD_CATEGORIES = [
+	'anime',
+	'manga',
+	'movie',
+	'tv',
+	'game',
+	'music',
+	'podcast'
+] as const;
 
 export const GRID_SIZES = [3, 4, 5] as const;
 export type GridSize = (typeof GRID_SIZES)[number];

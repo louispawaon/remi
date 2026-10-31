@@ -360,6 +360,59 @@ test('searches games without year filters and shows the platform', async ({ page
 	await expect(page.locator('.sheet-map')).toContainText('Sonic the Hedgehog');
 });
 
+test('searches podcasts without year filters and shows the publisher', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'podcast',
+				provider: 'podcastindex',
+				supportsYear: false,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'podcastindex',
+						providerId: '1',
+						category: 'podcast',
+						title: { preferred: 'The Daily', alternatives: [] },
+						year: null,
+						format: 'The New York Times',
+						status: null,
+						genres: [],
+						coverPath: 'https://cdn.example.com/podcast.jpg'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: null
+			})
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('podcast');
+	await expect(page.getByLabel('Year')).toHaveCount(0);
+	await page.getByTestId('search-input').fill('daily');
+	await expect(page.getByTestId('result')).toContainText('The Daily');
+	await expect(page.getByTestId('result')).toContainText('The New York Times');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.locator('.sheet-map')).toContainText('The Daily');
+});
+
 test('shows credential guidance when movie discovery is unavailable', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

@@ -30,6 +30,9 @@ describe('resolveImageUrl', () => {
 			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg')
 				.hostname
 		).toBe('cdn.thegamesdb.net');
+		expect(resolveImageUrl('podcastindex', 'https://cdn.example.com/art.jpg?cache=1').href).toBe(
+			'https://cdn.example.com/art.jpg?cache=1'
+		);
 	});
 
 	it('rejects arbitrary hosts, protocols, credentials, and unapproved paths', () => {
@@ -89,6 +92,24 @@ describe('resolveImageUrl', () => {
 		expect(() =>
 			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/%2e%2e/x.jpg')
 		).toThrow(RequestError);
+		expect(() => resolveImageUrl('podcastindex', 'http://cdn.example.com/art.jpg')).toThrow(
+			RequestError
+		);
+		expect(() => resolveImageUrl('podcastindex', 'https://localhost/art.jpg')).toThrow(
+			RequestError
+		);
+		expect(() => resolveImageUrl('podcastindex', 'https://127.0.0.1/art.jpg')).toThrow(
+			RequestError
+		);
+		expect(() =>
+			resolveImageUrl('podcastindex', 'https://user:pass@cdn.example.com/art.jpg')
+		).toThrow(RequestError);
+		expect(() => resolveImageUrl('podcastindex', 'https://cdn.example.com:8443/art.jpg')).toThrow(
+			RequestError
+		);
+		expect(() => resolveImageUrl('podcastindex', 'https://cdn.example.com/art.jpg#x')).toThrow(
+			RequestError
+		);
 	});
 });
 

@@ -1,5 +1,6 @@
 import { failure } from '#lib/server/media/response';
 import { proxyImage, resolveImageUrl } from '#lib/server/media/image';
+import { proxyPublicImage } from '#lib/server/media/public-image';
 import { parseImageRequest } from '#lib/server/media/validate';
 import type { RequestHandler } from './$types';
 
@@ -16,7 +17,10 @@ export const GET: RequestHandler = async ({ url, request, fetch }) => {
 		if (cached) return cached;
 
 		const signal = AbortSignal.any([request.signal, AbortSignal.timeout(8000)]);
-		const response = await proxyImage(target, fetch, signal);
+		const response =
+			provider === 'podcastindex'
+				? await proxyPublicImage(target, signal)
+				: await proxyImage(target, fetch, signal);
 		if (!edge) return response;
 
 		const cacheable = new Response(response.body, {
