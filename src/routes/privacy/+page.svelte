@@ -64,7 +64,7 @@
 			Because your work lives in your browser, you control it directly: delete cards in the library,
 			clear site data to remove everything, and export a project to keep a copy. If you believe Remi
 			holds data about you, or you want a metadata or artwork correction, write to
-			<a href="mailto:miggypawaon@gmail.com">miggypawaon@gmail.com</a>.
+			<a href="mailto:remi@project1of1.com">remi@project1of1.com</a>.
 		</p>
 	</section>
 

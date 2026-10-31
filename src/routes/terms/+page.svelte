@@ -87,7 +87,7 @@
 		<h2>Contact</h2>
 		<p>
 			Questions about these terms, or about content you believe should not be here:
-			<a href="mailto:miggypawaon@gmail.com">miggypawaon@gmail.com</a>.
+			<a href="mailto:remi@project1of1.com">remi@project1of1.com</a>.
 		</p>
 	</section>
 
