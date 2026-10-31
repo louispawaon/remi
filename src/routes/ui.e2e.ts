@@ -413,6 +413,65 @@ test('searches podcasts without year filters and shows the publisher', async ({ 
 	await expect(page.locator('.sheet-map')).toContainText('The Daily');
 });
 
+test('adds a text-only tile when provider artwork fails', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'podcast',
+				provider: 'podcastindex',
+				supportsYear: false,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'podcastindex',
+						providerId: 'djntv',
+						category: 'podcast',
+						title: { preferred: 'DJNTV – Disc Jockey News TV', alternatives: [] },
+						year: null,
+						format: 'DJNTV',
+						status: null,
+						genres: [],
+						coverPath: 'https://djntv.com/dead-cover.jpg'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: null
+			})
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({
+			status: 502,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				error: 'provider_unavailable',
+				message: 'The image host rejected the request.'
+			})
+		})
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('podcast');
+	await page.getByTestId('search-input').fill('djntv');
+	await expect(page.getByTestId('result').locator('.no-poster')).toHaveText('NO ART');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.getByText(/without artwork/)).toBeVisible();
+	await expect(page.locator('.sheet-map')).toContainText('DJNTV');
+});
+
 test('shows credential guidance when movie discovery is unavailable', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

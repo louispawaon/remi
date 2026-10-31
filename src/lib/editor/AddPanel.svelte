@@ -35,6 +35,8 @@
 	let retry = $state(0);
 	let optionsToken = 0;
 	let narrow = $state(false);
+	let failedCovers = $state<Record<string, boolean>>({});
+	let loadedCovers = $state<Record<string, boolean>>({});
 
 	const search = createMediaSearch();
 	const supportsFilters = $derived(
@@ -122,6 +124,8 @@
 			{
 				onResult: (result) => {
 					results = result.results;
+					failedCovers = {};
+					loadedCovers = {};
 					total = result.total;
 					hasNext = result.hasNextPage;
 					loading = false;
@@ -145,6 +149,8 @@
 		options = null;
 		optionsError = null;
 		filters = {};
+		failedCovers = {};
+		loadedCovers = {};
 		page = 1;
 		results = [];
 		total = null;
@@ -171,6 +177,14 @@
 		page = 1;
 	}
 
+	function markCoverFailed(key: string) {
+		failedCovers = { ...failedCovers, [key]: true };
+	}
+
+	function markCoverLoaded(key: string) {
+		loadedCovers = { ...loadedCovers, [key]: true };
+	}
+
 	function errorRetry() {
 		retry += 1;
 	}
@@ -181,9 +195,16 @@
 		addError = null;
 		notice = null;
 		try {
-			const normalized = result.coverPath
-				? await fetchProviderArtwork(result.provider, result.coverPath)
-				: null;
+			let normalized = null;
+			let artworkWarning: string | null = null;
+			if (result.coverPath) {
+				try {
+					normalized = await fetchProviderArtwork(result.provider, result.coverPath);
+				} catch (error) {
+					// Keep the result usable as an intentional text-only tile.
+					artworkWarning = error instanceof Error ? error.message : String(error);
+				}
+			}
 			const artworkId = randomId();
 			const item: CardItem = {
 				id: randomId(),
@@ -205,7 +226,9 @@
 				crops: {}
 			};
 			editor.addItem(item, normalized?.blob ?? null);
-			notice = `Added ${result.title.preferred}`;
+			notice = artworkWarning
+				? `Added ${result.title.preferred} without artwork. ${artworkWarning}`
+				: `Added ${result.title.preferred}`;
 		} catch (error) {
 			addError = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -394,16 +417,22 @@
 		<ul class="results" data-testid="results">
 			{#each results as result (`${result.provider}:${result.providerId}`)}
 				{@const key = `${result.provider}:${result.providerId}`}
-				<li class="result" data-testid="result">
+				<li class="result" data-testid="result" data-key={key}>
 					<div class="poster">
-						{#if result.coverPath}
+						{#if result.coverPath && !failedCovers[key]}
 							<img
+								class:loaded={loadedCovers[key]}
 								src={imageUrl(result.provider, result.coverPath)}
 								alt=""
 								loading="lazy"
 								width="44"
 								height="62"
+								onload={() => markCoverLoaded(key)}
+								onerror={() => markCoverFailed(key)}
 							/>
+							{#if !loadedCovers[key]}
+								<span class="poster-loading" aria-hidden="true"></span>
+							{/if}
 						{:else}
 							<span class="no-poster">NO ART</span>
 						{/if}
@@ -575,6 +604,7 @@
 		border-bottom: 1px solid var(--rule);
 	}
 	.poster {
+		position: relative;
 		width: 44px;
 		height: 62px;
 		background: var(--card);
@@ -589,6 +619,16 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		opacity: 0;
+		transition: opacity 120ms ease-out;
+	}
+	.poster img.loaded {
+		opacity: 1;
+	}
+	.poster-loading {
+		position: absolute;
+		inset: 0;
+		background: var(--panel);
 	}
 	.no-poster {
 		font-size: 8px;
