@@ -204,14 +204,6 @@
 		padding: 0 12px;
 		font-size: 10px;
 	}
-	.ghost.danger {
-		border-color: var(--danger);
-		color: var(--danger);
-	}
-	.ghost.danger:hover:not(:disabled) {
-		background: var(--danger);
-		color: var(--ground);
-	}
 	.slots {
 		display: none;
 		flex-direction: column;

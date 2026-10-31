@@ -7,12 +7,6 @@
 
 	let replacing = $state(false);
 	let imageError = $state<string | null>(null);
-	let removeArmed = $state(false);
-
-	$effect(() => {
-		void editor.selectedItemId;
-		removeArmed = false;
-	});
 
 	const crop = $derived(editor.selectedItem?.crops[editor.document.format] ?? { x: 0.5, y: 0.5 });
 
@@ -217,33 +211,6 @@
 				/>
 			</label>
 			{#if imageError}<p class="error-text" role="alert">{imageError}</p>{/if}
-
-			<div class="row-actions">
-				<button
-					class="ghost"
-					type="button"
-					onclick={() => editor.beginMove(editor.selectedItem!.id)}
-				>
-					Move
-				</button>
-				{#if removeArmed}
-					<button
-						class="text-action"
-						type="button"
-						onclick={() => {
-							editor.removeSelectedItem();
-							removeArmed = false;
-						}}>Confirm remove</button
-					>
-					<button class="text-action" type="button" onclick={() => (removeArmed = false)}
-						>Keep</button
-					>
-				{:else}
-					<button class="text-action" type="button" onclick={() => (removeArmed = true)}
-						>Remove item</button
-					>
-				{/if}
-			</div>
 		</section>
 	{:else}
 		<p class="hint">Select a cell or an unplaced item to edit its caption, crop, or image.</p>
@@ -336,12 +303,6 @@
 	}
 	.crop-row input[type='range'] {
 		width: 100%;
-	}
-	.row-actions {
-		display: flex;
-		gap: 14px;
-		align-items: center;
-		flex-wrap: wrap;
 	}
 	.file-label {
 		display: inline-flex;

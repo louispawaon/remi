@@ -238,6 +238,16 @@ img {
 	color: var(--ground);
 }
 
+.ghost.danger {
+	border-color: var(--danger);
+	color: var(--danger);
+}
+
+.ghost.danger:hover:not(:disabled) {
+	background: var(--danger);
+	color: var(--ground);
+}
+
 .text-action {
 	display: inline-flex;
 	align-items: center;
