@@ -86,11 +86,14 @@ export class EditorState {
 		this.editError = null;
 		if (this.movingItemId) {
 			this.placeMovingItem(index);
+			this.tool = 'arrange';
 			return;
 		}
 		if (isFreeSpaceCell(this.document, index)) return;
 		this.selectedSlot = index;
 		this.selectedItemId = this.document.slots[index] ?? null;
+		// Selecting a cell is arranging: follow the user to that tab.
+		this.tool = 'arrange';
 	}
 
 	beginMove(itemId: string): void {

@@ -75,32 +75,32 @@
 				{editor.selectedItem.titleOverride ?? editor.selectedItem.titles.preferred}
 			</p>
 			<div class="row-actions">
-				<button
-					class="ghost"
-					type="button"
-					onclick={() => editor.beginMove(editor.selectedItem!.id)}
-				>
-					Move
-				</button>
-				<button class="ghost" type="button" onclick={() => editor.unplace(editor.selectedItem!.id)}>
-					To tray
-				</button>
 				{#if removeArmed}
-					<span class="remove-actions">
-						<button
-							class="text-action"
-							type="button"
-							onclick={() => {
-								editor.removeSelectedItem();
-								removeArmed = false;
-							}}>Confirm remove</button
-						>
-						<button class="text-action" type="button" onclick={() => (removeArmed = false)}
-							>Keep</button
-						>
-					</span>
+					<button
+						class="ghost danger"
+						type="button"
+						onclick={() => {
+							editor.removeSelectedItem();
+							removeArmed = false;
+						}}>Confirm remove</button
+					>
+					<button class="ghost" type="button" onclick={() => (removeArmed = false)}>Keep</button>
 				{:else}
-					<button class="text-action" type="button" onclick={() => (removeArmed = true)}
+					<button
+						class="ghost"
+						type="button"
+						onclick={() => editor.beginMove(editor.selectedItem!.id)}
+					>
+						Move
+					</button>
+					<button
+						class="ghost"
+						type="button"
+						onclick={() => editor.unplace(editor.selectedItem!.id)}
+					>
+						To tray
+					</button>
+					<button class="ghost" type="button" onclick={() => (removeArmed = true)}
 						>Remove item</button
 					>
 				{/if}
@@ -194,18 +194,23 @@
 	}
 	.row-actions {
 		display: flex;
-		gap: 8px 14px;
+		gap: 8px;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: flex-end;
 	}
-	.row-actions .text-action {
-		white-space: nowrap;
+	.row-actions .ghost {
+		min-height: 36px;
+		padding: 0 12px;
+		font-size: 10px;
 	}
-	.remove-actions {
-		display: inline-flex;
-		align-items: center;
-		gap: 14px;
+	.ghost.danger {
+		border-color: var(--danger);
+		color: var(--danger);
+	}
+	.ghost.danger:hover:not(:disabled) {
+		background: var(--danger);
+		color: var(--ground);
 	}
 	.slots {
 		display: none;

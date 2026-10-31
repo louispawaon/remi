@@ -477,6 +477,16 @@ test('exports a transparent card background', async ({ page }) => {
 	expect(alpha).toBe(0);
 });
 
+test('selecting a cell moves the editor to Arrange', async ({ page }) => {
+	await seedFixture(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Style' }).click();
+	await page.locator('.cell[aria-label^="Slot 01:"]').click();
+	await expect(page.getByTestId('tabs').getByRole('button', { name: 'Arrange' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+});
+
 test('library and editor pass an axe accessibility scan', async ({ page }) => {
 	await page.goto('/');
 	await page.getByRole('heading', { level: 1 }).waitFor();
