@@ -413,7 +413,7 @@ test('searches podcasts without year filters and shows the publisher', async ({ 
 	await expect(page.locator('.sheet-map')).toContainText('The Daily');
 });
 
-test('adds a text-only tile when provider artwork fails', async ({ page }) => {
+test('adds a text-only tile when provider artwork is too large', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({
 			status: 200,
@@ -453,11 +453,11 @@ test('adds a text-only tile when provider artwork fails', async ({ page }) => {
 	);
 	await page.route('**/api/media/image*', (route) =>
 		route.fulfill({
-			status: 502,
+			status: 413,
 			contentType: 'application/json',
 			body: JSON.stringify({
-				error: 'provider_unavailable',
-				message: 'The image host rejected the request.'
+				error: 'image_too_large',
+				message: 'That image is larger than 20 MiB.'
 			})
 		})
 	);

@@ -201,7 +201,7 @@
 				try {
 					normalized = await fetchProviderArtwork(result.provider, result.coverPath);
 				} catch (error) {
-					// Keep the result usable as an intentional text-only tile.
+					// Missing, oversized, or broken provider artwork becomes a text-only tile.
 					artworkWarning = error instanceof Error ? error.message : String(error);
 				}
 			}
