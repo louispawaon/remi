@@ -6,6 +6,8 @@ node_modules
 .netlify
 /.svelte-kit
 /build
+/output/
+/.pnpm-store/
 
 # OS
 .DS_Store
