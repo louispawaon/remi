@@ -111,8 +111,10 @@ test('saves a pending edit before following browser Back', async ({ page }) => {
 		setTimeout(() => (window as unknown as { releaseWrite: () => void }).releaseWrite(), 200);
 		history.back();
 	});
+	// A cancelled popstate briefly reports the back entry, so wait for the library itself
+	// before reading: the editor only unmounts after its flush finishes.
+	await page.getByTestId('new-card').waitFor({ timeout: 15_000 });
 	await expect(page).toHaveURL(/\/$/);
-	await page.getByRole('heading', { level: 1 }).waitFor();
 	expect((await readDocument(page, id)).title).toBe('Saved before Back');
 });
 
