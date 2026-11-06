@@ -1,11 +1,17 @@
-import type { CardDocument, CardItem } from './types';
+import { CARD_SCHEMA_VERSION, type CardDocument, type CardItem, type GridDimension } from './types';
+
+/** The single centre cell, only meaningful when both axes are odd and at least 3. */
+export function centreCellIndex(
+	gridColumns: GridDimension,
+	gridRows: GridDimension
+): number | null {
+	if (gridColumns < 3 || gridRows < 3) return null;
+	if (gridColumns % 2 === 0 || gridRows % 2 === 0) return null;
+	return ((gridRows - 1) / 2) * gridColumns + (gridColumns - 1) / 2;
+}
 
 export function isFreeSpaceCell(document: CardDocument, index: number): boolean {
-	return (
-		document.freeSpace &&
-		document.gridSize % 2 === 1 &&
-		index === (document.gridSize * document.gridSize - 1) / 2
-	);
+	return document.freeSpace && index === centreCellIndex(document.gridColumns, document.gridRows);
 }
 
 export function placedItemIds(document: CardDocument): string[] {
@@ -33,10 +39,11 @@ export function randomId(): string {
 export function createDefaultDocument(id: string, now: string): CardDocument {
 	const slots: (string | null)[] = Array.from({ length: 25 }, () => null);
 	return {
-		schemaVersion: 1,
+		schemaVersion: CARD_SCHEMA_VERSION,
 		id,
 		title: 'Untitled card',
-		gridSize: 5,
+		gridColumns: 5,
+		gridRows: 5,
 		format: '4:5',
 		freeSpace: true,
 		appearance: {
@@ -74,12 +81,13 @@ export function removeItem(document: CardDocument, itemId: string): CardDocument
 /** Reflow placed items in order, then unplaced items, into the new capacity. */
 export function resizeGrid(
 	document: CardDocument,
-	gridSize: CardDocument['gridSize']
+	gridColumns: CardDocument['gridColumns'],
+	gridRows: CardDocument['gridRows']
 ): CardDocument {
-	if (document.gridSize === gridSize) return document;
+	if (document.gridColumns === gridColumns && document.gridRows === gridRows) return document;
 
-	const size = gridSize * gridSize;
-	const freeCell = document.freeSpace && gridSize % 2 === 1 ? (size - 1) / 2 : -1;
+	const size = gridColumns * gridRows;
+	const freeCell = document.freeSpace ? centreCellIndex(gridColumns, gridRows) : null;
 	const order = [...placedItemIds(document), ...unplacedItems(document).map((item) => item.id)];
 	const slots: (string | null)[] = Array.from({ length: size }, () => null);
 
@@ -89,7 +97,7 @@ export function resizeGrid(
 		slots[index] = order[cursor++];
 	}
 
-	return { ...document, gridSize, slots };
+	return { ...document, gridColumns, gridRows, slots };
 }
 
 /** Enabling free space displaces the centre item into the unplaced tray. */
@@ -97,8 +105,8 @@ export function setFreeSpace(document: CardDocument, enabled: boolean): CardDocu
 	if (document.freeSpace === enabled) return document;
 
 	const slots = [...document.slots];
-	if (enabled && document.gridSize % 2 === 1) {
-		const centre = (document.gridSize * document.gridSize - 1) / 2;
+	const centre = centreCellIndex(document.gridColumns, document.gridRows);
+	if (enabled && centre !== null) {
 		slots[centre] = null;
 	}
 	return { ...document, freeSpace: enabled, slots };

@@ -5,7 +5,7 @@ import { shuffleDocument } from './shuffle';
 
 describe('shuffleDocument', () => {
 	it('keeps the same items, blanks, and free-space cell', () => {
-		const document = createFixtureDocument({ gridSize: 5, freeSpace: true });
+		const document = createFixtureDocument({ gridColumns: 5, gridRows: 5, freeSpace: true });
 		const shuffled = shuffleDocument(document, () => 0.5);
 
 		expect(placedItemIds(shuffled).sort()).toEqual(placedItemIds(document).sort());
@@ -19,7 +19,7 @@ describe('shuffleDocument', () => {
 	});
 
 	it('is deterministic for a supplied random source', () => {
-		const document = createFixtureDocument({ gridSize: 5 });
+		const document = createFixtureDocument({ gridColumns: 5, gridRows: 5 });
 		const left = shuffleDocument(document, () => 0.25);
 		const right = shuffleDocument(document, () => 0.25);
 		expect(left.slots).toEqual(right.slots);

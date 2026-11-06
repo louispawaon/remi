@@ -5,6 +5,7 @@ import { CARD_LIMITS, type CardRecord } from '#lib/card/types';
 import { getDatabase, resetLibrary } from './db';
 import { importProjectFile } from './import';
 import { CardGoneError, RevisionConflictError, StorageWriteError, toStorageError } from './errors';
+import type { CardSummary } from './types';
 import {
 	assertStorable,
 	createCard,
@@ -40,12 +41,60 @@ describe('card library store', () => {
 	it('creates a default card with one saved revision', async () => {
 		const saved = await createCard();
 		expect(saved.document.revision).toBe(1);
-		expect(saved.document.gridSize).toBe(5);
+		expect(saved.document.gridColumns).toBe(5);
+		expect(saved.document.gridRows).toBe(5);
 		expect(saved.document.freeSpace).toBe(true);
 
 		const list = await listCards();
 		expect(list).toHaveLength(1);
-		expect(list[0]).toMatchObject({ id: saved.document.id, revision: 1, itemCount: 0 });
+		expect(list[0]).toMatchObject({
+			id: saved.document.id,
+			revision: 1,
+			itemCount: 0,
+			gridColumns: 5,
+			gridRows: 5
+		});
+	});
+
+	it('upgrades a legacy square record and summary on read', async () => {
+		const {
+			gridColumns: _columns,
+			gridRows: _rows,
+			...legacyBase
+		} = createFixtureDocument({
+			gridColumns: 4,
+			gridRows: 4
+		});
+		const legacyDocument = {
+			...legacyBase,
+			schemaVersion: 1,
+			gridSize: 4
+		} as unknown as CardRecord['document'];
+		const legacySummary = {
+			id: legacyDocument.id,
+			title: legacyDocument.title,
+			gridSize: 4,
+			format: legacyDocument.format,
+			itemCount: legacyDocument.items.length,
+			unplacedCount: 0,
+			updatedAt: legacyDocument.updatedAt,
+			revision: 1,
+			thumbnail: null
+		} as unknown as CardSummary;
+
+		const database = await getDatabase();
+		await database.put('cards', { document: legacyDocument, artwork: {} }, legacyDocument.id);
+		await database.put('library', legacySummary, legacyDocument.id);
+
+		const loaded = await loadCard(legacyDocument.id);
+		expect(loaded?.document.schemaVersion).toBe(2);
+		expect(loaded?.document.gridColumns).toBe(4);
+		expect(loaded?.document.gridRows).toBe(4);
+		expect(loaded?.document.slots).toHaveLength(16);
+
+		const [summary] = await listCards();
+		expect(summary.gridColumns).toBe(4);
+		expect(summary.gridRows).toBe(4);
 	});
 
 	it('stores the whole record and increments the revision on save', async () => {

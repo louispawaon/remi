@@ -7,6 +7,7 @@ import {
 } from '#lib/card/document';
 import { CARD_LIMITS, type CardDocument, type CardRecord } from '#lib/card/types';
 import { createProjectManifest } from '#lib/card/archive';
+import { upgradeDocument } from '#lib/card/migrate';
 import { getDatabase } from './db';
 import { CardGoneError, RevisionConflictError, StorageWriteError, toStorageError } from './errors';
 import type { CardSummary } from './types';
@@ -24,7 +25,8 @@ export function summarize(record: CardRecord, thumbnail: Blob | null): CardSumma
 	return {
 		id: record.document.id,
 		title: record.document.title,
-		gridSize: record.document.gridSize,
+		gridColumns: record.document.gridColumns,
+		gridRows: record.document.gridRows,
 		format: record.document.format,
 		itemCount: record.document.items.length,
 		unplacedCount: unplacedItems(record.document).length,
@@ -53,15 +55,33 @@ export function assertStorable(record: CardRecord): void {
 	}
 }
 
+type LegacySummary = Omit<CardSummary, 'gridColumns' | 'gridRows'> & {
+	gridSize?: number;
+	gridColumns?: number;
+	gridRows?: number;
+};
+
+function upgradeSummary(summary: CardSummary): CardSummary {
+	const legacy = summary as LegacySummary;
+	if (typeof legacy.gridColumns === 'number' && typeof legacy.gridRows === 'number') {
+		return summary;
+	}
+	if (typeof legacy.gridSize !== 'number') return summary;
+
+	const { gridSize, ...rest } = legacy;
+	return { ...rest, gridColumns: gridSize, gridRows: gridSize } as CardSummary;
+}
+
 export async function listCards(): Promise<CardSummary[]> {
 	const database = await getDatabase();
-	const summaries = await database.getAll('library');
+	const summaries = (await database.getAll('library')).map(upgradeSummary);
 	return summaries.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
 export async function loadCard(id: string): Promise<CardRecord | null> {
 	const database = await getDatabase();
-	return (await database.get('cards', id)) ?? null;
+	const record = await database.get('cards', id);
+	return record ? { ...record, document: upgradeDocument(record.document) } : null;
 }
 
 export async function getThumbnail(id: string): Promise<Blob | null> {

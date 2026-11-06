@@ -25,7 +25,8 @@ export async function renderCard(
 ): Promise<RenderedCard> {
 	const document = record.document;
 	const layout = computeLayout({
-		gridSize: document.gridSize,
+		gridColumns: document.gridColumns,
+		gridRows: document.gridRows,
 		format: document.format,
 		freeSpace: document.freeSpace,
 		resolution

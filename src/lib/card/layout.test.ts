@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { computeLayout, captionHeight, FORMAT_SIZES } from './layout';
-import { FORMATS, GRID_SIZES } from './types';
+import { FORMATS, GRID_DIMENSIONS } from './types';
 
 const resolutions = [1, 2] as const;
 const EPSILON = 1e-6;
+const SHAPES = GRID_DIMENSIONS.flatMap((gridColumns) =>
+	GRID_DIMENSIONS.map((gridRows) => ({ gridColumns, gridRows }))
+);
 
 function rectsOverlap(a: { x: number; y: number; width: number; height: number }, b: typeof a) {
 	return (
@@ -14,12 +17,23 @@ function rectsOverlap(a: { x: number; y: number; width: number; height: number }
 	);
 }
 
+function centreIndex(gridColumns: number, gridRows: number): number | null {
+	if (gridColumns < 3 || gridRows < 3 || gridColumns % 2 === 0 || gridRows % 2 === 0) return null;
+	return ((gridRows - 1) / 2) * gridColumns + (gridColumns - 1) / 2;
+}
+
 describe('computeLayout', () => {
-	it('produces exact output dimensions for every format and resolution', () => {
-		for (const gridSize of GRID_SIZES) {
+	it('produces exact output dimensions for every shape, format and resolution', () => {
+		for (const { gridColumns, gridRows } of SHAPES) {
 			for (const format of FORMATS) {
 				for (const resolution of resolutions) {
-					const layout = computeLayout({ gridSize, format, freeSpace: false, resolution });
+					const layout = computeLayout({
+						gridColumns,
+						gridRows,
+						format,
+						freeSpace: false,
+						resolution
+					});
 					const [width, height] = FORMAT_SIZES[format];
 					expect(layout.width).toBe(width * resolution);
 					expect(layout.height).toBe(height * resolution);
@@ -29,10 +43,16 @@ describe('computeLayout', () => {
 	});
 
 	it('keeps every grid inside the remaining area, centered, non-overlapping and within the cell ratio bound', () => {
-		for (const gridSize of GRID_SIZES) {
+		for (const { gridColumns, gridRows } of SHAPES) {
 			for (const format of FORMATS) {
-				const layout = computeLayout({ gridSize, format, freeSpace: true, resolution: 1 });
-				expect(layout.cells).toHaveLength(gridSize * gridSize);
+				const layout = computeLayout({
+					gridColumns,
+					gridRows,
+					format,
+					freeSpace: true,
+					resolution: 1
+				});
+				expect(layout.cells).toHaveLength(gridColumns * gridRows);
 
 				for (const cell of layout.cells) {
 					expect(cell.x).toBeGreaterThanOrEqual(layout.grid.x - EPSILON);
@@ -62,20 +82,44 @@ describe('computeLayout', () => {
 		}
 	});
 
-	it('marks the centre cell as free space only for odd grids with the option enabled', () => {
-		for (const gridSize of GRID_SIZES) {
-			const enabled = computeLayout({ gridSize, format: '4:5', freeSpace: true, resolution: 1 });
-			const disabled = computeLayout({ gridSize, format: '4:5', freeSpace: false, resolution: 1 });
-			expect(enabled.freeCellIndex).toBe(gridSize % 2 === 1 ? (gridSize * gridSize - 1) / 2 : null);
+	it('marks the centre cell as free space only when both axes are odd and at least 3', () => {
+		for (const { gridColumns, gridRows } of SHAPES) {
+			const enabled = computeLayout({
+				gridColumns,
+				gridRows,
+				format: '4:5',
+				freeSpace: true,
+				resolution: 1
+			});
+			const disabled = computeLayout({
+				gridColumns,
+				gridRows,
+				format: '4:5',
+				freeSpace: false,
+				resolution: 1
+			});
+			expect(enabled.freeCellIndex).toBe(centreIndex(gridColumns, gridRows));
 			expect(disabled.freeCellIndex).toBeNull();
 		}
 	});
 
 	it('scales the whole composition exactly for 2x output', () => {
-		for (const gridSize of GRID_SIZES) {
+		for (const { gridColumns, gridRows } of SHAPES) {
 			for (const format of FORMATS) {
-				const standard = computeLayout({ gridSize, format, freeSpace: true, resolution: 1 });
-				const doubled = computeLayout({ gridSize, format, freeSpace: true, resolution: 2 });
+				const standard = computeLayout({
+					gridColumns,
+					gridRows,
+					format,
+					freeSpace: true,
+					resolution: 1
+				});
+				const doubled = computeLayout({
+					gridColumns,
+					gridRows,
+					format,
+					freeSpace: true,
+					resolution: 2
+				});
 				expect(doubled.width).toBe(standard.width * 2);
 				expect(doubled.height).toBe(standard.height * 2);
 				expect(doubled.titleFontSize).toBe(standard.titleFontSize * 2);
@@ -88,20 +132,39 @@ describe('computeLayout', () => {
 	});
 
 	it('reserves story insets above and below the grid', () => {
-		const story = computeLayout({ gridSize: 5, format: '9:16', freeSpace: true, resolution: 1 });
+		const story = computeLayout({
+			gridColumns: 5,
+			gridRows: 5,
+			format: '9:16',
+			freeSpace: true,
+			resolution: 1
+		});
 		expect(story.heading.y + story.heading.height).toBe(160);
 		expect(story.footer.y).toBe(1920 - 240);
 
-		const square = computeLayout({ gridSize: 5, format: '1:1', freeSpace: true, resolution: 1 });
+		const square = computeLayout({
+			gridColumns: 5,
+			gridRows: 5,
+			format: '1:1',
+			freeSpace: true,
+			resolution: 1
+		});
 		expect(square.heading.y + square.heading.height).toBe(160);
 		expect(square.footer.y).toBe(1080 - 80);
 	});
 
 	it('gives the grid the heading reserve when the title is off', () => {
 		for (const format of FORMATS) {
-			const withTitle = computeLayout({ gridSize: 5, format, freeSpace: true, resolution: 1 });
+			const withTitle = computeLayout({
+				gridColumns: 5,
+				gridRows: 5,
+				format,
+				freeSpace: true,
+				resolution: 1
+			});
 			const headless = computeLayout({
-				gridSize: 5,
+				gridColumns: 5,
+				gridRows: 5,
 				format,
 				freeSpace: true,
 				resolution: 1,
@@ -118,7 +181,13 @@ describe('computeLayout', () => {
 
 	it('gives captions room for two lines inside each cell', () => {
 		for (const format of FORMATS) {
-			const layout = computeLayout({ gridSize: 5, format, freeSpace: true, resolution: 1 });
+			const layout = computeLayout({
+				gridColumns: 5,
+				gridRows: 5,
+				format,
+				freeSpace: true,
+				resolution: 1
+			});
 			const height = captionHeight(layout);
 			expect(height).toBe(layout.caption.lineHeight * 2 + layout.caption.padding * 2);
 			expect(height).toBeLessThan(layout.cells[0].height);

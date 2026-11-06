@@ -1,4 +1,11 @@
-import type { CardDocument, CardItem, Format, GridSize } from './types';
+import { centreCellIndex } from './document';
+import {
+	CARD_SCHEMA_VERSION,
+	type CardDocument,
+	type CardItem,
+	type Format,
+	type GridDimension
+} from './types';
 
 const TIMESTAMP = '2026-10-28T00:00:00.000Z';
 
@@ -85,34 +92,37 @@ const items: CardItem[] = [
 ];
 
 export interface FixtureOptions {
-	gridSize?: GridSize;
+	gridColumns?: GridDimension;
+	gridRows?: GridDimension;
 	format?: Format;
 	freeSpace?: boolean;
 }
 
 /** Deterministic card covering artwork, text-only, blank, free-space and unplaced states. */
 export function createFixtureDocument(options: FixtureOptions = {}): CardDocument {
-	const gridSize = options.gridSize ?? 5;
+	const gridColumns = options.gridColumns ?? 5;
+	const gridRows = options.gridRows ?? 5;
 	const format = options.format ?? '4:5';
 	const freeSpace = options.freeSpace ?? true;
-	const slotCount = gridSize * gridSize;
-	const freeCellIndex = freeSpace && gridSize % 2 === 1 ? (slotCount - 1) / 2 : null;
+	const slotCount = gridColumns * gridRows;
+	const freeCellIndex = freeSpace ? centreCellIndex(gridColumns, gridRows) : null;
 
 	const slots: (string | null)[] = Array.from({ length: slotCount }, () => null);
 	const placeable = Array.from({ length: slotCount }, (_, index) => index).filter(
 		(index) => index !== freeCellIndex
 	);
 	// Leave two blanks and two unplaced items so both states are always exercised.
-	const placed = items.slice(0, Math.min(6, placeable.length - 2));
+	const placed = items.slice(0, Math.max(0, Math.min(6, placeable.length - 2)));
 	placed.forEach((item, position) => {
 		slots[placeable[position]] = item.id;
 	});
 
 	return {
-		schemaVersion: 1,
+		schemaVersion: CARD_SCHEMA_VERSION,
 		id: 'fixture-card',
 		title: 'Remi fixture card',
-		gridSize,
+		gridColumns,
+		gridRows,
 		format,
 		freeSpace,
 		appearance: {

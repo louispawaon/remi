@@ -15,8 +15,8 @@ const TINY_PNG = Buffer.from(
 	'base64'
 );
 
-function makeRecord(): CardRecord {
-	const document = createFixtureDocument();
+function makeRecord(options: Parameters<typeof createFixtureDocument>[0] = {}): CardRecord {
+	const document = createFixtureDocument(options);
 	const artwork: Record<string, Blob> = {};
 	for (const item of document.items) {
 		if (item.artwork && !artwork[item.artwork.id]) {
@@ -124,6 +124,40 @@ describe('project archive', () => {
 		}
 	});
 
+	it('round-trips a rectangular grid', async () => {
+		const record = makeRecord({ gridColumns: 7, gridRows: 3 });
+		const restored = readProjectArchive(await createProjectArchive(record));
+
+		expect(restored.document.gridColumns).toBe(7);
+		expect(restored.document.gridRows).toBe(3);
+		expect(restored.document.slots).toHaveLength(21);
+	});
+
+	it('upgrades a version 1 manifest with a square gridSize', async () => {
+		const bytes = await archiveWithManifest(
+			makeRecord({ gridColumns: 4, gridRows: 4 }),
+			(manifest) => {
+				manifest.schemaVersion = 1;
+				manifest.document.schemaVersion = 1;
+				delete manifest.document.gridColumns;
+				delete manifest.document.gridRows;
+				manifest.document.gridSize = 4;
+			}
+		);
+		const restored = readProjectArchive(bytes);
+
+		expect(restored.document.schemaVersion).toBe(2);
+		expect(restored.document.gridColumns).toBe(4);
+		expect(restored.document.gridRows).toBe(4);
+	});
+
+	it('rejects grid dimensions above 7', async () => {
+		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
+			manifest.document.gridColumns = 8;
+		});
+		expect(() => readProjectArchive(bytes)).toThrow(/schema/i);
+	});
+
 	it('writes only schema, document and artwork metadata to the manifest', async () => {
 		const manifest = await manifestOf(makeRecord());
 		expect(Object.keys(manifest).sort()).toEqual(['artwork', 'document', 'schemaVersion']);
@@ -132,7 +166,7 @@ describe('project archive', () => {
 
 	it('rejects unsupported schema versions', async () => {
 		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
-			manifest.schemaVersion = 2;
+			manifest.schemaVersion = 3;
 		});
 		expect(() => readProjectArchive(bytes)).toThrow(/schema/i);
 	});

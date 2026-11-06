@@ -34,10 +34,11 @@ function fakeContext() {
 
 function card(format: Format = '4:5'): CardDocument {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		id: 'card',
 		title: '',
-		gridSize: 3,
+		gridColumns: 3,
+		gridRows: 3,
 		format,
 		freeSpace: false,
 		appearance: {
@@ -55,7 +56,7 @@ function card(format: Format = '4:5'): CardDocument {
 }
 
 function layoutFor(format: Format = '4:5') {
-	return computeLayout({ gridSize: 3, format, freeSpace: false, resolution: 1 });
+	return computeLayout({ gridColumns: 3, gridRows: 3, format, freeSpace: false, resolution: 1 });
 }
 
 describe('card footer', () => {

@@ -8,6 +8,7 @@ import {
 	CATEGORIES,
 	FONT_CHOICES,
 	FORMATS,
+	GRID_DIMENSIONS,
 	type CardDocument,
 	type CardRecord
 } from './types';
@@ -58,7 +59,8 @@ const documentSchema = v.strictObject({
 	schemaVersion: v.literal(CARD_SCHEMA_VERSION),
 	id: v.pipe(v.string(), v.minLength(1)),
 	title: v.string(),
-	gridSize: v.picklist([3, 4, 5]),
+	gridColumns: v.picklist(GRID_DIMENSIONS),
+	gridRows: v.picklist(GRID_DIMENSIONS),
 	format: v.picklist(FORMATS),
 	freeSpace: v.boolean(),
 	appearance: v.strictObject({
@@ -73,6 +75,29 @@ const documentSchema = v.strictObject({
 	updatedAt: v.string(),
 	revision: v.pipe(v.number(), v.integer(), v.minValue(0))
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Version 1 archives stored a square grid as one gridSize. */
+function upgradeManifest(json: unknown): unknown {
+	if (!isRecord(json) || json.schemaVersion !== 1 || !isRecord(json.document)) return json;
+	const gridSize = json.document.gridSize;
+	if (typeof gridSize !== 'number') return json;
+
+	const { gridSize: _gridSize, ...document } = json.document;
+	return {
+		...json,
+		schemaVersion: CARD_SCHEMA_VERSION,
+		document: {
+			...document,
+			schemaVersion: CARD_SCHEMA_VERSION,
+			gridColumns: gridSize,
+			gridRows: gridSize
+		}
+	};
+}
 
 const manifestSchema = v.strictObject({
 	schemaVersion: v.literal(CARD_SCHEMA_VERSION),
@@ -208,7 +233,7 @@ export function readProjectArchive(bytes: Uint8Array): CardRecord {
 		throw new Error('Project manifest is not valid JSON');
 	}
 
-	const parsed = v.safeParse(manifestSchema, json);
+	const parsed = v.safeParse(manifestSchema, upgradeManifest(json));
 	if (!parsed.success) {
 		throw new Error(
 			`Project manifest schema is invalid or unsupported: ${parsed.issues[0]?.message ?? 'unknown issue'}`
@@ -224,10 +249,10 @@ export function readProjectArchive(bytes: Uint8Array): CardRecord {
 
 function validateDocument(manifest: Manifest) {
 	const { document, artwork } = manifest;
-	const expectedSlots = document.gridSize * document.gridSize;
+	const expectedSlots = document.gridColumns * document.gridRows;
 	if (document.slots.length !== expectedSlots) {
 		throw new Error(
-			`Slot count ${document.slots.length} does not match the ${document.gridSize}x${document.gridSize} grid`
+			`Slot count ${document.slots.length} does not match the ${document.gridColumns}x${document.gridRows} grid`
 		);
 	}
 	if (document.items.length > CARD_LIMITS.maxItems) {

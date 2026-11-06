@@ -1,4 +1,4 @@
-export const CARD_SCHEMA_VERSION = 1;
+export const CARD_SCHEMA_VERSION = 2;
 
 export const CATEGORIES = [
 	'anime',
@@ -24,8 +24,10 @@ export const ADD_CATEGORIES = [
 	'podcast'
 ] as const;
 
-export const GRID_SIZES = [3, 4, 5] as const;
-export type GridSize = (typeof GRID_SIZES)[number];
+export const GRID_DIMENSIONS = [1, 2, 3, 4, 5, 6, 7] as const;
+export type GridDimension = (typeof GRID_DIMENSIONS)[number];
+export const GRID_MIN = GRID_DIMENSIONS[0];
+export const GRID_MAX = GRID_DIMENSIONS[GRID_DIMENSIONS.length - 1];
 
 export const FORMATS = ['4:5', '3:4', '9:16', '1:1'] as const;
 export type Format = (typeof FORMATS)[number];
@@ -86,7 +88,8 @@ export interface CardDocument {
 	schemaVersion: typeof CARD_SCHEMA_VERSION;
 	id: string;
 	title: string;
-	gridSize: GridSize;
+	gridColumns: GridDimension;
+	gridRows: GridDimension;
 	format: Format;
 	freeSpace: boolean;
 	appearance: CardAppearance;

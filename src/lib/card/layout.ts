@@ -1,4 +1,5 @@
-import type { Format, GridSize, Resolution } from './types';
+import { centreCellIndex } from './document';
+import type { Format, GridDimension, Resolution } from './types';
 
 export const FORMAT_SIZES: Record<Format, readonly [number, number]> = {
 	'4:5': [1080, 1350],
@@ -34,7 +35,8 @@ export interface CardLayout {
 	width: number;
 	height: number;
 	format: Format;
-	gridSize: GridSize;
+	gridColumns: GridDimension;
+	gridRows: GridDimension;
 	resolution: Resolution;
 	heading: Rect;
 	footer: Rect;
@@ -52,7 +54,8 @@ export interface CardLayout {
 }
 
 export interface LayoutInput {
-	gridSize: GridSize;
+	gridColumns: GridDimension;
+	gridRows: GridDimension;
 	format: Format;
 	freeSpace: boolean;
 	resolution: Resolution;
@@ -81,8 +84,8 @@ export function computeLayout(input: LayoutInput): CardLayout {
 	const availableWidth = standardWidth - margin * 2;
 	const availableHeight = standardHeight - topInset - bottomInset;
 
-	let cellWidth = (availableWidth - (input.gridSize - 1) * gap) / input.gridSize;
-	let cellHeight = (availableHeight - (input.gridSize - 1) * gap) / input.gridSize;
+	let cellWidth = (availableWidth - (input.gridColumns - 1) * gap) / input.gridColumns;
+	let cellHeight = (availableHeight - (input.gridRows - 1) * gap) / input.gridRows;
 	const ratio = cellWidth / cellHeight;
 	if (ratio < LAYOUT_METRICS.minCellRatio) {
 		cellHeight = cellWidth / LAYOUT_METRICS.minCellRatio;
@@ -90,8 +93,8 @@ export function computeLayout(input: LayoutInput): CardLayout {
 		cellWidth = cellHeight * LAYOUT_METRICS.maxCellRatio;
 	}
 
-	const gridWidth = input.gridSize * cellWidth + (input.gridSize - 1) * gap;
-	const gridHeight = input.gridSize * cellHeight + (input.gridSize - 1) * gap;
+	const gridWidth = input.gridColumns * cellWidth + (input.gridColumns - 1) * gap;
+	const gridHeight = input.gridRows * cellHeight + (input.gridRows - 1) * gap;
 	const grid: Rect = {
 		x: (standardWidth - gridWidth) / 2,
 		y: topInset + (availableHeight - gridHeight) / 2,
@@ -100,8 +103,8 @@ export function computeLayout(input: LayoutInput): CardLayout {
 	};
 
 	const cells: Rect[] = [];
-	for (let row = 0; row < input.gridSize; row++) {
-		for (let column = 0; column < input.gridSize; column++) {
+	for (let row = 0; row < input.gridRows; row++) {
+		for (let column = 0; column < input.gridColumns; column++) {
 			cells.push({
 				x: grid.x + column * (cellWidth + gap),
 				y: grid.y + row * (cellHeight + gap),
@@ -115,7 +118,8 @@ export function computeLayout(input: LayoutInput): CardLayout {
 		width: standardWidth,
 		height: standardHeight,
 		format: input.format,
-		gridSize: input.gridSize,
+		gridColumns: input.gridColumns,
+		gridRows: input.gridRows,
 		resolution: input.resolution,
 		heading: {
 			x: margin,
@@ -131,10 +135,7 @@ export function computeLayout(input: LayoutInput): CardLayout {
 		},
 		grid,
 		cells,
-		freeCellIndex:
-			input.freeSpace && input.gridSize % 2 === 1
-				? (input.gridSize * input.gridSize - 1) / 2
-				: null,
+		freeCellIndex: input.freeSpace ? centreCellIndex(input.gridColumns, input.gridRows) : null,
 		titleFontSize: LAYOUT_METRICS.titleFontSize,
 		caption: {
 			fontSize: LAYOUT_METRICS.captionFontSize,

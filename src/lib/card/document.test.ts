@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+	centreCellIndex,
 	createDefaultDocument,
 	duplicateDocument,
 	isFreeSpaceCell,
@@ -12,18 +13,30 @@ import {
 	unplacedItems
 } from './document';
 import { createFixtureDocument } from './fixture';
+import { CARD_SCHEMA_VERSION } from './types';
 
 describe('card document helpers', () => {
-	it('treats the centre of an odd grid as free space only when enabled', () => {
-		const enabled = createFixtureDocument({ gridSize: 5, freeSpace: true });
+	it('treats the centre of an odd, at-least-3-by-3 grid as free space only when enabled', () => {
+		const enabled = createFixtureDocument({ gridColumns: 5, gridRows: 5, freeSpace: true });
 		expect(isFreeSpaceCell(enabled, 12)).toBe(true);
 		expect(isFreeSpaceCell(enabled, 11)).toBe(false);
 
-		const disabled = createFixtureDocument({ gridSize: 5, freeSpace: false });
+		const disabled = createFixtureDocument({ gridColumns: 5, gridRows: 5, freeSpace: false });
 		expect(isFreeSpaceCell(disabled, 12)).toBe(false);
 
-		const even = createFixtureDocument({ gridSize: 4, freeSpace: true });
+		const even = createFixtureDocument({ gridColumns: 4, gridRows: 5, freeSpace: true });
 		expect(even.slots.every((_, index) => !isFreeSpaceCell(even, index))).toBe(true);
+
+		const single = createFixtureDocument({ gridColumns: 1, gridRows: 1, freeSpace: true });
+		expect(isFreeSpaceCell(single, 0)).toBe(false);
+	});
+
+	it('finds the centre cell for rectangular odd grids', () => {
+		expect(centreCellIndex(3, 5)).toBe(7);
+		expect(centreCellIndex(5, 3)).toBe(7);
+		expect(centreCellIndex(7, 7)).toBe(24);
+		expect(centreCellIndex(4, 5)).toBeNull();
+		expect(centreCellIndex(1, 3)).toBeNull();
 	});
 
 	it('lists placed items in slot order without blanks', () => {
@@ -43,7 +56,9 @@ describe('card document helpers', () => {
 
 	it('starts new cards with the agreed defaults', () => {
 		const document = createDefaultDocument('new-card', '2026-10-28T00:00:00.000Z');
-		expect(document.gridSize).toBe(5);
+		expect(document.schemaVersion).toBe(CARD_SCHEMA_VERSION);
+		expect(document.gridColumns).toBe(5);
+		expect(document.gridRows).toBe(5);
 		expect(document.format).toBe('4:5');
 		expect(document.freeSpace).toBe(true);
 		expect(document.appearance.titleVisible).toBe(true);
@@ -53,7 +68,7 @@ describe('card document helpers', () => {
 	});
 
 	it('changes format without moving items or changing capacity', () => {
-		const document = createFixtureDocument({ gridSize: 5, format: '4:5' });
+		const document = createFixtureDocument({ gridColumns: 5, gridRows: 5, format: '4:5' });
 		const next = setFormat(document, '9:16');
 		expect(next.slots).toEqual(document.slots);
 		expect(next.items).toEqual(document.items);
@@ -61,10 +76,12 @@ describe('card document helpers', () => {
 	});
 
 	it('reflows placed items in order and keeps overflow unplaced when the grid shrinks', () => {
-		const document = createFixtureDocument({ gridSize: 5, freeSpace: true });
+		const document = createFixtureDocument({ gridColumns: 5, gridRows: 5, freeSpace: true });
 		const before = placedItemIds(document);
-		const next = resizeGrid(document, 3);
+		const next = resizeGrid(document, 3, 3);
 
+		expect(next.gridColumns).toBe(3);
+		expect(next.gridRows).toBe(3);
 		expect(next.slots).toHaveLength(9);
 		const ordered = [...before, ...unplacedItems(document).map((item) => item.id)];
 		const reflowed = placedItemIds(next);
@@ -74,9 +91,23 @@ describe('card document helpers', () => {
 		expect(isFreeSpaceCell(next, 4)).toBe(true);
 	});
 
+	it('reflows into a rectangular grid and moves the free space with the centre', () => {
+		const document = createFixtureDocument({ gridColumns: 5, gridRows: 5, freeSpace: true });
+		const before = placedItemIds(document);
+		const next = resizeGrid(document, 7, 3);
+
+		expect(next.slots).toHaveLength(21);
+		expect(isFreeSpaceCell(next, 10)).toBe(true);
+		expect(placedItemIds(next)).toEqual([
+			...before,
+			...unplacedItems(document).map((item) => item.id)
+		]);
+		expect(next.slots[10]).toBeNull();
+	});
+
 	it('displaces the centre item into the tray when free space is enabled', () => {
-		const document = createFixtureDocument({ gridSize: 5, freeSpace: false });
-		const centre = 12;
+		const document = createFixtureDocument({ gridColumns: 3, gridRows: 5, freeSpace: false });
+		const centre = 7;
 		document.slots[centre] = 'unplaced-art';
 
 		const next = setFreeSpace(document, true);
