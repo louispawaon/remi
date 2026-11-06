@@ -261,7 +261,7 @@
 
 	<h2 id="export-title">{snapshot.document.title}</h2>
 	<p class="meta">
-		{snapshot.document.format} · {snapshot.document.gridSize}×{snapshot.document.gridSize}
+		{snapshot.document.format} · {snapshot.document.gridColumns}×{snapshot.document.gridRows}
 	</p>
 
 	<button

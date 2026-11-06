@@ -4,11 +4,12 @@
 	import { createFixtureDocument } from '#lib/card/fixture';
 	import { renderCard, renderCardPng } from '#lib/card/png';
 	import { verifyCardArtwork } from '#lib/card/verify';
-	import type { Format, GridSize, Resolution } from '#lib/card/types';
+	import type { Format, GridDimension, Resolution } from '#lib/card/types';
 	import { createFixtureArtwork, recordFor } from '#lib/dev/artwork';
 	import type { HarnessApi, HarnessRenderResult } from '#lib/dev/harness-api';
 
-	let gridSize = $state<GridSize>(5);
+	let gridColumns = $state<GridDimension>(5);
+	let gridRows = $state<GridDimension>(5);
 	let format = $state<Format>('4:5');
 	let resolution = $state<Resolution>(1);
 	let status = $state('Ready');
@@ -60,14 +61,15 @@
 	}
 
 	async function renderFixture(
-		grid: GridSize = gridSize,
+		columns: GridDimension = gridColumns,
+		rows: GridDimension = gridRows,
 		cardFormat: Format = format,
 		cardResolution: Resolution = resolution
 	): Promise<HarnessRenderResult> {
 		status = 'Rendering…';
 		try {
 			record = recordFor(
-				createFixtureDocument({ gridSize: grid, format: cardFormat }),
+				createFixtureDocument({ gridColumns: columns, gridRows: rows, format: cardFormat }),
 				await artwork()
 			);
 			const rendered = await renderCard(record, cardResolution);
@@ -140,7 +142,8 @@
 			const imported = readProjectArchive(new Uint8Array(await file.arrayBuffer()));
 			await verifyCardArtwork(imported);
 			record = imported;
-			gridSize = record.document.gridSize;
+			gridColumns = record.document.gridColumns;
+			gridRows = record.document.gridRows;
 			format = record.document.format;
 			resolution = 1;
 			await renderCurrent();
@@ -172,16 +175,21 @@
 		const api: HarnessApi = {
 			renderMatrix: async () => {
 				const entries = [];
-				for (const grid of [3, 4, 5] as GridSize[]) {
+				for (const grid of [3, 4, 5] as GridDimension[]) {
 					for (const cardFormat of ['4:5', '3:4', '9:16', '1:1'] as Format[]) {
 						for (const cardResolution of [1, 2] as Resolution[]) {
 							const fixture = recordFor(
-								createFixtureDocument({ gridSize: grid, format: cardFormat }),
+								createFixtureDocument({
+									gridColumns: grid,
+									gridRows: grid,
+									format: cardFormat
+								}),
 								await artwork()
 							);
 							const rendered = await renderCard(fixture, cardResolution);
 							entries.push({
-								gridSize: grid,
+								gridColumns: grid,
+								gridRows: grid,
 								format: cardFormat,
 								resolution: cardResolution,
 								width: rendered.canvas.width,
@@ -201,7 +209,8 @@
 				const imported = readProjectArchive(new Uint8Array(bytes));
 				await verifyCardArtwork(imported);
 				record = imported;
-				gridSize = record.document.gridSize;
+				gridColumns = record.document.gridColumns;
+				gridRows = record.document.gridRows;
 				format = record.document.format;
 				await renderCurrent();
 			},
@@ -228,11 +237,19 @@
 
 	<div>
 		<label>
-			Grid
-			<select data-testid="grid" bind:value={gridSize}>
-				<option value={3}>3 × 3</option>
-				<option value={4}>4 × 4</option>
-				<option value={5}>5 × 5</option>
+			Columns
+			<select data-testid="grid-columns" bind:value={gridColumns}>
+				{#each [1, 2, 3, 4, 5, 6, 7] as size (size)}
+					<option value={size}>{size}</option>
+				{/each}
+			</select>
+		</label>
+		<label>
+			Rows
+			<select data-testid="grid-rows" bind:value={gridRows}>
+				{#each [1, 2, 3, 4, 5, 6, 7] as size (size)}
+					<option value={size}>{size}</option>
+				{/each}
 			</select>
 		</label>
 		<label>

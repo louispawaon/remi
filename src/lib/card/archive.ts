@@ -86,7 +86,8 @@ function upgradeManifest(json: unknown): unknown {
 	const gridSize = json.document.gridSize;
 	if (typeof gridSize !== 'number') return json;
 
-	const { gridSize: _gridSize, ...document } = json.document;
+	const document = { ...json.document };
+	delete document.gridSize;
 	return {
 		...json,
 		schemaVersion: CARD_SCHEMA_VERSION,

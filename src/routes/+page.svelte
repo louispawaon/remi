@@ -151,7 +151,7 @@
 	function meta(card: Row) {
 		const date = new Date(card.updatedAt);
 		const waiting = card.unplacedCount > 0 ? ` · ${card.unplacedCount} waiting` : '';
-		return `${card.gridSize}×${card.gridSize} · ${card.format} · ${card.itemCount} items${waiting} · ${date.toLocaleDateString(
+		return `${card.gridColumns}×${card.gridRows} · ${card.format} · ${card.itemCount} items${waiting} · ${date.toLocaleDateString(
 			undefined,
 			{
 				month: 'short',

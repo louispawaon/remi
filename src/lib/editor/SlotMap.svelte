@@ -8,7 +8,7 @@
 <aside class="sheet-map" aria-label="Slots">
 	<div class="map-head">
 		<h2 class="section-title">Sheet map</h2>
-		<span class="mono">{editor.document.gridSize}×{editor.document.gridSize}</span>
+		<span class="mono">{editor.document.gridColumns}×{editor.document.gridRows}</span>
 	</div>
 
 	<div class="rows">

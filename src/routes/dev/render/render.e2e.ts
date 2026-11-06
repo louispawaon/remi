@@ -34,13 +34,15 @@ test('renders all 24 grid, format and resolution combinations at exact dimension
 	for (const result of results) {
 		const [width, height] = DIMENSIONS[result.format];
 		expect({
-			grid: result.gridSize,
+			columns: result.gridColumns,
+			rows: result.gridRows,
 			format: result.format,
 			resolution: result.resolution,
 			width: result.width,
 			height: result.height
 		}).toEqual({
-			grid: result.gridSize,
+			columns: result.gridColumns,
+			rows: result.gridRows,
 			format: result.format,
 			resolution: result.resolution,
 			width: width * result.resolution,
@@ -49,13 +51,24 @@ test('renders all 24 grid, format and resolution combinations at exact dimension
 	}
 });
 
+test('renders rectangular grids at exact dimensions', async ({ page }) => {
+	await openHarness(page);
+	const wide = await page.evaluate(() => window.__remiHarness!.render(7, 3, '4:5', 1));
+	expect([wide.width, wide.height]).toEqual([1080, 1350]);
+	expect(wide.samples.length).toBeGreaterThan(0);
+
+	const tall = await page.evaluate(() => window.__remiHarness!.render(3, 7, '9:16', 2));
+	expect([tall.width, tall.height]).toEqual([2160, 3840]);
+});
+
 test('downloads and opens a PNG at exact dimensions in a mobile viewport', async ({ browser }) => {
 	const context = await browser.newContext({ ...devices['Pixel 7'] });
 	const page = await context.newPage();
 	await page.goto(`${BASE_URL}/dev/render`);
 	await page.waitForFunction(() => Boolean(window.__remiHarness?.state()));
 
-	await page.getByTestId('grid').selectOption('3');
+	await page.getByTestId('grid-columns').selectOption('3');
+	await page.getByTestId('grid-rows').selectOption('3');
 	await page.getByTestId('format').selectOption('9:16');
 	await page.getByTestId('resolution').selectOption('2');
 	await page.getByTestId('render').click();
@@ -86,7 +99,7 @@ test('restores an exported project offline with identical state, artwork and cro
 	await page.goto(`${BASE_URL}/dev/render`);
 	await page.waitForFunction(() => Boolean(window.__remiHarness?.state()));
 
-	const before = await page.evaluate(() => window.__remiHarness!.render(5, '4:5', 1));
+	const before = await page.evaluate(() => window.__remiHarness!.render(5, 5, '4:5', 1));
 	const beforeState = await page.evaluate(() => window.__remiHarness!.state());
 	expect(beforeState?.items.length).toBeGreaterThan(0);
 

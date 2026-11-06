@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { createFixtureDocument } from '#lib/card/fixture';
 	import { renderCard } from '#lib/card/png';
-	import type { CardDocument, Format, GridSize } from '#lib/card/types';
+	import { centreCellIndex } from '#lib/card/document';
+	import type { CardDocument, Format, GridDimension } from '#lib/card/types';
 	import { createFixtureArtwork } from '#lib/dev/artwork';
 
 	let { data } = $props();
@@ -36,8 +37,9 @@
 	];
 
 	function populate(cardDocument: CardDocument) {
-		const size = cardDocument.gridSize;
-		const free = cardDocument.freeSpace && size % 2 === 1 ? (size * size - 1) / 2 : -1;
+		const free = cardDocument.freeSpace
+			? centreCellIndex(cardDocument.gridColumns, cardDocument.gridRows)
+			: null;
 		const capacity = cardDocument.slots.filter((_, index) => index !== free).length;
 		const target = Math.floor(capacity * 0.75);
 		const sources = cardDocument.items.filter((item) => item.artwork);
@@ -68,12 +70,16 @@
 
 	async function draw(
 		host: HTMLElement | undefined,
-		gridSize: GridSize,
+		gridSize: GridDimension,
 		format: Format,
 		options: { selectSlot?: number; title?: string; populate?: boolean; contain?: boolean } = {}
 	) {
 		if (!host) return;
-		const cardDocument = createFixtureDocument({ gridSize, format });
+		const cardDocument = createFixtureDocument({
+			gridColumns: gridSize,
+			gridRows: gridSize,
+			format
+		});
 		cardDocument.title = options.title ?? 'Friday Night Rotation';
 		if (options.populate) populate(cardDocument);
 
@@ -84,7 +90,9 @@
 		canvas.style.display = 'block';
 		host.replaceChildren(canvas);
 
-		const free = cardDocument.freeSpace && gridSize % 2 === 1 ? (gridSize * gridSize - 1) / 2 : -1;
+		const free = cardDocument.freeSpace
+			? centreCellIndex(cardDocument.gridColumns, cardDocument.gridRows)
+			: null;
 
 		if (options.selectSlot !== undefined) {
 			const cell = rendered.layout.cells[options.selectSlot];

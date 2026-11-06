@@ -1,4 +1,15 @@
-import { CARD_SCHEMA_VERSION, type CardDocument, type CardItem, type GridDimension } from './types';
+import {
+	CARD_SCHEMA_VERSION,
+	GRID_MAX,
+	GRID_MIN,
+	type CardDocument,
+	type CardItem,
+	type GridDimension
+} from './types';
+
+export function clampGridDimension(value: number): GridDimension {
+	return Math.min(GRID_MAX, Math.max(GRID_MIN, Math.round(value))) as GridDimension;
+}
 
 /** The single centre cell, only meaningful when both axes are odd and at least 3. */
 export function centreCellIndex(

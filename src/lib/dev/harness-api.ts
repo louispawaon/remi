@@ -1,4 +1,4 @@
-import type { CardDocument, Format, GridSize, Resolution } from '#lib/card/types';
+import type { CardDocument, Format, GridDimension, Resolution } from '#lib/card/types';
 
 export interface HarnessRenderResult {
 	width: number;
@@ -8,7 +8,8 @@ export interface HarnessRenderResult {
 }
 
 export interface HarnessMatrixEntry {
-	gridSize: GridSize;
+	gridColumns: GridDimension;
+	gridRows: GridDimension;
 	format: Format;
 	resolution: Resolution;
 	width: number;
@@ -18,7 +19,12 @@ export interface HarnessMatrixEntry {
 /** Test-only surface exposed by the diagnostic harness route. */
 export interface HarnessApi {
 	renderMatrix(): Promise<HarnessMatrixEntry[]>;
-	render(gridSize: GridSize, format: Format, resolution: Resolution): Promise<HarnessRenderResult>;
+	render(
+		gridColumns: GridDimension,
+		gridRows: GridDimension,
+		format: Format,
+		resolution: Resolution
+	): Promise<HarnessRenderResult>;
 	renderCurrent(resolution?: Resolution): Promise<HarnessRenderResult>;
 	state(): CardDocument | null;
 	importBytes(bytes: number[]): Promise<void>;

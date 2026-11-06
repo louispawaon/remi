@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { isFreeSpaceCell } from '#lib/card/document';
-	import { GRID_SIZES } from '#lib/card/types';
+	import { centreCellIndex, isFreeSpaceCell } from '#lib/card/document';
+	import { GRID_MAX, GRID_MIN } from '#lib/card/types';
 	import type { EditorState } from './editor-state.svelte';
 
 	let { editor }: { editor: EditorState } = $props();
 
+	const freeSpaceAvailable = $derived(
+		centreCellIndex(editor.document.gridColumns, editor.document.gridRows) !== null
+	);
 	let removeArmed = $state(false);
 
 	$effect(() => {
@@ -33,17 +36,48 @@
 	{/if}
 
 	<div class="field">
-		<span>Grid</span>
-		<span class="seg">
-			{#each GRID_SIZES as size (size)}
-				<button
-					type="button"
-					class="seg-btn"
-					class:on={editor.document.gridSize === size}
-					aria-pressed={editor.document.gridSize === size}
-					onclick={() => editor.setGridSize(size)}>{size}</button
-				>
-			{/each}
+		<span>Columns</span>
+		<span class="seg stepper">
+			<button
+				type="button"
+				class="seg-btn"
+				aria-label="Fewer columns"
+				disabled={editor.document.gridColumns <= GRID_MIN}
+				onclick={() => editor.setGrid(editor.document.gridColumns - 1, editor.document.gridRows)}
+				>−</button
+			>
+			<span class="step-value">{editor.document.gridColumns}</span>
+			<button
+				type="button"
+				class="seg-btn"
+				aria-label="More columns"
+				disabled={editor.document.gridColumns >= GRID_MAX}
+				onclick={() => editor.setGrid(editor.document.gridColumns + 1, editor.document.gridRows)}
+				>+</button
+			>
+		</span>
+	</div>
+
+	<div class="field">
+		<span>Rows</span>
+		<span class="seg stepper">
+			<button
+				type="button"
+				class="seg-btn"
+				aria-label="Fewer rows"
+				disabled={editor.document.gridRows <= GRID_MIN}
+				onclick={() => editor.setGrid(editor.document.gridColumns, editor.document.gridRows - 1)}
+				>−</button
+			>
+			<span class="step-value">{editor.document.gridRows}</span>
+			<button
+				type="button"
+				class="seg-btn"
+				aria-label="More rows"
+				disabled={editor.document.gridRows >= GRID_MAX}
+				onclick={() => editor.setGrid(editor.document.gridColumns, editor.document.gridRows + 1)}
+				>+</button
+			>
 		</span>
 	</div>
 
@@ -53,14 +87,14 @@
 			type="button"
 			class="switch"
 			role="switch"
-			aria-checked={editor.document.freeSpace && editor.document.gridSize % 2 === 1}
+			aria-checked={editor.document.freeSpace && freeSpaceAvailable}
 			aria-label="Central free space"
-			disabled={editor.document.gridSize % 2 === 0}
+			disabled={!freeSpaceAvailable}
 			onclick={() => editor.setFreeSpace(!editor.document.freeSpace)}
 		></button>
 	</div>
-	{#if editor.document.gridSize % 2 === 0}
-		<p class="hint">Free space is available on odd grids.</p>
+	{#if !freeSpaceAvailable}
+		<p class="hint">Free space needs odd columns and rows, 3 or more.</p>
 	{/if}
 
 	<div class="field">
@@ -283,6 +317,17 @@
 		font-weight: 500;
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.stepper {
+		align-items: center;
+		flex-wrap: nowrap;
+	}
+	.step-value {
+		min-width: 22px;
+		text-align: center;
+		font-size: 12px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
 	}
 	.hint {
 		font-size: 12px;

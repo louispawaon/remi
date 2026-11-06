@@ -57,36 +57,34 @@ describe('card library store', () => {
 	});
 
 	it('upgrades a legacy square record and summary on read', async () => {
-		const {
-			gridColumns: _columns,
-			gridRows: _rows,
-			...legacyBase
-		} = createFixtureDocument({
-			gridColumns: 4,
-			gridRows: 4
-		});
-		const legacyDocument = {
-			...legacyBase,
-			schemaVersion: 1,
-			gridSize: 4
-		} as unknown as CardRecord['document'];
+		const fixture = createFixtureDocument({ gridColumns: 4, gridRows: 4 });
+		const legacyDocument = { ...fixture } as unknown as Record<string, unknown>;
+		delete legacyDocument.gridColumns;
+		delete legacyDocument.gridRows;
+		legacyDocument.schemaVersion = 1;
+		legacyDocument.gridSize = 4;
+
 		const legacySummary = {
-			id: legacyDocument.id,
-			title: legacyDocument.title,
+			id: fixture.id,
+			title: fixture.title,
 			gridSize: 4,
-			format: legacyDocument.format,
-			itemCount: legacyDocument.items.length,
+			format: fixture.format,
+			itemCount: fixture.items.length,
 			unplacedCount: 0,
-			updatedAt: legacyDocument.updatedAt,
+			updatedAt: fixture.updatedAt,
 			revision: 1,
 			thumbnail: null
 		} as unknown as CardSummary;
 
 		const database = await getDatabase();
-		await database.put('cards', { document: legacyDocument, artwork: {} }, legacyDocument.id);
-		await database.put('library', legacySummary, legacyDocument.id);
+		await database.put(
+			'cards',
+			{ document: legacyDocument as unknown as CardRecord['document'], artwork: {} },
+			fixture.id
+		);
+		await database.put('library', legacySummary, fixture.id);
 
-		const loaded = await loadCard(legacyDocument.id);
+		const loaded = await loadCard(fixture.id);
 		expect(loaded?.document.schemaVersion).toBe(2);
 		expect(loaded?.document.gridColumns).toBe(4);
 		expect(loaded?.document.gridRows).toBe(4);

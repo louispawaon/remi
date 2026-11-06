@@ -1,4 +1,6 @@
 import {
+	centreCellIndex,
+	clampGridDimension,
 	isFreeSpaceCell,
 	randomId,
 	removeItem as withoutItem,
@@ -72,8 +74,10 @@ export class EditorState {
 		this.#reconcileSelection();
 	}
 
-	setGridSize(gridSize: CardDocument['gridSize']): void {
-		this.#mutate(withGrid(this.document, gridSize));
+	setGrid(gridColumns: number, gridRows: number): void {
+		this.#mutate(
+			withGrid(this.document, clampGridDimension(gridColumns), clampGridDimension(gridRows))
+		);
 		this.#reconcileSelection();
 	}
 
@@ -163,8 +167,9 @@ export class EditorState {
 	addItem(item: CardItem, blob: Blob | null): void {
 		const document = this.document;
 		const slots = [...document.slots];
-		const free = document.freeSpace && document.gridSize % 2 === 1;
-		const centre = free ? (document.slots.length - 1) / 2 : -1;
+		const centre = document.freeSpace
+			? centreCellIndex(document.gridColumns, document.gridRows)
+			: null;
 		const target = slots.findIndex((slot, index) => slot === null && index !== centre);
 
 		if (target >= 0) slots[target] = item.id;

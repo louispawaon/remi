@@ -101,11 +101,13 @@ test('changes format and grid without losing items, and keeps per-format crops',
 	await expect(horizontal).toHaveValue('100');
 
 	await page.getByTestId('tabs').getByRole('button', { name: 'Arrange' }).click();
-	await page.getByRole('button', { name: '3', exact: true }).click();
+	await page.getByRole('button', { name: 'Fewer columns' }).click();
+	await page.getByRole('button', { name: 'Fewer columns' }).click();
 	await expect(page.getByTestId('item-count')).toContainText('8 items');
-	await expect(page.locator('.sheet-map .row')).toHaveCount(9);
+	await expect(page.locator('.sheet-map .row')).toHaveCount(15);
 
-	await page.getByRole('button', { name: '5', exact: true }).click();
+	await page.getByRole('button', { name: 'More columns' }).click();
+	await page.getByRole('button', { name: 'More columns' }).click();
 	await expect(page.locator('.sheet-map .row')).toHaveCount(25);
 	await expect(page.getByTestId('item-count')).toContainText('8 items');
 });
