@@ -155,7 +155,8 @@ content; the page scrolls.
 - Failed saves keep Export project available and name the consequence.
 - Unplaced items stay visible and are explicitly excluded from PNG output.
 - Format changes never move items; grid changes reflow in order; overflow stays
-  in the tray.
+  in the tray. Columns and rows are independent, 1–7 each; the free-space cell
+  exists only when both are odd and at least 3.
 - The latest sheet is the hero. Its poster opens the sheet; the wall label
   carries the same management actions as a wall card, so no sheet loses its
   controls by being featured.

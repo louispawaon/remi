@@ -16,7 +16,8 @@ This file is the short brief for implementation work; if they disagree, the spec
 - A local library: create, rename, duplicate, reopen, delete, autosave.
 - Guided editing: titles, colors, three curated fonts, image replacement, crop position,
   reorder, shuffle.
-- 3×3, 4×4, and 5×5 grids; optional central free space on odd grids.
+- 1×1 through 7×7 grids, with columns and rows set independently; optional central free
+  space when both are odd and at least 3.
 - 4:5, 3:4, 9:16, and 1:1 formats; standard and 2× PNG export.
 - Editable `.remi` ZIP projects containing all artwork, including uploads and unplaced items.
 - Full mobile workflows on iPhone Safari and Android Chrome.
