@@ -85,7 +85,7 @@ describe('card library store', () => {
 		await database.put('library', legacySummary, fixture.id);
 
 		const loaded = await loadCard(fixture.id);
-		expect(loaded?.document.schemaVersion).toBe(2);
+		expect(loaded?.document.schemaVersion).toBe(3);
 		expect(loaded?.document.gridColumns).toBe(4);
 		expect(loaded?.document.gridRows).toBe(4);
 		expect(loaded?.document.slots).toHaveLength(16);

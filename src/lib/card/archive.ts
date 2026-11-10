@@ -9,6 +9,7 @@ import {
 	FONT_CHOICES,
 	FORMATS,
 	GRID_DIMENSIONS,
+	TITLES_MODES,
 	type CardDocument,
 	type CardRecord
 } from './types';
@@ -64,7 +65,7 @@ const documentSchema = v.strictObject({
 	format: v.picklist(FORMATS),
 	freeSpace: v.boolean(),
 	appearance: v.strictObject({
-		titleVisible: v.boolean(),
+		titles: v.picklist(TITLES_MODES),
 		background: v.string(),
 		foreground: v.string(),
 		font: v.picklist(FONT_CHOICES)
@@ -80,23 +81,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Version 1 archives stored a square grid as one gridSize. */
+/** Older archives stored a square gridSize and one boolean for both titles. */
 function upgradeManifest(json: unknown): unknown {
-	if (!isRecord(json) || json.schemaVersion !== 1 || !isRecord(json.document)) return json;
-	const gridSize = json.document.gridSize;
-	if (typeof gridSize !== 'number') return json;
+	if (!isRecord(json) || !isRecord(json.document)) return json;
+	const version = json.schemaVersion;
+	if (typeof version !== 'number' || version >= CARD_SCHEMA_VERSION) return json;
 
 	const document = { ...json.document };
-	delete document.gridSize;
+
+	if (version === 1 && typeof document.gridSize === 'number') {
+		const gridSize = document.gridSize;
+		delete document.gridSize;
+		document.gridColumns = gridSize;
+		document.gridRows = gridSize;
+	}
+
+	if (isRecord(document.appearance)) {
+		const { titleVisible, ...appearance } = document.appearance;
+		if (appearance.titles === undefined) {
+			appearance.titles = titleVisible === false ? 'off' : 'cells';
+		}
+		document.appearance = appearance;
+	}
+
 	return {
 		...json,
 		schemaVersion: CARD_SCHEMA_VERSION,
-		document: {
-			...document,
-			schemaVersion: CARD_SCHEMA_VERSION,
-			gridColumns: gridSize,
-			gridRows: gridSize
-		}
+		document: { ...document, schemaVersion: CARD_SCHEMA_VERSION }
 	};
 }
 

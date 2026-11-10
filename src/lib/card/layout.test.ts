@@ -103,6 +103,32 @@ describe('computeLayout', () => {
 		}
 	});
 
+	it('reserves a numbered index between the grid and the footer', () => {
+		for (const format of FORMATS) {
+			const layout = computeLayout({
+				gridColumns: 5,
+				gridRows: 5,
+				format,
+				freeSpace: true,
+				resolution: 1,
+				legendHeight: 220
+			});
+
+			expect(layout.legend.height).toBe(220);
+			expect(layout.legend.x).toBe(layout.heading.x);
+			expect(layout.legend.width).toBe(layout.heading.width);
+			expect(layout.grid.y + layout.grid.height).toBeLessThanOrEqual(layout.legend.y + EPSILON);
+			expect(layout.legend.y + layout.legend.height).toBeLessThanOrEqual(layout.footer.y + EPSILON);
+
+			for (const cell of layout.cells) {
+				expect(cell.width).toBeGreaterThan(0);
+				expect(cell.height).toBeGreaterThan(0);
+				expect(cell.width / cell.height).toBeGreaterThanOrEqual(0.72 - EPSILON);
+				expect(cell.width / cell.height).toBeLessThanOrEqual(1.15 + EPSILON);
+			}
+		}
+	});
+
 	it('scales the whole composition exactly for 2x output', () => {
 		for (const { gridColumns, gridRows } of SHAPES) {
 			for (const format of FORMATS) {
@@ -125,6 +151,8 @@ describe('computeLayout', () => {
 				expect(doubled.titleFontSize).toBe(standard.titleFontSize * 2);
 				expect(doubled.caption.fontSize).toBe(standard.caption.fontSize * 2);
 				expect(doubled.heading).toEqual(scaleRect(standard.heading, 2));
+				expect(doubled.footer).toEqual(scaleRect(standard.footer, 2));
+				expect(doubled.legend).toEqual(scaleRect(standard.legend, 2));
 				expect(doubled.grid).toEqual(scaleRect(standard.grid, 2));
 				expect(doubled.cells).toEqual(standard.cells.map((cell) => scaleRect(cell, 2)));
 			}

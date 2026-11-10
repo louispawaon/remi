@@ -7,7 +7,7 @@ export async function createThumbnail(record: CardRecord, maxWidth = 360): Promi
 		...record,
 		document: {
 			...record.document,
-			appearance: { ...record.document.appearance, titleVisible: false }
+			appearance: { ...record.document.appearance, titles: 'off' }
 		}
 	};
 	const { canvas } = await renderCard(preview, 1, { footer: false });

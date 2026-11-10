@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { computeLayout } from './layout';
-import { CARD_FOOTER, drawCard } from './render';
-import type { CardDocument, Format } from './types';
+import type { LegendPlan } from './legend';
+import { CARD_FOOTER, drawCard, type DrawableArtwork } from './render';
+import type { CardDocument, CardItem, Format } from './types';
 
 function fakeContext() {
 	const texts: { text: string; x: number; y: number }[] = [];
@@ -34,7 +35,7 @@ function fakeContext() {
 
 function card(format: Format = '4:5'): CardDocument {
 	return {
-		schemaVersion: 2,
+		schemaVersion: 3,
 		id: 'card',
 		title: '',
 		gridColumns: 3,
@@ -42,7 +43,7 @@ function card(format: Format = '4:5'): CardDocument {
 		format,
 		freeSpace: false,
 		appearance: {
-			titleVisible: false,
+			titles: 'off',
 			background: '#000000',
 			foreground: '#ffffff',
 			font: 'sans'
@@ -57,6 +58,51 @@ function card(format: Format = '4:5'): CardDocument {
 
 function layoutFor(format: Format = '4:5') {
 	return computeLayout({ gridColumns: 3, gridRows: 3, format, freeSpace: false, resolution: 1 });
+}
+
+function item(id: string, title: string): CardItem {
+	return {
+		id,
+		category: 'movie',
+		sourceId: null,
+		titles: { preferred: title, alternatives: [] },
+		titleOverride: null,
+		artwork: { id: `art-${id}`, type: 'image/png', width: 100, height: 100 },
+		crops: {}
+	};
+}
+
+function cardWithItems(titles: string, mode: CardDocument['appearance']['titles'] = 'index') {
+	const document = card();
+	document.appearance.titles = mode;
+	document.items = titles.split('|').map((title, index) => item(`i${index}`, title));
+	const slots: (string | null)[] = document.items.map((entry) => entry.id);
+	while (slots.length < 9) slots.push(null);
+	document.slots = slots;
+	return document;
+}
+
+const artwork = { width: 100, height: 100 } as unknown as DrawableArtwork;
+
+function legend(): LegendPlan {
+	return {
+		fontSize: 14,
+		lineHeight: 19,
+		numberWidth: 20,
+		numberGap: 8,
+		columns: [
+			{
+				x: 0,
+				width: 984,
+				entries: [
+					{ number: '01', lines: ['First title'], y: 12 },
+					{ number: '02', lines: ['Second title'], y: 35 }
+				]
+			}
+		],
+		height: 80,
+		truncated: false
+	};
 }
 
 describe('card footer', () => {
@@ -102,5 +148,55 @@ describe('card footer', () => {
 			footer: false
 		});
 		expect(texts.some((entry) => entry.text === CARD_FOOTER)).toBe(false);
+	});
+});
+
+describe('numbered index', () => {
+	it('replaces cell captions with plate numbers', () => {
+		const { ctx, texts } = fakeContext();
+		drawCard(ctx, {
+			document: cardWithItems('First title|Second title'),
+			layout: layoutFor(),
+			resolveArtwork: () => artwork
+		});
+
+		expect(texts.map((entry) => entry.text)).toEqual(expect.arrayContaining(['01', '02']));
+		expect(texts.some((entry) => entry.text.includes('First title'))).toBe(false);
+	});
+
+	it('keeps captions in cells mode and draws no numbers', () => {
+		const { ctx, texts } = fakeContext();
+		drawCard(ctx, {
+			document: cardWithItems('First title|Second title', 'cells'),
+			layout: layoutFor(),
+			resolveArtwork: () => artwork
+		});
+
+		expect(texts.some((entry) => entry.text === 'First title')).toBe(true);
+		expect(texts.some((entry) => entry.text === '01')).toBe(false);
+	});
+
+	it('prints every key entry and puts the credit below the list', () => {
+		const { ctx, texts } = fakeContext();
+		const layout = computeLayout({
+			gridColumns: 3,
+			gridRows: 3,
+			format: '4:5',
+			freeSpace: false,
+			resolution: 1,
+			legendHeight: 80
+		});
+		drawCard(ctx, {
+			document: cardWithItems('First title|Second title'),
+			layout,
+			resolveArtwork: () => artwork,
+			legend: legend()
+		});
+
+		expect(texts.map((entry) => entry.text)).toEqual(
+			expect.arrayContaining(['01', 'First title', '02', 'Second title'])
+		);
+		const footer = texts.find((entry) => entry.text === CARD_FOOTER)!;
+		expect(footer.y).toBeGreaterThan(layout.legend.y + layout.legend.height);
 	});
 });

@@ -15,7 +15,8 @@ This file is the short brief for implementation work; if they disagree, the spec
   one category covering every platform; Podcasts is one category covering shows.
 - A local library: create, rename, duplicate, reopen, delete, autosave.
 - Guided editing: titles, colors, three curated fonts, image replacement, crop position,
-  reorder, shuffle.
+  reorder, shuffle. Titles can sit in cells, move to a numbered index under the grid
+  with the full names, or be hidden.
 - 1×1 through 7×7 grids, with columns and rows set independently; optional central free
   space when both are odd and at least 3.
 - 4:5, 3:4, 9:16, and 1:1 formats; standard and 2× PNG export.
@@ -30,7 +31,7 @@ bulk-library export, public hosting.
 
 ## Defaults
 
-New cards: 5×5, 4:5, titles visible, English-preferred titles, central free space on.
+New cards: 5×5, 4:5, cell captions, English-preferred titles, central free space on.
 One template, three curated fonts, custom raster uploads only.
 
 ## Limits

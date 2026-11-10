@@ -146,9 +146,27 @@ describe('project archive', () => {
 		);
 		const restored = readProjectArchive(bytes);
 
-		expect(restored.document.schemaVersion).toBe(2);
+		expect(restored.document.schemaVersion).toBe(3);
 		expect(restored.document.gridColumns).toBe(4);
 		expect(restored.document.gridRows).toBe(4);
+	});
+
+	it('upgrades a version 2 manifest with the old title toggle', async () => {
+		const record = makeRecord();
+		record.document.appearance.titles = 'off';
+		const bytes = await archiveWithManifest(record, (manifest) => {
+			const document = manifest.document as unknown as Record<string, unknown> & {
+				appearance: Record<string, unknown>;
+			};
+			manifest.schemaVersion = 2;
+			document.schemaVersion = 2;
+			document.appearance = { ...document.appearance, titleVisible: false };
+			delete document.appearance.titles;
+		});
+		const restored = readProjectArchive(bytes);
+
+		expect(restored.document.schemaVersion).toBe(3);
+		expect(restored.document.appearance.titles).toBe('off');
 	});
 
 	it('rejects grid dimensions above 7', async () => {
@@ -166,7 +184,7 @@ describe('project archive', () => {
 
 	it('rejects unsupported schema versions', async () => {
 		const bytes = await archiveWithManifest(makeRecord(), (manifest) => {
-			manifest.schemaVersion = 3;
+			manifest.schemaVersion = 4;
 		});
 		expect(() => readProjectArchive(bytes)).toThrow(/schema/i);
 	});

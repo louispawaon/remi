@@ -1,7 +1,8 @@
-import { placedItemIds } from './document';
-import { computeLayout, type CardLayout } from './layout';
-import { drawCard } from './render';
-import type { CardRecord, Resolution } from './types';
+import { placedItemIds, slotNumbers } from './document';
+import { planLegend, type LegendMeasure, type LegendPlan } from './legend';
+import { computeLayout, FORMAT_SIZES, LAYOUT_METRICS, type CardLayout } from './layout';
+import { cardFont, drawCard } from './render';
+import type { CardDocument, CardRecord, Resolution } from './types';
 
 export type RenderStage = 'fonts' | 'artwork' | 'drawing' | 'encoding';
 
@@ -24,13 +25,6 @@ export async function renderCard(
 	options: RenderOptions = {}
 ): Promise<RenderedCard> {
 	const document = record.document;
-	const layout = computeLayout({
-		gridColumns: document.gridColumns,
-		gridRows: document.gridRows,
-		format: document.format,
-		freeSpace: document.freeSpace,
-		resolution
-	});
 
 	options.onProgress?.('fonts');
 	const fonts = globalThis.document.fonts;
@@ -45,6 +39,21 @@ export async function renderCard(
 		await fonts.ready;
 	}
 	abortIfNeeded(options.signal);
+
+	const [standardWidth, standardHeight] = FORMAT_SIZES[document.format];
+	const legend =
+		document.appearance.titles === 'index'
+			? planIndex(document, standardWidth, standardHeight)
+			: null;
+
+	const layout = computeLayout({
+		gridColumns: document.gridColumns,
+		gridRows: document.gridRows,
+		format: document.format,
+		freeSpace: document.freeSpace,
+		resolution,
+		legendHeight: legend?.height ?? 0
+	});
 
 	const canvas = globalThis.document.createElement('canvas');
 	canvas.width = layout.width;
@@ -80,7 +89,8 @@ export async function renderCard(
 			document,
 			layout,
 			resolveArtwork: (id) => bitmaps.get(id),
-			footer: options.footer
+			footer: options.footer,
+			legend
 		});
 	} finally {
 		for (const bitmap of bitmaps.values()) bitmap.close();
@@ -113,4 +123,41 @@ export function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
 
 function abortIfNeeded(signal?: AbortSignal) {
 	if (signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
+}
+
+/** Measure the numbered key at 1x; both resolutions share the same composition. */
+function planIndex(
+	card: CardDocument,
+	standardWidth: number,
+	standardHeight: number
+): LegendPlan | null {
+	const numbering = slotNumbers(card);
+	const byId = new Map(card.items.map((item) => [item.id, item]));
+	const titles: string[] = [];
+	for (let index = 0; index < card.slots.length; index++) {
+		const id = card.slots[index];
+		if (!id || numbering[index] === null) continue;
+		const item = byId.get(id);
+		if (item) titles.push(item.titleOverride ?? item.titles.preferred);
+	}
+	if (titles.length === 0) return null;
+
+	const measuring = globalThis.document.createElement('canvas').getContext('2d');
+	if (!measuring) throw new Error('Canvas 2D is unavailable');
+	const font = cardFont(card.appearance.font);
+	const weight = font.weight === 800 ? 700 : 600;
+	const measure: LegendMeasure = Object.assign(
+		(text: string) => measuring.measureText(text).width,
+		{
+			setFont: (size: number) => {
+				measuring.font = `${weight} ${size}px ${font.stack}`;
+			}
+		}
+	);
+
+	return planLegend(titles, {
+		width: standardWidth - LAYOUT_METRICS.margin * 2,
+		maxHeight: Math.round(standardHeight * (card.format === '9:16' ? 0.25 : 0.2)),
+		measure
+	});
 }

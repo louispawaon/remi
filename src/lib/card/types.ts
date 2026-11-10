@@ -1,4 +1,4 @@
-export const CARD_SCHEMA_VERSION = 2;
+export const CARD_SCHEMA_VERSION = 3;
 
 export const CATEGORIES = [
 	'anime',
@@ -40,6 +40,10 @@ export type ArtworkType = (typeof ARTWORK_TYPES)[number];
 export const FONT_CHOICES = ['sans', 'serif', 'display'] as const;
 export type FontChoice = (typeof FONT_CHOICES)[number];
 
+/** Cells carry captions, numbered keys, or neither. */
+export const TITLES_MODES = ['cells', 'index', 'off'] as const;
+export type TitlesMode = (typeof TITLES_MODES)[number];
+
 export const CARD_LIMITS = {
 	maxItems: 100,
 	maxArtworkBytes: 8 * 1024 * 1024,
@@ -75,7 +79,7 @@ export interface CardItem {
 }
 
 export interface CardAppearance {
-	titleVisible: boolean;
+	titles: TitlesMode;
 	background: string;
 	foreground: string;
 	font: FontChoice;

@@ -138,6 +138,9 @@ content; the page scrolls.
   last tile in the wall, and the only other New sheet entry besides the header
   and hero.
 - **Slot tag** — butter pill with a two-digit cobalt code; selected cell only.
+- **Numbered index** — two-digit plate tag on each covered cell, then the full titles
+  in up to three lines under the grid, above the credit. Covers shrink to make room;
+  the index takes the card ink, the plate tags match the caption treatment.
 - **Sheet map** — quiet 12px slot rows; selected code is a butter pill.
 - **Tray** — unplaced items as capsule chips with a butter Place tag.
 - **Export slip** — butter paper, cobalt type, rounded top on mobile, grabber;

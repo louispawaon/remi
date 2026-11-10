@@ -189,6 +189,27 @@ test('uploads artwork, saves it, and exports standard and 2x PNG files', async (
 	expect((await project).suggestedFilename()).toMatch(/\.remi$/);
 });
 
+test('switches to a numbered index and exports the full title key', async ({ page }) => {
+	await seedFixture(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Style' }).click();
+	await page.getByRole('button', { name: 'Use a numbered index' }).click();
+
+	await expect(page.getByText('Cells show numbers; full titles below.')).toBeVisible();
+	await expect(page.locator('.render-error')).toHaveCount(0);
+	await expect(page.getByTestId('save-status')).toHaveText('Saved', { timeout: 6000 });
+
+	await openExport(page);
+	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
+	const download = page.waitForEvent('download');
+	await page.getByTestId('save-png').click();
+	const bytes = readFileSync((await (await download).path())!);
+	expect(readPngSize(bytes)).toEqual([1080, 1350]);
+
+	await page.getByTestId('export-dialog').getByRole('button', { name: 'Cancel' }).click();
+	await page.getByRole('button', { name: 'Show titles in cells' }).click();
+	await expect(page.getByText('Cells show numbers; full titles below.')).toHaveCount(0);
+});
+
 test('adds a mocked provider result through the search panel', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

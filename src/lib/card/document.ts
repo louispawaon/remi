@@ -36,6 +36,15 @@ export function unplacedItems(document: CardDocument): CardItem[] {
 	return document.items.filter((item) => !placed.has(item.id));
 }
 
+/** Row-major key numbers for filled cells, or null for blanks and free space. */
+export function slotNumbers(document: CardDocument): (number | null)[] {
+	let number = 0;
+	return document.slots.map((id, index) => {
+		if (id === null || isFreeSpaceCell(document, index)) return null;
+		return ++number;
+	});
+}
+
 export function randomId(): string {
 	if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
 
@@ -58,7 +67,7 @@ export function createDefaultDocument(id: string, now: string): CardDocument {
 		format: '4:5',
 		freeSpace: true,
 		appearance: {
-			titleVisible: true,
+			titles: 'cells',
 			background: '#0c0c0f',
 			foreground: '#f6ebc0',
 			font: 'display'

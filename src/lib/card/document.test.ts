@@ -10,6 +10,7 @@ import {
 	resizeGrid,
 	setFormat,
 	setFreeSpace,
+	slotNumbers,
 	unplacedItems
 } from './document';
 import { createFixtureDocument } from './fixture';
@@ -39,6 +40,15 @@ describe('card document helpers', () => {
 		expect(centreCellIndex(1, 3)).toBeNull();
 	});
 
+	it('numbers filled cells in reading order and skips blanks and free space', () => {
+		const document = createDefaultDocument('card', '2026-01-01T00:00:00.000Z');
+		document.gridColumns = 3;
+		document.gridRows = 3;
+		document.slots = ['a', null, 'b', null, 'free', null, 'c', null, null];
+
+		expect(slotNumbers(document)).toEqual([1, null, 2, null, null, null, 3, null, null]);
+	});
+
 	it('lists placed items in slot order without blanks', () => {
 		const document = createFixtureDocument();
 		const placed = placedItemIds(document);
@@ -61,7 +71,7 @@ describe('card document helpers', () => {
 		expect(document.gridRows).toBe(5);
 		expect(document.format).toBe('4:5');
 		expect(document.freeSpace).toBe(true);
-		expect(document.appearance.titleVisible).toBe(true);
+		expect(document.appearance.titles).toBe('cells');
 		expect(document.items).toEqual([]);
 		expect(document.slots).toHaveLength(25);
 		expect(document.revision).toBe(0);

@@ -40,6 +40,8 @@ export interface CardLayout {
 	resolution: Resolution;
 	heading: Rect;
 	footer: Rect;
+	/** Empty when the card has no numbered index. */
+	legend: Rect;
 	grid: Rect;
 	/** Row-major cell rectangles; a cell may be blank or free space. */
 	cells: Rect[];
@@ -61,6 +63,8 @@ export interface LayoutInput {
 	resolution: Resolution;
 	/** No title band: the grid takes the heading reserve. */
 	headless?: boolean;
+	/** Space reserved for a numbered index above the footer, in standard units. */
+	legendHeight?: number;
 }
 
 export function captionHeight(layout: CardLayout): number {
@@ -80,9 +84,25 @@ export function computeLayout(input: LayoutInput): CardLayout {
 		input.format === '9:16'
 			? LAYOUT_METRICS.storyBottomReserve
 			: margin + LAYOUT_METRICS.footerReserve;
+	const legendHeight = Math.max(0, input.legendHeight ?? 0);
+	const legendBottom =
+		standardHeight -
+		(input.format === '9:16' ? LAYOUT_METRICS.storyBottomReserve : margin) -
+		LAYOUT_METRICS.footerReserve;
+	const legend: Rect = {
+		x: margin,
+		y: legendBottom - legendHeight,
+		width: standardWidth - margin * 2,
+		height: legendHeight
+	};
 
 	const availableWidth = standardWidth - margin * 2;
-	const availableHeight = standardHeight - topInset - bottomInset;
+	const availableHeight = Math.max(
+		0,
+		legendHeight > 0
+			? legend.y - LAYOUT_METRICS.gap - topInset
+			: standardHeight - topInset - bottomInset
+	);
 
 	let cellWidth = (availableWidth - (input.gridColumns - 1) * gap) / input.gridColumns;
 	let cellHeight = (availableHeight - (input.gridRows - 1) * gap) / input.gridRows;
@@ -133,6 +153,7 @@ export function computeLayout(input: LayoutInput): CardLayout {
 			width: standardWidth - margin * 2,
 			height: bottomInset - margin
 		},
+		legend,
 		grid,
 		cells,
 		freeCellIndex: input.freeSpace ? centreCellIndex(input.gridColumns, input.gridRows) : null,
@@ -163,6 +184,7 @@ function scaleLayout(layout: CardLayout, factor: number): CardLayout {
 		height: layout.height * factor,
 		heading: scale(layout.heading),
 		footer: scale(layout.footer),
+		legend: scale(layout.legend),
 		grid: scale(layout.grid),
 		cells: layout.cells.map(scale),
 		titleFontSize: layout.titleFontSize * factor,

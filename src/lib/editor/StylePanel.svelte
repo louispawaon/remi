@@ -8,6 +8,12 @@
 	let replacing = $state(false);
 	let imageError = $state<string | null>(null);
 
+	const TITLE_MODES = [
+		{ value: 'cells', label: 'Captions', aria: 'Show titles in cells' },
+		{ value: 'index', label: 'Index', aria: 'Use a numbered index' },
+		{ value: 'off', label: 'Off', aria: 'Hide titles' }
+	] as const;
+
 	const crop = $derived(editor.selectedItem?.crops[editor.document.format] ?? { x: 0.5, y: 0.5 });
 
 	async function replaceImage(event: Event) {
@@ -32,20 +38,26 @@
 <section class="panel-body" aria-label="Style">
 	<h2 class="section-title">Style</h2>
 
-	<div class="field">
+	<div class="field stacked">
 		<span>Titles</span>
-		<button
-			type="button"
-			class="switch"
-			role="switch"
-			aria-checked={editor.document.appearance.titleVisible}
-			aria-label="Show titles"
-			onclick={() =>
-				editor.setAppearance({ titleVisible: !editor.document.appearance.titleVisible })}
-		></button>
+		<span class="seg" role="group" aria-label="Title treatment">
+			{#each TITLE_MODES as mode (mode.value)}
+				<button
+					type="button"
+					class="seg-btn"
+					class:on={editor.document.appearance.titles === mode.value}
+					aria-pressed={editor.document.appearance.titles === mode.value}
+					aria-label={mode.aria}
+					onclick={() => editor.setAppearance({ titles: mode.value })}>{mode.label}</button
+				>
+			{/each}
+		</span>
+		{#if editor.document.appearance.titles === 'index'}
+			<p class="hint">Cells show numbers; full titles below.</p>
+		{/if}
 	</div>
 
-	<div class="field">
+	<div class="field stacked">
 		<span>Format</span>
 		<span class="seg">
 			{#each FORMATS as format (format)}
@@ -60,9 +72,9 @@
 		</span>
 	</div>
 
-	<div class="field stacked face-field">
+	<div class="field stacked">
 		<span>Face</span>
-		<span class="seg face-seg">
+		<span class="seg">
 			<button
 				type="button"
 				class="seg-btn"
@@ -87,7 +99,7 @@
 		</span>
 	</div>
 
-	<div class="field">
+	<div class="field stacked">
 		<span>Ground</span>
 		<span class="colors">
 			<button
@@ -120,7 +132,7 @@
 		</span>
 	</div>
 
-	<div class="field">
+	<div class="field stacked">
 		<span>Ink</span>
 		<span class="colors">
 			{#each ['#f6ebc0', '#ffffff', '#0c0c0f'] as color (color)}
@@ -221,7 +233,7 @@
 	.panel-body {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 18px;
 	}
 	.colors {
 		display: flex;
@@ -275,13 +287,6 @@
 		font-size: 12px;
 		line-height: 1.4;
 		color: var(--ink-2);
-	}
-	.face-seg {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-	.face-seg .seg-btn {
-		padding: 0 4px;
 	}
 	.crop {
 		display: flex;

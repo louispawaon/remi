@@ -126,7 +126,7 @@ export function createFixtureDocument(options: FixtureOptions = {}): CardDocumen
 		format,
 		freeSpace,
 		appearance: {
-			titleVisible: true,
+			titles: 'cells',
 			background: '#0c0c0f',
 			foreground: '#f6ebc0',
 			font: 'display'
