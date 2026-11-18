@@ -11,11 +11,11 @@
 		{ title: 'Night Shift', meta: 'Film · 2024', tone: 'butter', mark: '01' },
 		{ title: 'Blue Hour', meta: 'Series', tone: 'cobalt' },
 		{ title: 'Salt & Static', meta: 'Album', tone: 'black', mark: 'A' },
-		{ title: 'The Long Take', meta: 'Film', tone: 'cobalt' },
+		{ title: 'Soft Crash', meta: 'Game', tone: 'cobalt' },
 		{ title: 'Free', meta: 'Space', tone: 'butter', free: true },
 		{ title: 'Paper Tiger', meta: 'Manga', tone: 'butter', mark: '02' },
-		{ title: 'Low Tide', meta: 'Series', tone: 'black', mark: 'B' },
-		{ title: 'After Dark', meta: 'Album', tone: 'cobalt' },
+		{ title: 'Low Tide', meta: 'Anime', tone: 'black', mark: 'B' },
+		{ title: 'Dead Air', meta: 'Podcast', tone: 'cobalt' },
 		{ title: 'West Wind', meta: 'Film · 2023', tone: 'butter' }
 	];
 </script>

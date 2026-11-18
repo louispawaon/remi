@@ -166,10 +166,10 @@
 		const editedToday = cards.filter(
 			(card) => new Date(card.updatedAt).toDateString() === today
 		).length;
-		const sheets = `${cards.length} ${cards.length === 1 ? 'sheet' : 'sheets'}`;
+		const collections = `${cards.length} ${cards.length === 1 ? 'collection' : 'collections'}`;
 		return editedToday > 0
-			? `${sheets} · ${editedToday} edited today`
-			: `${sheets} · last edited ${new Date(cards[0].updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+			? `${collections} · ${editedToday} edited today`
+			: `${collections} · last edited ${new Date(cards[0].updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
 	});
 </script>
 
@@ -187,7 +187,7 @@
 				disabled={creating}
 				onclick={create}
 			>
-				{creating ? 'Making…' : 'New sheet'}
+				{creating ? 'Creating…' : 'New collection'}
 			</button>
 		</div>
 	</header>
@@ -196,16 +196,16 @@
 		<section class="hero" aria-labelledby="hero-title">
 			<div class="hero-copy">
 				<h1 id="hero-title" class="display">
-					<span>Everything you love.</span>
-					<span>One sheet.</span>
+					<span>These belong together.</span>
+					<span>According to you.</span>
 				</h1>
 				<p class="lead">
-					Search for the covers you want, hang them on one sheet, and export the wall as a single
-					image.
+					Hang covers from movies, music, anime, games, and more on one wall. Name the collection
+					and save it as an image.
 				</p>
 				<div class="hero-actions">
 					<button class="stamp hero-stamp" type="button" disabled={creating} onclick={create}>
-						{creating ? 'Making…' : cards.length === 0 ? 'Make the first sheet' : 'New sheet'}
+						{creating ? 'Creating…' : 'New collection'}
 					</button>
 					<label class="ghost file-label">
 						{importing ? 'Importing…' : 'Import project'}
@@ -230,7 +230,7 @@
 				{#if loading}
 					<div class="poster-frame" aria-hidden="true">
 						<div class="poster skeleton-poster">
-							<span class="skeleton-label">Opening the wall…</span>
+							<span class="skeleton-label">Opening your library…</span>
 						</div>
 					</div>
 				{:else if featured}
@@ -246,7 +246,7 @@
 									{#if featured.url}
 										<img class="poster-art" src={featured.url} alt="" />
 									{:else}
-										<span class="poster-blank">Empty sheet</span>
+										<span class="poster-blank">No preview</span>
 									{/if}
 								</span>
 							</a>
@@ -261,7 +261,7 @@
 										void commitRename();
 									}}
 								>
-									<label class="visually-hidden" for="featured-rename">Card title</label>
+									<label class="visually-hidden" for="featured-rename">Collection title</label>
 									<input
 										id="featured-rename"
 										class="input"
@@ -314,8 +314,8 @@
 							</div>
 						</div>
 						<div class="wall-label">
-							<h2 class="display wall-title">Your first wall</h2>
-							<p class="meta">3×3 · Free space · No account</p>
+							<h2 class="display wall-title">different media, same emotional damage</h2>
+							<p class="meta">3×3 · 4:5 · 8 items</p>
 						</div>
 					</article>
 				{/if}
@@ -346,7 +346,7 @@
 								{#if card.url}
 									<img class="art" src={card.url} alt="" loading="lazy" />
 								{:else}
-									<span class="art blank">NO IMAGE</span>
+									<span class="art blank">No preview</span>
 								{/if}
 							</a>
 
@@ -359,7 +359,9 @@
 											void commitRename();
 										}}
 									>
-										<label class="visually-hidden" for={`rename-${card.id}`}>Card title</label>
+										<label class="visually-hidden" for={`rename-${card.id}`}>
+											Collection title
+										</label>
 										<input
 											id={`rename-${card.id}`}
 											class="input"
@@ -409,11 +411,11 @@
 						class="new-tile"
 						type="button"
 						disabled={creating}
-						aria-label="Create a new sheet"
+						aria-label="New collection"
 						onclick={create}
 					>
 						<span class="new-mark" aria-hidden="true"></span>
-						<span class="new-label">{creating ? 'Making…' : 'New sheet'}</span>
+						<span class="new-label">{creating ? 'Creating…' : 'New collection'}</span>
 					</button>
 				</div>
 			</section>
@@ -483,7 +485,7 @@
 		padding: 0 32px 64px;
 	}
 
-	/* The hero: copy on the left, the latest sheet mounted as a poster on the right. */
+	/* The hero: copy on the left, the latest collection mounted as a poster on the right. */
 	.hero {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
