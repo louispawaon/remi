@@ -3,6 +3,9 @@
 Status: direction chosen 2026-10-29 (user chose Club Wall from the three
 explorations). This replaces the 2026-10-28 "Catalog" direction.
 
+This record preserves the original exploration and copy. Current interface
+language lives in [Remi’s voice guide](../../../DESIGN.md#voice).
+
 The working evidence (comps, screenshots, temporary covers) lived in a local
 `design-pivot/` folder and is intentionally not tracked.
 

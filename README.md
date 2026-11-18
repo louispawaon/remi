@@ -1,6 +1,6 @@
 # Remi
 
-A local-first media card maker built with SvelteKit. Product requirements live in
+Remi is a local-first media collection maker built with SvelteKit. Product requirements live in
 [PRODUCT.md](PRODUCT.md); the full specification and phased plan live in
 [docs/superpowers/](docs/superpowers/README.md).
 
@@ -42,7 +42,7 @@ leak fails the build instead of shipping.
 ## Render harness
 
 `pnpm dev`, then open `/dev/render` or `/dev/library`. They exercise the deterministic
-fixture across grids, formats, and resolutions, plus local cards, revisions, thumbnails, and
+fixture across grids, formats, and resolutions, plus local collections, revisions, thumbnails, and
 project import. Both are unavailable in a production build unless `ENABLE_DEV_HARNESS=1` is
 set, which the automated tests use.
 
@@ -54,5 +54,5 @@ there; use the app's download/open-image fallbacks when testing over plain HTTP.
 
 ## Saving and backups
 
-Cards autosave to IndexedDB in the browser. Browser storage can be cleared or evicted, so
+Collections autosave to IndexedDB in the browser. Browser storage can be cleared or evicted, so
 exported `.remi` project files are the durable backup.

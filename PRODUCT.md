@@ -1,8 +1,8 @@
 # Remi — product requirements
 
-Remi is a media card maker: search anime, manga, manhwa, manhua, movies, TV, games,
-songs, albums, and podcasts, arrange them into a customizable grid, and export the result
-as a PNG or a complete editable project. It runs locally, works on phones on the same
+Remi is a media collection maker. Search anime, manga, manhwa, manhua, movies, TV, games,
+songs, albums, and podcasts. Arrange their covers on a wall, name the collection, and save
+it as a PNG or an editable project. It runs locally, works on phones on the same
 network, and needs no accounts.
 
 The binding specification is [docs/superpowers/specs/2026-10-28-remi-v1-design.md](docs/superpowers/specs/2026-10-28-remi-v1-design.md).
@@ -10,7 +10,7 @@ This file is the short brief for implementation work; if they disagree, the spec
 
 ## Included
 
-- Nine categories mixed within one card, with paginated search, provider filters, and
+- Nine categories mixed within one collection, with paginated search, provider filters, and
   title-language preference. Music is one category covering songs and albums; Games is
   one category covering every platform; Podcasts is one category covering shows.
 - A local library: create, rename, duplicate, reopen, delete, autosave.
@@ -25,19 +25,19 @@ This file is the short brief for implementation work; if they disagree, the spec
 
 ## Excluded
 
-Gameplay, progress tracking, accounts, cloud sync, public card links, list imports,
+Gameplay, progress tracking, accounts, cloud sync, public collection links, list imports,
 freeform design, extra templates, offline installation, JPEG/PDF/SVG export,
 bulk-library export, public hosting.
 
 ## Defaults
 
-New cards: 5×5, 4:5, cell captions, English-preferred titles, central free space on.
+New collections: 5×5, 4:5, cell captions, English-preferred titles, central free space on.
 One template, three curated fonts, custom raster uploads only.
 
 ## Limits
 
 - Uploads: PNG/JPEG/WebP, 10 MiB and 24 megapixels; stored at max 1600 px long edge.
-- Stored artwork: 8 MiB per asset, 40 MiB per card, 100 items per card.
+- Stored artwork: 8 MiB per asset, 40 MiB of artwork and 100 items per collection.
 - Project archives: 64 MiB compressed and expanded, 102 entries, 1 MiB manifest.
 - Output: 1080 px wide, or 2160 px at 2×.
 
@@ -45,5 +45,5 @@ One template, three curated fonts, custom raster uploads only.
 
 - One Canvas renderer for preview and PNG; export dimensions independent of viewport.
 - Everything editable without dragging or hovering.
-- Credentials stay server-side; uploaded artwork and saved cards stay on the device.
-- Never silently discard overflow items, overwrite cards, or claim a failed save/export succeeded.
+- Credentials stay server-side; uploaded artwork and saved collections stay on the device.
+- Never silently discard overflow items, overwrite collections, or claim a failed save/export succeeded.
