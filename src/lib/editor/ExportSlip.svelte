@@ -294,7 +294,7 @@
 			<p class="status" role="status" data-testid="prep-stage">{stageLabel()}</p>
 			<div class="prep-track" aria-hidden="true">
 				<span
-					style={`width:${stage === 'artwork' && total > 0 ? Math.round((completed / total) * 100) : 100}%`}
+					style:transform={`scaleX(${stage === 'artwork' && total > 0 ? completed / total : 1})`}
 				></span>
 			</div>
 			<button
@@ -468,7 +468,12 @@
 		display: block;
 		height: 3px;
 		background: var(--ground);
-		transition: width 0.15s linear;
+		transform-origin: left;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.prep-track span {
+			transition: transform 0.15s linear;
+		}
 	}
 	.open-row {
 		margin-top: 10px;
