@@ -61,7 +61,7 @@ export function createDefaultDocument(id: string, now: string): CardDocument {
 	return {
 		schemaVersion: CARD_SCHEMA_VERSION,
 		id,
-		title: 'Untitled card',
+		title: 'Untitled collection',
 		gridColumns: 5,
 		gridRows: 5,
 		format: '4:5',

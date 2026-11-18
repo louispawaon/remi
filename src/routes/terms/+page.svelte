@@ -12,8 +12,8 @@
 	<section>
 		<h2>Using Remi</h2>
 		<p>
-			Remi is a free tool for composing media cards from metadata and artwork. Use it for your own
-			projects. You do not need an account, and using it does not create a contract beyond these
+			Remi is a free tool for making media collections from metadata and artwork. Use it for your
+			own projects. You do not need an account, and using it does not create a contract beyond these
 			terms.
 		</p>
 	</section>
@@ -21,9 +21,9 @@
 	<section>
 		<h2>Your content</h2>
 		<p>
-			What you make in Remi is yours. You are responsible for the images you upload and the cards
-			you export, including making sure you have the right to use and share them. Do not use Remi to
-			infringe someone else’s copyright, trademark, or other rights.
+			What you make in Remi is yours. You are responsible for the images you upload and the
+			collections you export, including making sure you have the right to use and share them. Do not
+			use Remi to infringe someone else’s copyright, trademark, or other rights.
 		</p>
 		<p>
 			Remi stores your work in your browser, not on a server. Keep exports if you need the work to
@@ -70,7 +70,7 @@
 		<h2>No warranty and liability</h2>
 		<p>
 			To the extent permitted by law, Remi is provided without warranties of any kind, and the
-			people who run it are not liable for lost cards, lost exports, or any indirect or
+			people who run it are not liable for lost collections, lost exports, or any indirect or
 			consequential loss from using it. Nothing here limits rights you have that cannot be limited
 			by law.
 		</p>

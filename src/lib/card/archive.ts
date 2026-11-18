@@ -165,7 +165,7 @@ export function createProjectManifest(document: CardDocument): Manifest {
 	const manifest = buildManifest(document);
 	if (strToU8(JSON.stringify(manifest)).byteLength > ARCHIVE_LIMITS.manifestBytes) {
 		throw new Error(
-			'Project manifest exceeds the 1 MiB limit. Shorten the card title or captions.'
+			'Project manifest exceeds the 1 MiB limit. Shorten the collection title or captions.'
 		);
 	}
 	return manifest;
@@ -173,7 +173,7 @@ export function createProjectManifest(document: CardDocument): Manifest {
 
 export async function createProjectArchive(record: CardRecord): Promise<Uint8Array> {
 	if (record.document.items.length > CARD_LIMITS.maxItems) {
-		throw new Error(`Card has more than ${CARD_LIMITS.maxItems} items`);
+		throw new Error(`Collection has more than ${CARD_LIMITS.maxItems} items`);
 	}
 
 	const manifest = createProjectManifest(record.document);
@@ -187,7 +187,9 @@ export async function createProjectArchive(record: CardRecord): Promise<Uint8Arr
 		}
 		artworkBytes += blob.size;
 		if (artworkBytes > CARD_LIMITS.maxCardArtworkBytes) {
-			throw new Error(`Card artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`);
+			throw new Error(
+				`Collection artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`
+			);
 		}
 		files[entry.path] = new Uint8Array(await blob.arrayBuffer());
 	}
@@ -268,7 +270,7 @@ function validateDocument(manifest: Manifest) {
 		);
 	}
 	if (document.items.length > CARD_LIMITS.maxItems) {
-		throw new Error(`Card has more than ${CARD_LIMITS.maxItems} items`);
+		throw new Error(`Collection has more than ${CARD_LIMITS.maxItems} items`);
 	}
 
 	const itemIds = new Set<string>();
@@ -327,7 +329,9 @@ function collectArtwork(manifest: Manifest, files: Record<string, Uint8Array>) {
 		}
 		totalBytes += data.byteLength;
 		if (totalBytes > CARD_LIMITS.maxCardArtworkBytes) {
-			throw new Error(`Card artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`);
+			throw new Error(
+				`Collection artwork exceeds the ${CARD_LIMITS.maxCardArtworkBytes} byte limit`
+			);
 		}
 		artwork[entry.id] = new Blob([new Uint8Array(data)], { type: entry.type });
 	}

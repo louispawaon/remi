@@ -90,11 +90,11 @@
 			case 'artwork':
 				return total > 0 ? `Loading artwork ${completed}/${total}…` : 'Loading artwork…';
 			case 'drawing':
-				return 'Drawing card…';
+				return 'Drawing collection…';
 			case 'encoding':
 				return 'Encoding PNG…';
 			default:
-				return 'Preparing…';
+				return 'Preparing PNG…';
 		}
 	}
 
@@ -285,8 +285,7 @@
 
 	{#if unplaced.length > 0}
 		<p class="warn">
-			{String(unplaced.length).padStart(2, '0')} unplaced item{unplaced.length === 1 ? '' : 's'} excluded
-			from this PNG.
+			{unplaced.length} unplaced item{unplaced.length === 1 ? '' : 's'} will stay out of the PNG.
 		</p>
 	{/if}
 
@@ -353,7 +352,7 @@
 		<button class="ghost" data-testid="export-project" type="button" onclick={exportProject}
 			>Export .remi</button
 		>
-		<p class="meta">Keeps every item, crop, and artwork for a full restore.</p>
+		<p class="meta">Reopen the project with all items, artwork, and edits.</p>
 	</div>
 </dialog>
 

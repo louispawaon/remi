@@ -16,9 +16,9 @@
 	}
 
 	const DEFAULT: Meta = {
-		title: 'Remi — media card maker for anime, manga, movies, games, music, and podcasts',
+		title: 'Remi — Media collection maker',
 		description:
-			'Search anime, manga, manhwa, movies, TV, games, songs, albums, and podcasts, arrange the covers on one card, and export it as a single image. Local-first, no account required.'
+			'Make a collection of movies, music, anime, games, and more. Hang the covers on one wall and save it as an image. No account needed.'
 	};
 
 	const PAGES: Record<string, Meta> = {
@@ -26,12 +26,12 @@
 		'/privacy': {
 			title: 'Privacy — Remi',
 			description:
-				'How Remi handles your data: cards and artwork stay in your browser, search terms go to AniList, TMDB, TheGamesDB, Deezer, and Podcast Index.'
+				'How Remi handles your data: collections and artwork stay in your browser, search terms go to AniList, TMDB, TheGamesDB, Deezer, and Podcast Index.'
 		},
 		'/terms': {
 			title: 'Terms — Remi',
 			description:
-				'The terms for using Remi, a local-first card maker that stores your work in your browser.'
+				'The terms for using Remi, a local-first collection maker that stores your work in your browser.'
 		},
 		'/credits': {
 			title: 'Credits — Remi',

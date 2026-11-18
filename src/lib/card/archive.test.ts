@@ -270,7 +270,7 @@ describe('project archive', () => {
 		for (const path of Object.keys(files).filter((entry) => entry.startsWith('artwork/'))) {
 			files[path] = new Uint8Array(7 * 1024 * 1024);
 		}
-		expect(() => readProjectArchive(zipSync(files, { level: 1 }))).toThrow(/card artwork/i);
+		expect(() => readProjectArchive(zipSync(files, { level: 1 }))).toThrow(/collection artwork/i);
 	});
 
 	it('rejects cards with too many items', async () => {

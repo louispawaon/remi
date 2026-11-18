@@ -12,22 +12,23 @@
 	<section>
 		<h2>The short version</h2>
 		<p>
-			Remi is local-first. Your cards, titles, crops and artwork stay in this browser. There is no
-			account, no analytics, and no Remi database holding your work. Search terms do leave your
-			device so the app can find media.
+			Remi is local-first. Your collections, titles, crops and artwork stay in this browser. There
+			is no account, no analytics, and no Remi database holding your work. Search terms do leave
+			your device so the app can find media.
 		</p>
 	</section>
 
 	<section>
 		<h2>What stays on your device</h2>
 		<p>
-			Cards, item titles, artwork you upload or add, crop positions, appearance settings, thumbnails
-			and revision data are stored in this browser’s IndexedDB. Export files you create are ordinary
-			local files. None of this is sent to a Remi server and none of it is readable by us.
+			Collections, item titles, artwork you upload or add, crop positions, appearance settings,
+			thumbnails and revision data are stored in this browser’s IndexedDB. Export files you create
+			are ordinary local files. None of this is sent to a Remi server and none of it is readable by
+			us.
 		</p>
 		<p>
-			Clearing site data or deleting a card removes that data. Browser storage can also be evicted
-			without warning, which is why exported <code>.remi</code> files are the durable backup.
+			Clearing site data or deleting a collection removes that data. Browser storage can also be
+			evicted without warning, which is why exported <code>.remi</code> files are the durable backup.
 		</p>
 	</section>
 
@@ -62,9 +63,9 @@
 	<section>
 		<h2>Your choices</h2>
 		<p>
-			Because your work lives in your browser, you control it directly: delete cards in the library,
-			clear site data to remove everything, and export a project to keep a copy. If you believe Remi
-			holds data about you, or you want a metadata or artwork correction, write to
+			Because your work lives in your browser, you control it directly: delete collections in the
+			library, clear site data to remove everything, and export a project to keep a copy. If you
+			believe Remi holds data about you, or you want a metadata or artwork correction, write to
 			<a href="mailto:remi@project1of1.com">remi@project1of1.com</a>.
 		</p>
 	</section>

@@ -1,7 +1,7 @@
 import type { CardRecord } from '#lib/card/types';
 import { canvasToPng, renderCard } from '#lib/card/png';
 
-/** Small library thumbnail; the sheet label carries the title, so the art stays clean. */
+/** The wall label carries the title so the library thumbnail can show only the artwork. */
 export async function createThumbnail(record: CardRecord, maxWidth = 360): Promise<Blob> {
 	const preview: CardRecord = {
 		...record,

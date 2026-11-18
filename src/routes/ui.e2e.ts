@@ -52,16 +52,16 @@ test('creates a card, saves its title, reloads, and shows it in the library', as
 
 test('library renames, duplicates, and deletes independently', async ({ page }) => {
 	await createCard(page);
-	await page.getByTestId('title').fill('First sheet');
+	await page.getByTestId('title').fill('First collection');
 	await expect(page.getByTestId('save-status')).toHaveText('Saved', { timeout: 5000 });
 	await page.getByRole('button', { name: 'REMI' }).click();
 	await page.waitForURL(/\/$/);
 
 	await page.getByTestId('card').first().getByRole('button', { name: 'Rename' }).click();
-	await page.getByLabel('Card title').fill('Renamed sheet');
+	await page.getByLabel('Collection title').fill('Renamed collection');
 	await page.getByRole('button', { name: 'Save' }).click();
 	await expect(page.getByTestId('card')).toHaveCount(1);
-	await expect(page.getByTestId('card').first()).toContainText('Renamed sheet');
+	await expect(page.getByTestId('card').first()).toContainText('Renamed collection');
 
 	await page.getByTestId('card').first().getByRole('button', { name: 'Duplicate' }).click();
 	await expect(page.getByTestId('card')).toHaveCount(2);
@@ -809,7 +809,7 @@ test('standard and 2x keep the same composition on a populated card', async ({ p
 	await seedFixture(page);
 	await openExport(page);
 	await expect(page.getByTestId('export-dialog')).toContainText(
-		'02 unplaced items excluded from this PNG.'
+		'2 unplaced items will stay out of the PNG.'
 	);
 	await expect(page.getByText(/Prepared 1080 × 1350/)).toBeVisible({ timeout: 10_000 });
 

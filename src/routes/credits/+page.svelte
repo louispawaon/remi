@@ -51,9 +51,9 @@
 	<section>
 		<h2>Your data</h2>
 		<p>
-			Cards, artwork, and uploads stay in this browser’s IndexedDB. Nothing is uploaded to a Remi
-			server. Export a <code>.remi</code> project to keep a durable copy; browser storage can be cleared
-			or evicted.
+			Collections, artwork, and uploads stay in this browser’s IndexedDB. Nothing is uploaded to a
+			Remi server. Export a <code>.remi</code> project to keep a durable copy; browser storage can be
+			cleared or evicted.
 		</p>
 	</section>
 </main>

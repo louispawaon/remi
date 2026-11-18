@@ -21,7 +21,7 @@
 	let leaving = false;
 
 	const leaveWarning =
-		'This card is not saved. Leave and lose the changes in this tab? Export the project first to keep them.';
+		'Leave without saving? Export the project before leaving to keep your changes.';
 
 	beforeNavigate((navigation) => {
 		if (allowLeave) {
@@ -110,7 +110,7 @@
 	</main>
 {:else if !editor}
 	<main class="load-state">
-		<p class="mono">Opening sheet…</p>
+		<p class="mono">Opening collection…</p>
 	</main>
 {:else}
 	<div class="editor-app">
@@ -121,7 +121,7 @@
 			</div>
 
 			<label class="title-wrap">
-				<span class="visually-hidden">Card title</span>
+				<span class="visually-hidden">Collection title</span>
 				<input
 					class="title-input"
 					data-testid="title"
@@ -167,9 +167,9 @@
 			<div class="banner" role="alert">
 				<span>
 					{editor.status === 'conflict'
-						? 'This card changed in another tab. Reload before editing further.'
-						: (editor.statusDetail ?? 'That save failed.')}
-					Your work is still in memory and can be exported.
+						? 'This collection changed in another tab. Reload before editing further.'
+						: (editor.statusDetail ?? 'Couldn’t save this collection.')}
+					Export the project to keep a copy of your current edits.
 				</span>
 				<span class="banner-actions">
 					<button class="text-action" type="button" onclick={() => void editor?.flush()}
@@ -187,7 +187,7 @@
 									allowLeave = true;
 									window.location.reload();
 								}
-							}}>Reload card</button
+							}}>Reload collection</button
 						>
 					{/if}
 				</span>
@@ -214,7 +214,7 @@
 					<div hidden={editor.tool !== 'arrange'}><ArrangePanel {editor} /></div>
 					<div hidden={editor.tool !== 'style'}><StylePanel {editor} /></div>
 					{#if editor.tool === 'preview'}
-						<p class="hint">Tap a cell to select it, or use Add to hang a poster.</p>
+						<p class="hint">Tap a slot to select it, or use Add to hang a cover.</p>
 					{/if}
 				</div>
 			</aside>
@@ -223,9 +223,9 @@
 				class="sheet"
 				class:compact={editor.tool !== 'preview'}
 				class:add={editor.tool === 'add'}
-				aria-label="Card preview"
+				aria-label="Collection preview"
 			>
-				<h1 class="visually-hidden">{editor.document.title || 'Untitled card'}</h1>
+				<h1 class="visually-hidden">{editor.document.title || 'Untitled collection'}</h1>
 				<div class="sheet-head">
 					<span class="mono">
 						{FORMAT_SIZES[editor.document.format][0]} × {FORMAT_SIZES[editor.document.format][1]}

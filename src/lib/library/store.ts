@@ -39,18 +39,18 @@ export function summarize(record: CardRecord, thumbnail: Blob | null): CardSumma
 /** Storage refuses cards the renderer would choke on; limits match the archive contract. */
 export function assertStorable(record: CardRecord): void {
 	if (record.document.items.length > CARD_LIMITS.maxItems) {
-		throw new StorageWriteError(`A card can hold at most ${CARD_LIMITS.maxItems} items.`);
+		throw new StorageWriteError(`A collection can hold at most ${CARD_LIMITS.maxItems} items.`);
 	}
 	createProjectManifest(record.document);
 
 	let total = 0;
 	for (const blob of Object.values(record.artwork)) {
 		if (blob.size > CARD_LIMITS.maxArtworkBytes) {
-			throw new StorageWriteError('One artwork file is larger than the 8 MiB card limit.');
+			throw new StorageWriteError('One artwork file is larger than the 8 MiB file limit.');
 		}
 		total += blob.size;
 		if (total > CARD_LIMITS.maxCardArtworkBytes) {
-			throw new StorageWriteError('This card’s artwork is larger than the 40 MiB limit.');
+			throw new StorageWriteError('This collection’s artwork is larger than the 40 MiB limit.');
 		}
 	}
 }
@@ -118,7 +118,7 @@ async function writeCard(
 
 		const existing = await cards.get(record.document.id);
 		if (mode === 'insert') {
-			if (existing) throw new StorageWriteError('A card with this id already exists.');
+			if (existing) throw new StorageWriteError('A collection with this ID already exists.');
 		} else if (!existing) {
 			throw new CardGoneError();
 		} else if (existing.document.revision !== record.document.revision) {
@@ -186,13 +186,13 @@ export async function createCard(
 
 export async function renameCard(id: string, title: string): Promise<CardRecord> {
 	const existing = await loadCard(id);
-	if (!existing) throw new StorageWriteError('That card no longer exists.');
+	if (!existing) throw new StorageWriteError('That collection no longer exists.');
 	return saveCard({ ...existing, document: renameDocument(existing.document, title) });
 }
 
 export async function duplicateCard(id: string): Promise<CardRecord> {
 	const existing = await loadCard(id);
-	if (!existing) throw new StorageWriteError('That card no longer exists.');
+	if (!existing) throw new StorageWriteError('That collection no longer exists.');
 
 	const now = new Date().toISOString();
 	const copy: CardRecord = {
