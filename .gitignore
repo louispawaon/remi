@@ -31,3 +31,7 @@ test-results
 # Local design working folder (comps, shots, temporary covers)
 design-pivot/
 .impeccable/
+
+# Local video project and collection brief
+video/
+remi_collection_video_brief.json
