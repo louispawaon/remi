@@ -59,7 +59,10 @@ export function resolveImageUrl(provider: MediaProvider, value: string): URL {
 		} catch {
 			throw new RequestError('Deezer image path is not approved.');
 		}
-		if (!pathname.startsWith('/images/cover/') || pathname.includes('..')) {
+		if (
+			(!pathname.startsWith('/images/cover/') && !pathname.startsWith('/images/artist/')) ||
+			pathname.includes('..')
+		) {
 			throw new RequestError('Deezer image path is not approved.');
 		}
 		if (url.search || url.hash) {

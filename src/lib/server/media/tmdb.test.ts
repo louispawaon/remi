@@ -189,6 +189,78 @@ describe('TMDB adapter', () => {
 		});
 	});
 
+	it('searches people with a portrait and known-for context', async () => {
+		const fetcher = vi.fn<typeof fetch>(async (input) => {
+			expect(String(input)).toContain('/search/person');
+			return jsonResponse({
+				page: 1,
+				total_pages: 2,
+				total_results: 20,
+				results: [
+					{
+						id: 31,
+						name: 'Tom Hanks',
+						profile_path: '/tom.jpg',
+						known_for_department: 'Acting',
+						known_for: [{ title: 'Forrest Gump' }]
+					}
+				]
+			});
+		});
+		const adapter = createTmdb({ token: 'secret', fetch: fetcher as unknown as typeof fetch });
+		const result = await adapter.search({ ...movieRequest, scope: 'person', query: 'tom hanks' });
+
+		expect(result.results[0]).toMatchObject({
+			providerId: 'person:31',
+			category: 'movie',
+			format: 'Forrest Gump',
+			coverPath: '/t/p/w500/tom.jpg'
+		});
+		expect(result.hasNextPage).toBe(true);
+	});
+
+	it('browses cast roles for movies and TV', async () => {
+		const fetcher = vi.fn<typeof fetch>(async (input) => {
+			if (String(input).includes('/movie/5/credits')) {
+				return jsonResponse({
+					cast: [
+						{
+							id: 31,
+							credit_id: 'c1',
+							name: 'Tom Hanks',
+							character: 'Forrest Gump',
+							profile_path: '/tom.jpg'
+						}
+					]
+				});
+			}
+			return jsonResponse({
+				cast: [
+					{
+						id: 32,
+						credit_id: 'c2',
+						name: 'Song Kang',
+						roles: [{ character: 'Cha Hyun-su' }],
+						profile_path: '/song.jpg'
+					}
+				]
+			});
+		});
+		const adapter = createTmdb({ token: 'secret', fetch: fetcher as unknown as typeof fetch });
+
+		const movie = await adapter.cast!('movie', '5');
+		expect(movie[0]).toMatchObject({
+			providerId: 'character:c1',
+			category: 'movie',
+			title: { preferred: 'Forrest Gump', alternatives: ['Tom Hanks'] },
+			format: 'Tom Hanks',
+			coverPath: '/t/p/w500/tom.jpg'
+		});
+
+		const tv = await adapter.cast!('tv', '9');
+		expect(tv[0]).toMatchObject({ title: { preferred: 'Cha Hyun-su' }, category: 'tv' });
+	});
+
 	it('exposes genre filters and TV status but not for movies', async () => {
 		const fetcher = vi.fn(async () =>
 			jsonResponse({
@@ -201,6 +273,7 @@ describe('TMDB adapter', () => {
 		const adapter = createTmdb({ token: 'secret', fetch: fetcher as unknown as typeof fetch });
 
 		const movie = await adapter.options('movie');
+		expect(movie.scopes.map((option) => option.value)).toEqual(['title', 'person']);
 		expect(movie.filters.map((filter) => filter.key)).toEqual(['genre']);
 		expect(movie.filters[0].options).toContainEqual({ value: '878', label: 'Science Fiction' });
 

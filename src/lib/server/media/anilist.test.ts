@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createAniList } from './anilist';
-import { MediaError } from './errors';
+import { MediaError, RequestError } from './errors';
 import type { MediaSearchRequest } from '#lib/media/types';
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
@@ -170,6 +170,76 @@ describe('AniList adapter', () => {
 		const pending = cancelled.search(request, controller.signal);
 		controller.abort();
 		await expect(pending).rejects.toMatchObject({ code: 'provider_unavailable' });
+	});
+
+	it('searches characters and people with portraits', async () => {
+		const characterPage = jsonResponse({
+			data: {
+				Page: {
+					pageInfo: { hasNextPage: true, total: 5000 },
+					characters: [
+						{
+							id: 62,
+							name: { full: 'Zoro Roronoa', native: 'ロロノア・ゾロ' },
+							image: {
+								large: 'https://s4.anilist.co/file/anilistcdn/character/large/b62.png'
+							},
+							media: {
+								nodes: [{ title: { english: 'ONE PIECE' }, seasonYear: 1999 }]
+							}
+						}
+					]
+				}
+			}
+		});
+		const staffPage = jsonResponse({
+			data: {
+				Page: {
+					pageInfo: { hasNextPage: false, total: 1 },
+					staff: [
+						{
+							id: 118075,
+							name: { full: 'Kazuya Nakai', native: '中井和哉' },
+							image: {
+								large: 'https://s4.anilist.co/file/anilistcdn/staff/large/n118075.png'
+							},
+							languageV2: 'Japanese',
+							primaryOccupations: ['Voice Actor']
+						}
+					]
+				}
+			}
+		});
+		const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
+			const body = JSON.parse(String(init?.body)) as { query: string };
+			return body.query.includes('characters(') ? characterPage : staffPage;
+		});
+		const adapter = createAniList(fetcher as unknown as typeof fetch);
+
+		const characters = await adapter.search({ ...request, scope: 'character' });
+		expect(characters.results[0]).toMatchObject({
+			providerId: 'character:62',
+			title: { preferred: 'Zoro Roronoa', alternatives: ['ロロノア・ゾロ'] },
+			year: 1999,
+			format: 'ONE PIECE',
+			coverPath: 'https://s4.anilist.co/file/anilistcdn/character/large/b62.png'
+		});
+		expect(characters.hasNextPage).toBe(true);
+
+		const people = await adapter.search({ ...request, scope: 'person' });
+		expect(people.results[0]).toMatchObject({
+			providerId: 'person:118075',
+			title: { preferred: 'Kazuya Nakai' },
+			format: 'Voice Actor',
+			coverPath: 'https://s4.anilist.co/file/anilistcdn/staff/large/n118075.png'
+		});
+	});
+
+	it('requires a name for character and people searches', async () => {
+		const adapter = createAniList();
+		await expect(
+			adapter.search({ ...request, scope: 'character', query: undefined })
+		).rejects.toBeInstanceOf(RequestError);
 	});
 
 	it('exposes category-appropriate options', async () => {

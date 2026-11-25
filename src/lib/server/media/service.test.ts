@@ -227,6 +227,22 @@ describe('MediaService', () => {
 		});
 	});
 
+	it('browses cast through TMDB', async () => {
+		const fetcher = vi.fn<typeof fetch>(
+			async () =>
+				new Response(JSON.stringify({ cast: [] }), {
+					headers: { 'content-type': 'application/json' }
+				})
+		);
+		const service = new MediaService({
+			tmdbToken: 'token',
+			fetch: fetcher as unknown as typeof fetch
+		});
+
+		await expect(service.cast('movie', '5')).resolves.toEqual([]);
+		expect(String(fetcher.mock.calls[0][0])).toContain('/movie/5/credits');
+	});
+
 	it('routes podcasts to Podcast Index with credentials', async () => {
 		const fetcher = fetcherMock();
 		const service = new MediaService({

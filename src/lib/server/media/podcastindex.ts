@@ -165,6 +165,7 @@ export function createPodcastIndex(options: PodcastIndexOptions): MediaAdapter {
 			return {
 				category,
 				provider: 'podcastindex',
+				scopes: [{ value: 'title', label: 'Titles' }],
 				supportsYear: false,
 				titleLanguages: [],
 				filters: []

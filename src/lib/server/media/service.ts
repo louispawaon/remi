@@ -2,6 +2,7 @@ import type { Category } from '#lib/card/types';
 import type {
 	MediaOptions,
 	MediaProvider,
+	MediaResult,
 	MediaSearchRequest,
 	MediaSearchResult
 } from '#lib/media/types';
@@ -9,7 +10,7 @@ import { createAniList } from './anilist';
 import type { MediaAdapter } from './adapter';
 import { TTLCache } from './cache';
 import { createDeezer } from './deezer';
-import { missingTmdbCredentials } from './errors';
+import { MediaError, missingTmdbCredentials } from './errors';
 import { createPodcastIndex } from './podcastindex';
 import { createIgdb } from './igdb';
 import { createTmdb } from './tmdb';
@@ -106,6 +107,20 @@ export class MediaService {
 		return abortable(pending, signal);
 	}
 
+	async cast(category: Category, id: string, signal?: AbortSignal): Promise<MediaResult[]> {
+		const provider = PROVIDERS[category];
+		if (provider === 'tmdb' && !this.#tmdb) throw missingTmdbCredentials();
+
+		const adapter = this.#adapter(provider);
+		if (!adapter.cast) {
+			throw new MediaError(
+				'provider_unavailable',
+				'Cast browsing is not available for this category.'
+			);
+		}
+		return abortable(adapter.cast(category, id), signal);
+	}
+
 	async options(category: Category, signal?: AbortSignal): Promise<MediaOptions> {
 		const provider = PROVIDERS[category];
 		if (provider === 'tmdb' && !this.#tmdb) throw missingTmdbCredentials();
@@ -155,6 +170,7 @@ function searchKey(request: MediaSearchRequest): string {
 	return JSON.stringify([
 		request.category,
 		request.mode,
+		request.scope ?? 'title',
 		request.query ?? '',
 		request.page,
 		request.year ?? '',

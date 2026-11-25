@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+	castUrl,
 	createMediaSearch,
 	fetchMediaSearch,
 	imageUrl,
@@ -40,6 +41,14 @@ const result = (query: string): MediaSearchResult => ({
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('media client urls', () => {
+	it('serializes scope and cast urls', () => {
+		expect(searchUrl(request)).toContain('scope=title');
+		expect(searchUrl({ ...request, scope: 'character' })).toContain('scope=character');
+		const cast = castUrl('movie', '5');
+		expect(cast).toContain('category=movie');
+		expect(cast).toContain('id=5');
+	});
+
 	it('serializes only the filters in use', () => {
 		const url = searchUrl(request);
 		expect(url).toContain('category=anime');

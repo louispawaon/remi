@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { RequestError } from './errors';
-import { parseImageRequest, parseOptionsRequest, parseSearchRequest } from './validate';
+import {
+	parseCastRequest,
+	parseImageRequest,
+	parseOptionsRequest,
+	parseSearchRequest
+} from './validate';
 
 const search = (query: string) => new URL(`https://remi.test/api/media/search?${query}`);
 const options = (query: string) => new URL(`https://remi.test/api/media/options?${query}`);
@@ -16,6 +21,25 @@ describe('request validation', () => {
 			titleLanguage: 'english',
 			query: undefined
 		});
+	});
+
+	it('defaults scope to title and accepts character or person searches', () => {
+		expect(parseSearchRequest(search('category=game&mode=search&query=zelda')).scope).toBe('title');
+		expect(
+			parseSearchRequest(search('category=game&mode=search&query=zelda&scope=character')).scope
+		).toBe('character');
+		expect(() =>
+			parseSearchRequest(search('category=game&mode=search&query=zelda&scope=nope'))
+		).toThrow(RequestError);
+	});
+
+	it('parses cast requests for movies and TV only', () => {
+		expect(
+			parseCastRequest(new URL('https://remi.test/api/media/cast?category=movie&id=5'))
+		).toEqual({ category: 'movie', id: '5' });
+		expect(() =>
+			parseCastRequest(new URL('https://remi.test/api/media/cast?category=anime&id=5'))
+		).toThrow(RequestError);
 	});
 
 	it('requires a query for search and validates enums and ranges', () => {

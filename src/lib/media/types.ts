@@ -6,6 +6,9 @@ export type MediaProvider = (typeof MEDIA_PROVIDERS)[number];
 export const SEARCH_MODES = ['search', 'browse'] as const;
 export type SearchMode = (typeof SEARCH_MODES)[number];
 
+export const SEARCH_SCOPES = ['title', 'character', 'person'] as const;
+export type SearchScope = (typeof SEARCH_SCOPES)[number];
+
 export const TITLE_LANGUAGES = ['english', 'romaji', 'native'] as const;
 export type TitleLanguage = (typeof TITLE_LANGUAGES)[number];
 
@@ -30,6 +33,8 @@ export interface MediaResult {
 export interface MediaSearchRequest {
 	category: Category;
 	mode: SearchMode;
+	/** Defaults to title so older requests keep working. */
+	scope?: SearchScope;
 	query?: string;
 	page: number;
 	year?: number;
@@ -60,6 +65,7 @@ export interface MediaFilter {
 export interface MediaOptions {
 	category: Category;
 	provider: MediaProvider;
+	scopes: MediaOption[];
 	filters: MediaFilter[];
 	titleLanguages: MediaOption[];
 	supportsYear: boolean;

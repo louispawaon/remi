@@ -3,6 +3,7 @@ import type {
 	MediaErrorBody,
 	MediaOptions,
 	MediaProvider,
+	MediaResult,
 	MediaSearchRequest,
 	MediaSearchResult
 } from './types';
@@ -23,6 +24,7 @@ export function searchUrl(request: MediaSearchRequest): string {
 	const params = new URLSearchParams({
 		category: request.category,
 		mode: request.mode,
+		scope: request.scope ?? 'title',
 		page: String(request.page),
 		titleLanguage: request.titleLanguage
 	});
@@ -36,6 +38,10 @@ export function searchUrl(request: MediaSearchRequest): string {
 
 export function optionsUrl(category: Category): string {
 	return `/api/media/options?${new URLSearchParams({ category })}`;
+}
+
+export function castUrl(category: Category, id: string): string {
+	return `/api/media/cast?${new URLSearchParams({ category, id })}`;
 }
 
 export function imageUrl(provider: MediaProvider, path: string): string {
@@ -60,6 +66,17 @@ export async function fetchMediaOptions(
 	const response = await fetcher(optionsUrl(category), { signal });
 	if (!response.ok) throw await toClientError(response);
 	return (await response.json()) as MediaOptions;
+}
+
+export async function fetchMediaCast(
+	category: Category,
+	id: string,
+	signal?: AbortSignal,
+	fetcher: typeof fetch = globalThis.fetch
+): Promise<MediaResult[]> {
+	const response = await fetcher(castUrl(category, id), { signal });
+	if (!response.ok) throw await toClientError(response);
+	return (await response.json()) as MediaResult[];
 }
 
 export interface SearchHandlers {

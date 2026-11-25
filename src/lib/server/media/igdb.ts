@@ -28,6 +28,13 @@ interface IgdbGame {
 	genres?: IgdbName[];
 }
 
+interface IgdbCharacter {
+	id: number;
+	name?: string;
+	mug_shot?: { image_id?: string };
+	games?: IgdbName[];
+}
+
 export interface IgdbOptions {
 	clientId: string | undefined;
 	clientSecret: string | undefined;
@@ -112,6 +119,7 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 	}
 
 	async function query<T>(
+		endpoint: 'games' | 'characters',
 		body: string,
 		signal?: AbortSignal,
 		retried = false
@@ -119,7 +127,7 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 		const bearer = await accessToken(signal);
 		let response: Response;
 		try {
-			response = await fetcher(`${BASE}/games`, {
+			response = await fetcher(`${BASE}/${endpoint}`, {
 				method: 'POST',
 				headers: {
 					'Client-ID': id,
@@ -141,7 +149,7 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 
 		if (response.status === 401 && !retried) {
 			token = null;
-			return query<T>(body, signal, true);
+			return query<T>(endpoint, body, signal, true);
 		}
 		if (!response.ok) {
 			throw upstreamError('IGDB', response.status, retryAfterSeconds(response));
@@ -161,6 +169,28 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 			if (request.mode !== 'search') {
 				throw new RequestError('Game search needs a title.');
 			}
+
+			const scope = request.scope ?? 'title';
+			const queryText = request.query?.trim();
+			if (scope === 'character') {
+				if (!queryText) throw new RequestError('Search needs a character name.');
+				const offset = (request.page - 1) * PAGE_SIZE;
+				const { rows } = await query<IgdbCharacter>(
+					'characters',
+					`search "${escape(queryText)}"; fields name, mug_shot.image_id, games.name; limit ${PAGE_SIZE}; offset ${offset};`,
+					signal
+				);
+				// The index carries junk and artless entries; only portrait tiles are useful here.
+				return {
+					results: rows.filter((row) => row.mug_shot?.image_id).map(normalizeCharacter),
+					page: request.page,
+					hasNextPage: rows.length === PAGE_SIZE,
+					total: null
+				};
+			}
+			if (scope !== 'title') {
+				throw new RequestError('IGDB does not carry people.');
+			}
 			if (request.titleLanguage !== 'english') {
 				throw new RequestError('IGDB supplies one title; language choice applies to AniList.');
 			}
@@ -168,11 +198,11 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 				throw new RequestError('Filters are not available for games.');
 			}
 
-			const queryText = request.query?.trim();
 			if (!queryText) throw new RequestError('Search needs a game title.');
 
 			const offset = (request.page - 1) * PAGE_SIZE;
 			const { rows, total } = await query<IgdbGame>(
+				'games',
 				`search "${escape(queryText)}"; fields name, cover.image_id, first_release_date, platforms.name, genres.name; limit ${PAGE_SIZE}; offset ${offset};`,
 				signal
 			);
@@ -192,6 +222,10 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 			return {
 				category,
 				provider: 'igdb',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'character', label: 'Characters' }
+				],
 				supportsYear: false,
 				titleLanguages: [],
 				filters: []
@@ -219,6 +253,22 @@ function normalize(game: IgdbGame): MediaResult {
 		status: null,
 		genres: (game.genres ?? []).map((genre) => genre.name).filter(Boolean) as string[],
 		coverPath: game.cover?.image_id ? `${IMAGE_PREFIX}${game.cover.image_id}.jpg` : null
+	};
+}
+
+function normalizeCharacter(character: IgdbCharacter): MediaResult {
+	return {
+		provider: 'igdb',
+		providerId: `character:${character.id}`,
+		category: 'game',
+		title: { preferred: character.name?.trim() || 'Unknown character', alternatives: [] },
+		year: null,
+		format: character.games?.[0]?.name ?? 'Game',
+		status: null,
+		genres: [],
+		coverPath: character.mug_shot?.image_id
+			? `${IMAGE_PREFIX}${character.mug_shot.image_id}.jpg`
+			: null
 	};
 }
 

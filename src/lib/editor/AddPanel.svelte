@@ -5,13 +5,13 @@
 	import { ADD_CATEGORIES, type CardItem, type Category } from '#lib/card/types';
 	import {
 		createMediaSearch,
+		fetchMediaCast,
 		fetchMediaOptions,
 		imageUrl,
 		type MediaClientError
 	} from '#lib/media/client';
-	import type { MediaOptions } from '#lib/media/types';
+	import type { MediaOptions, MediaResult, SearchScope } from '#lib/media/types';
 	import { fetchProviderArtwork, normalizeArtwork } from '#lib/media/artwork';
-	import type { MediaResult } from '#lib/media/types';
 	import type { EditorState } from './editor-state.svelte';
 
 	let { editor }: { editor: EditorState } = $props();
@@ -23,6 +23,8 @@
 	let year = $state('');
 	let filters = $state<Record<string, string>>({});
 	let titleLanguage = $state('english');
+	let scope = $state<SearchScope>('title');
+	let casting = $state<{ id: string; title: string } | null>(null);
 	let results = $state<MediaResult[]>([]);
 	let total = $state<number | null>(null);
 	let hasNext = $state(false);
@@ -39,19 +41,35 @@
 	let loadedCovers = $state<Record<string, boolean>>({});
 
 	const search = createMediaSearch();
+	const scopes = $derived(options?.scopes ?? [{ value: 'title', label: 'Titles' }]);
 	const supportsFilters = $derived(
-		editor.addCategory !== 'movie' &&
+		scope === 'title' &&
+			editor.addCategory !== 'movie' &&
 			editor.addCategory !== 'tv' &&
 			editor.addCategory !== 'music' &&
 			editor.addCategory !== 'game' &&
 			editor.addCategory !== 'podcast'
 	);
 	const supportsYear = $derived(
-		options
-			? options.supportsYear
-			: editor.addCategory !== 'music' &&
+		scope === 'title' &&
+			(options
+				? options.supportsYear
+				: editor.addCategory !== 'music' &&
 					editor.addCategory !== 'game' &&
-					editor.addCategory !== 'podcast'
+					editor.addCategory !== 'podcast')
+	);
+	const placeholder = $derived(
+		scope === 'character'
+			? 'Search characters'
+			: scope === 'person'
+				? 'Search people'
+				: editor.addCategory === 'music'
+					? 'Search songs, albums or artists'
+					: editor.addCategory === 'game'
+						? 'Search games'
+						: editor.addCategory === 'podcast'
+							? 'Search podcasts'
+							: 'Search titles'
 	);
 	const hasFilters = $derived(
 		supportsYear ||
@@ -83,7 +101,14 @@
 		const currentYear = year;
 		const currentFilters = filters;
 		const language = titleLanguage;
+		const currentScope = scope;
+		const browsing = casting;
 		void retry;
+
+		if (browsing) {
+			search.cancel();
+			return;
+		}
 
 		const yearText = supportsYear ? currentYear.trim() : '';
 		if (yearText && !/^\d{4}$/.test(yearText)) {
@@ -113,6 +138,7 @@
 			{
 				category,
 				mode: 'search',
+				scope: currentScope,
 				query: text.trim(),
 				page: currentPage,
 				year: yearText ? Number(yearText) : undefined,
@@ -149,6 +175,8 @@
 		options = null;
 		optionsError = null;
 		filters = {};
+		scope = 'title';
+		casting = null;
 		failedCovers = {};
 		loadedCovers = {};
 		page = 1;
@@ -174,6 +202,44 @@
 
 	function setFilter(key: string, value: string) {
 		filters = { ...filters, [key]: value };
+		page = 1;
+	}
+
+	function setScope(next: SearchScope) {
+		if (scope === next) return;
+		scope = next;
+		casting = null;
+		page = 1;
+		results = [];
+		total = null;
+		hasNext = false;
+		year = '';
+		filters = {};
+		failedCovers = {};
+		loadedCovers = {};
+	}
+
+	async function openCast(result: MediaResult) {
+		casting = { id: result.providerId, title: result.title.preferred };
+		search.cancel();
+		searchError = null;
+		loading = true;
+		failedCovers = {};
+		loadedCovers = {};
+		try {
+			results = await fetchMediaCast(result.category, result.providerId);
+			total = null;
+			hasNext = false;
+		} catch (error) {
+			results = [];
+			searchError = error instanceof Error ? error.message : String(error);
+		} finally {
+			loading = false;
+		}
+	}
+
+	function closeCast() {
+		casting = null;
 		page = 1;
 	}
 
@@ -290,13 +356,7 @@
 				class="input"
 				data-testid="search-input"
 				type="search"
-				placeholder={editor.addCategory === 'music'
-					? 'Search songs, albums or artists'
-					: editor.addCategory === 'game'
-						? 'Search games'
-						: editor.addCategory === 'podcast'
-							? 'Search podcasts'
-							: 'Search titles'}
+				{placeholder}
 				value={query}
 				oninput={(event) => {
 					query = event.currentTarget.value;
@@ -305,6 +365,22 @@
 			/>
 		</label>
 	</div>
+
+	{#if scopes.length > 1}
+		<div class="scope-row" role="group" aria-label="Search scope">
+			{#each scopes as option (option.value)}
+				<button
+					class="ghost scope-btn"
+					class:active={scope === option.value}
+					type="button"
+					aria-pressed={scope === option.value}
+					onclick={() => setScope(option.value as SearchScope)}
+				>
+					{option.label}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#snippet filterFields()}
 		<div class="filters">
@@ -391,6 +467,13 @@
 		</div>
 	{/if}
 
+	{#if casting}
+		<div class="cast-head">
+			<button class="text-action" type="button" onclick={closeCast}>← Back to titles</button>
+			<span class="label">Cast of {casting.title}</span>
+		</div>
+	{/if}
+
 	<div class="results-head">
 		<span class="label">Results</span>
 		<span class="mono"
@@ -443,6 +526,11 @@
 						{#if result.title.alternatives.length > 0}
 							<span class="alt">{result.title.alternatives[0]}</span>
 						{/if}
+						{#if scope === 'title' && (editor.addCategory === 'movie' || editor.addCategory === 'tv')}
+							<button class="text-action cast-link" type="button" onclick={() => openCast(result)}>
+								Cast
+							</button>
+						{/if}
 					</div>
 					<button
 						class="stamp add"
@@ -457,7 +545,7 @@
 		</ul>
 	{/if}
 
-	{#if results.length > 0}
+	{#if results.length > 0 && !casting}
 		<div class="pager">
 			<button
 				class="ghost pager-btn"
@@ -504,6 +592,34 @@
 		display: flex;
 		gap: 8px;
 		align-items: stretch;
+	}
+	.scope-row {
+		display: flex;
+		gap: 6px;
+		margin-top: 8px;
+	}
+	.scope-btn {
+		padding: 4px 10px;
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+	.scope-btn.active {
+		border-color: var(--ink);
+		background: var(--ink);
+		color: var(--ground);
+	}
+	.cast-head {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		margin-top: 8px;
+	}
+	.cast-link {
+		align-self: flex-start;
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
 	}
 	.category-field {
 		flex: 0 0 106px;

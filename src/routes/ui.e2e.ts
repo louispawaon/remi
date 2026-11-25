@@ -383,6 +383,140 @@ test('searches games without year filters and shows the platform', async ({ page
 	await expect(page.locator('.sheet-map')).toContainText('Sonic the Hedgehog');
 });
 
+test('searches characters from a second scope and adds one', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'anime',
+				provider: 'anilist',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'character', label: 'Characters' },
+					{ value: 'person', label: 'People' }
+				],
+				supportsYear: true,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'anilist',
+						providerId: 'character:62',
+						category: 'anime',
+						title: { preferred: 'Zoro Roronoa', alternatives: ['ロロノア・ゾロ'] },
+						year: 1999,
+						format: 'ONE PIECE',
+						status: null,
+						genres: [],
+						coverPath: 'https://s4.anilist.co/file/anilistcdn/character/large/b62.png'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: 1
+			})
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('anime');
+	await page.getByRole('button', { name: 'Characters' }).click();
+	await page.getByTestId('search-input').fill('zoro');
+	await expect(page.getByTestId('result')).toContainText('Zoro Roronoa');
+	await expect(page.getByTestId('result')).toContainText('ONE PIECE');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.locator('.sheet-map')).toContainText('Zoro Roronoa');
+});
+
+test('browses a movie cast and adds a character', async ({ page }) => {
+	await page.route('**/api/media/options*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				category: 'movie',
+				provider: 'tmdb',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'person', label: 'Actors' }
+				],
+				supportsYear: true,
+				titleLanguages: [],
+				filters: []
+			})
+		})
+	);
+	await page.route('**/api/media/search*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				results: [
+					{
+						provider: 'tmdb',
+						providerId: '5',
+						category: 'movie',
+						title: { preferred: 'Forrest Gump', alternatives: [] },
+						year: 1994,
+						format: 'Movie',
+						status: null,
+						genres: [],
+						coverPath: '/t/p/w500/forrest.jpg'
+					}
+				],
+				page: 1,
+				hasNextPage: false,
+				total: 1
+			})
+		})
+	);
+	await page.route('**/api/media/cast*', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify([
+				{
+					provider: 'tmdb',
+					providerId: 'character:c1',
+					category: 'movie',
+					title: { preferred: 'Forrest Gump', alternatives: ['Tom Hanks'] },
+					year: null,
+					format: 'Tom Hanks',
+					status: null,
+					genres: [],
+					coverPath: '/t/p/w500/tom.jpg'
+				}
+			])
+		})
+	);
+	await page.route('**/api/media/image*', (route) =>
+		route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+	);
+
+	await createCard(page);
+	await page.getByTestId('tabs').getByRole('button', { name: 'Add' }).click();
+	await page.getByLabel('Category').selectOption('movie');
+	await page.getByTestId('search-input').fill('forrest gump');
+	await page.getByTestId('result').getByRole('button', { name: 'Cast' }).click();
+	await expect(page.getByText('Cast of Forrest Gump')).toBeVisible();
+	await expect(page.getByTestId('result')).toContainText('Tom Hanks');
+	await page.getByTestId('result').getByRole('button', { name: 'Add' }).click();
+	await expect(page.locator('.sheet-map')).toContainText('Forrest Gump');
+});
+
 test('searches podcasts without year filters and shows the publisher', async ({ page }) => {
 	await page.route('**/api/media/options*', (route) =>
 		route.fulfill({

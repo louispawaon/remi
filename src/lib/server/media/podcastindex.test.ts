@@ -142,6 +142,7 @@ describe('Podcast Index adapter', () => {
 		await expect(adapter.options('podcast')).resolves.toEqual({
 			category: 'podcast',
 			provider: 'podcastindex',
+			scopes: [{ value: 'title', label: 'Titles' }],
 			supportsYear: false,
 			titleLanguages: [],
 			filters: []

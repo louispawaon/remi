@@ -9,7 +9,10 @@ const BASE = 'https://api.deezer.com';
 const PER_TYPE = 12;
 
 interface DeezerArtist {
+	id?: number;
 	name?: string;
+	picture_xl?: string;
+	picture_big?: string;
 }
 
 interface DeezerAlbumRef {
@@ -88,6 +91,33 @@ export function createDeezer(fetcher: typeof fetch = globalThis.fetch): MediaAda
 			if (request.mode !== 'search') {
 				throw new RequestError('Music search needs a song, album or artist name.');
 			}
+
+			const scope = request.scope ?? 'title';
+			const query = request.query?.trim();
+			if (scope === 'person') {
+				if (!query) throw new RequestError('Search needs an artist name.');
+				const artists = await getJson<DeezerArtist>(
+					'/search/artist',
+					{
+						q: query,
+						limit: String(PER_TYPE * 2),
+						index: String((request.page - 1) * PER_TYPE * 2)
+					},
+					signal
+				);
+				if (!Array.isArray(artists.data)) {
+					throw new MediaError('provider_unavailable', 'Deezer returned an unexpected response.');
+				}
+				return {
+					results: artists.data.map(normalizeArtist),
+					page: request.page,
+					hasNextPage: Boolean(artists.next),
+					total: typeof artists.total === 'number' ? artists.total : null
+				};
+			}
+			if (scope !== 'title') {
+				throw new RequestError('Deezer does not carry characters.');
+			}
 			if (request.titleLanguage !== 'english') {
 				throw new RequestError('Deezer supplies one title; language choice applies to AniList.');
 			}
@@ -95,7 +125,6 @@ export function createDeezer(fetcher: typeof fetch = globalThis.fetch): MediaAda
 				throw new RequestError('Filters are not available for music.');
 			}
 
-			const query = request.query?.trim();
 			if (!query) throw new RequestError('Search needs a title, album or artist.');
 
 			const params = {
@@ -131,6 +160,10 @@ export function createDeezer(fetcher: typeof fetch = globalThis.fetch): MediaAda
 			return {
 				category,
 				provider: 'deezer',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'person', label: 'Artists' }
+				],
 				supportsYear: false,
 				titleLanguages: [],
 				filters: []
@@ -169,6 +202,20 @@ function normalizeAlbum(album: DeezerAlbum): MediaResult {
 		status: null,
 		genres: [],
 		coverPath: album.cover_xl ?? album.cover_big ?? null
+	};
+}
+
+function normalizeArtist(artist: DeezerArtist): MediaResult {
+	return {
+		provider: 'deezer',
+		providerId: `person:${artist.id}`,
+		category: 'music',
+		title: { preferred: artist.name?.trim() || 'Unknown artist', alternatives: [] },
+		year: null,
+		format: 'Artist',
+		status: null,
+		genres: [],
+		coverPath: artist.picture_xl ?? artist.picture_big ?? null
 	};
 }
 

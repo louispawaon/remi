@@ -2,11 +2,12 @@ import type {
 	MediaOptions,
 	MediaResult,
 	MediaSearchRequest,
+	MediaSearchResult,
 	MediaTitle,
 	TitleLanguage
 } from '#lib/media/types';
 import type { MediaAdapter } from './adapter';
-import { MediaError, timeoutError, upstreamError } from './errors';
+import { MediaError, RequestError, timeoutError, upstreamError } from './errors';
 import { rateLimitResetSeconds, retryAfterSeconds } from './http';
 import { withTimeout } from './timeout';
 
@@ -90,6 +91,38 @@ query Media(
 	}
 }`;
 
+const CHARACTER_QUERY = `
+query Characters($page: Int, $perPage: Int, $search: String) {
+	Page(page: $page, perPage: $perPage) {
+		pageInfo { hasNextPage total }
+		characters(search: $search, sort: FAVOURITES_DESC) {
+			id
+			name { full native }
+			image { large }
+			media(perPage: 1, sort: POPULARITY_DESC) {
+				nodes { title { english romaji } seasonYear }
+			}
+		}
+	}
+}`;
+
+const PEOPLE_QUERY = `
+query People($page: Int, $perPage: Int, $search: String) {
+	Page(page: $page, perPage: $perPage) {
+		pageInfo { hasNextPage total }
+		staff(search: $search, sort: FAVOURITES_DESC) {
+			id
+			name { full native }
+			image { large }
+			languageV2
+			primaryOccupations
+			staffMedia(perPage: 1, sort: POPULARITY_DESC) {
+				nodes { title { english romaji } }
+			}
+		}
+	}
+}`;
+
 interface AniListMedia {
 	id: number;
 	title: { romaji?: string | null; english?: string | null; native?: string | null };
@@ -106,13 +139,99 @@ interface AniListPayload {
 		Page?: {
 			pageInfo?: { hasNextPage?: boolean; total?: number };
 			media?: AniListMedia[];
+			characters?: AniListCharacter[];
+			staff?: AniListStaff[];
 		};
 	};
 }
 
+interface AniListCharacter {
+	id: number;
+	name?: { full?: string | null; native?: string | null } | null;
+	image?: { large?: string | null } | null;
+	media?: {
+		nodes?: {
+			title?: { english?: string | null; romaji?: string | null } | null;
+			seasonYear?: number | null;
+		}[];
+	} | null;
+}
+
+interface AniListStaff {
+	id: number;
+	name?: { full?: string | null; native?: string | null } | null;
+	image?: { large?: string | null } | null;
+	languageV2?: string | null;
+	primaryOccupations?: string[] | null;
+	staffMedia?: {
+		nodes?: { title?: { english?: string | null; romaji?: string | null } | null }[];
+	} | null;
+}
+
 export function createAniList(fetcher: typeof fetch = globalThis.fetch): MediaAdapter {
+	async function searchScope(
+		request: MediaSearchRequest,
+		scope: 'character' | 'person',
+		signal?: AbortSignal
+	): Promise<MediaSearchResult> {
+		if (request.mode !== 'search' || !request.query?.trim()) {
+			throw new RequestError('Search needs a name.');
+		}
+
+		let response: Response;
+		try {
+			response = await fetcher(ENDPOINT, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', accept: 'application/json' },
+				body: JSON.stringify({
+					query: scope === 'character' ? CHARACTER_QUERY : PEOPLE_QUERY,
+					variables: { page: request.page, perPage: PER_PAGE, search: request.query.trim() }
+				}),
+				signal: withTimeout(signal)
+			});
+		} catch (error) {
+			throw fetchFailure(error, 'AniList');
+		}
+
+		if (!response.ok) {
+			throw upstreamError(
+				'AniList',
+				response.status,
+				retryAfterSeconds(response) ?? rateLimitResetSeconds(response)
+			);
+		}
+
+		let payload: AniListPayload;
+		try {
+			payload = (await response.json()) as AniListPayload;
+		} catch {
+			throw new MediaError('provider_unavailable', 'AniList returned an unreadable response.');
+		}
+
+		const page = payload.data?.Page;
+		const entries = scope === 'character' ? page?.characters : page?.staff;
+		if (!page || !Array.isArray(entries)) {
+			throw new MediaError('provider_unavailable', 'AniList returned an unexpected response.');
+		}
+
+		return {
+			results:
+				scope === 'character'
+					? (entries as AniListCharacter[]).map((entry) =>
+							normalizeCharacter(entry, request.category)
+						)
+					: (entries as AniListStaff[]).map((entry) => normalizeStaff(entry, request.category)),
+			page: request.page,
+			hasNextPage: page.pageInfo?.hasNextPage ?? false,
+			total: page.pageInfo?.total ?? null
+		};
+	}
+
 	return {
 		async search(request, signal) {
+			const scope = request.scope ?? 'title';
+			if (scope !== 'title') return searchScope(request, scope, signal);
+
 			const mapping = CATEGORY_MAP[request.category];
 			if (!mapping)
 				throw new MediaError('provider_unavailable', 'AniList does not carry this category.');
@@ -185,6 +304,11 @@ export function createAniList(fetcher: typeof fetch = globalThis.fetch): MediaAd
 			return {
 				category,
 				provider: 'anilist',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'character', label: 'Characters' },
+					{ value: 'person', label: 'People' }
+				],
 				supportsYear: true,
 				titleLanguages: [
 					{ value: 'english', label: 'English' },
@@ -225,6 +349,57 @@ function normalize(media: AniListMedia, request: MediaSearchRequest): MediaResul
 		status: media.status ?? null,
 		genres: media.genres ?? [],
 		coverPath: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null
+	};
+}
+
+function normalizeCharacter(
+	character: AniListCharacter,
+	category: MediaSearchRequest['category']
+): MediaResult {
+	const work = character.media?.nodes?.[0];
+	const workTitle = work?.title?.english || work?.title?.romaji || null;
+	const native = character.name?.native?.trim();
+	return {
+		provider: 'anilist',
+		providerId: `character:${character.id}`,
+		category,
+		title: {
+			preferred: character.name?.full?.trim() || 'Unknown character',
+			alternatives: native ? [native] : []
+		},
+		year: work?.seasonYear ?? null,
+		format: workTitle,
+		status: null,
+		genres: [],
+		coverPath: character.image?.large ?? null
+	};
+}
+
+function normalizeStaff(
+	staff: AniListStaff,
+	category: MediaSearchRequest['category']
+): MediaResult {
+	const occupations = (staff.primaryOccupations ?? []).filter((value) => value.trim());
+	const work = staff.staffMedia?.nodes?.[0]?.title;
+	const native = staff.name?.native?.trim();
+	return {
+		provider: 'anilist',
+		providerId: `person:${staff.id}`,
+		category,
+		title: {
+			preferred: staff.name?.full?.trim() || 'Unknown person',
+			alternatives: native ? [native] : []
+		},
+		year: null,
+		format:
+			occupations.slice(0, 2).join(', ') ||
+			work?.english ||
+			work?.romaji ||
+			staff.languageV2 ||
+			'Crew',
+		status: null,
+		genres: [],
+		coverPath: staff.image?.large ?? null
 	};
 }
 

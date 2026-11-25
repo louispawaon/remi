@@ -1,5 +1,10 @@
 import type { Category } from '#lib/card/types';
-import type { MediaOptions, MediaResult, MediaSearchResult } from '#lib/media/types';
+import type {
+	MediaOptions,
+	MediaResult,
+	MediaSearchRequest,
+	MediaSearchResult
+} from '#lib/media/types';
 import type { MediaAdapter } from './adapter';
 import {
 	missingTmdbCredentials,
@@ -45,6 +50,34 @@ interface TmdbPage {
 	results?: TmdbItem[];
 	total_pages?: number;
 	total_results?: number;
+}
+
+interface TmdbPerson {
+	id: number;
+	name?: string;
+	profile_path?: string | null;
+	known_for_department?: string;
+	known_for?: { title?: string; name?: string; media_type?: string }[];
+}
+
+interface TmdbPersonPage {
+	page?: number;
+	results?: TmdbPerson[];
+	total_pages?: number;
+	total_results?: number;
+}
+
+interface TmdbCastEntry {
+	id: number;
+	credit_id?: string;
+	name?: string;
+	character?: string;
+	roles?: { character?: string }[];
+	profile_path?: string | null;
+}
+
+interface TmdbCredits {
+	cast?: TmdbCastEntry[];
 }
 
 export function createTmdb(options: TmdbOptions): MediaAdapter {
@@ -94,8 +127,44 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 		}
 	}
 
+	async function searchPeople(
+		request: MediaSearchRequest,
+		signal?: AbortSignal
+	): Promise<MediaSearchResult> {
+		if (request.mode !== 'search' || !request.query?.trim()) {
+			throw new RequestError('Search needs an actor name.');
+		}
+
+		const payload = (await getJson(
+			'/search/person',
+			{
+				query: request.query.trim(),
+				page: String(request.page),
+				language: 'en-US',
+				include_adult: 'false'
+			},
+			signal
+		)) as TmdbPersonPage;
+
+		if (!Array.isArray(payload.results)) {
+			throw new MediaError('provider_unavailable', 'TMDB returned an unexpected response.');
+		}
+
+		return {
+			results: payload.results.map((person) => normalizePerson(person, request.category)),
+			page: request.page,
+			hasNextPage: request.page < (payload.total_pages ?? 0),
+			total: payload.total_results ?? null
+		};
+	}
+
 	return {
 		async search(request, signal): Promise<MediaSearchResult> {
+			const scope = request.scope ?? 'title';
+			if (scope === 'person') return searchPeople(request, signal);
+			if (scope !== 'title') {
+				throw new RequestError('TMDB finds characters through a title, not by name.');
+			}
 			if (request.titleLanguage !== 'english') {
 				throw new RequestError('TMDB supplies one title; language choice applies to AniList.');
 			}
@@ -161,6 +230,10 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 			return {
 				category,
 				provider: 'tmdb',
+				scopes: [
+					{ value: 'title', label: 'Titles' },
+					{ value: 'person', label: 'Actors' }
+				],
 				supportsYear: true,
 				titleLanguages: [],
 				filters: [
@@ -177,7 +250,54 @@ export function createTmdb(options: TmdbOptions): MediaAdapter {
 						: [])
 				]
 			};
+		},
+
+		async cast(category, id, signal): Promise<MediaResult[]> {
+			if (category !== 'movie' && category !== 'tv') {
+				throw new RequestError('TMDB only browses cast for movies and TV.');
+			}
+			const path =
+				category === 'movie'
+					? `/movie/${encodeURIComponent(id)}/credits`
+					: `/tv/${encodeURIComponent(id)}/aggregate_credits`;
+			const payload = (await getJson(path, { language: 'en-US' }, signal)) as TmdbCredits;
+			if (!Array.isArray(payload.cast)) {
+				throw new MediaError('provider_unavailable', 'TMDB returned an unexpected response.');
+			}
+			return payload.cast.slice(0, 24).map((entry) => normalizeCast(entry, category));
 		}
+	};
+}
+
+function normalizePerson(person: TmdbPerson, category: Category): MediaResult {
+	const knownFor = person.known_for?.find((item) => item.title || item.name);
+	const context = knownFor?.title || knownFor?.name || person.known_for_department || 'Person';
+	return {
+		provider: 'tmdb',
+		providerId: `person:${person.id}`,
+		category,
+		title: { preferred: person.name?.trim() || 'Unknown person', alternatives: [] },
+		year: null,
+		format: context,
+		status: null,
+		genres: [],
+		coverPath: person.profile_path ? `${IMAGE_PREFIX}${person.profile_path}` : null
+	};
+}
+
+function normalizeCast(entry: TmdbCastEntry, category: Category): MediaResult {
+	const role = entry.character?.trim() || entry.roles?.[0]?.character?.trim();
+	const actor = entry.name?.trim();
+	return {
+		provider: 'tmdb',
+		providerId: `character:${entry.credit_id ?? entry.id}`,
+		category,
+		title: { preferred: role || actor || 'Unknown role', alternatives: actor ? [actor] : [] },
+		year: null,
+		format: actor || 'Cast',
+		status: null,
+		genres: [],
+		coverPath: entry.profile_path ? `${IMAGE_PREFIX}${entry.profile_path}` : null
 	};
 }
 

@@ -117,11 +117,40 @@ describe('Deezer adapter', () => {
 		).rejects.toBeInstanceOf(RequestError);
 	});
 
+	it('searches artists with portraits', async () => {
+		const fetcher = vi.fn<typeof fetch>(async (input) => {
+			expect(String(input)).toContain('/search/artist');
+			return jsonResponse({
+				data: [
+					{
+						id: 7,
+						name: 'Frank Ocean',
+						picture_xl: 'https://cdn-images.dzcdn.net/images/artist/abc/1000x1000.jpg'
+					}
+				],
+				total: 1
+			});
+		});
+		const adapter = createDeezer(fetcher as unknown as typeof fetch);
+		const result = await adapter.search({ ...musicRequest, scope: 'person', query: 'frank ocean' });
+
+		expect(result.results[0]).toMatchObject({
+			providerId: 'person:7',
+			title: { preferred: 'Frank Ocean' },
+			format: 'Artist',
+			coverPath: 'https://cdn-images.dzcdn.net/images/artist/abc/1000x1000.jpg'
+		});
+	});
+
 	it('offers no filters, year, or title languages', async () => {
 		const adapter = createDeezer(fetchMock() as unknown as typeof fetch);
 		await expect(adapter.options('music')).resolves.toEqual({
 			category: 'music',
 			provider: 'deezer',
+			scopes: [
+				{ value: 'title', label: 'Titles' },
+				{ value: 'person', label: 'Artists' }
+			],
 			supportsYear: false,
 			titleLanguages: [],
 			filters: []

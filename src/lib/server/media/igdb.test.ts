@@ -169,11 +169,39 @@ describe('IGDB adapter', () => {
 		).rejects.toBeInstanceOf(RequestError);
 	});
 
+	it('searches characters and keeps only entries with art', async () => {
+		const fetcher = vi.fn<typeof fetch>(async (input) => {
+			if (String(input).includes('id.twitch.tv')) {
+				return jsonResponse({ access_token: 'token', expires_in: 5_000_000 });
+			}
+			return jsonResponse([
+				{ id: 1, name: 'Kratos', mug_shot: { image_id: 'cm1' }, games: [{ name: 'God of War' }] },
+				{ id: 2, name: 'Artless', games: [] }
+			]);
+		});
+		const adapter = create(fetcher);
+		const result = await adapter.search({ ...gameRequest, scope: 'character', page: 1 });
+
+		expect(String(fetcher.mock.calls[1][0])).toContain('/v4/characters');
+		expect(String(fetcher.mock.calls[1][1]?.body)).toContain('mug_shot.image_id');
+		expect(result.results).toHaveLength(1);
+		expect(result.results[0]).toMatchObject({
+			providerId: 'character:1',
+			title: { preferred: 'Kratos' },
+			format: 'God of War',
+			coverPath: 'https://images.igdb.com/igdb/image/upload/t_cover_big/cm1.jpg'
+		});
+	});
+
 	it('offers no filters, year, or title languages', async () => {
 		const adapter = create(fetchMock());
 		await expect(adapter.options('game')).resolves.toEqual({
 			category: 'game',
 			provider: 'igdb',
+			scopes: [
+				{ value: 'title', label: 'Titles' },
+				{ value: 'character', label: 'Characters' }
+			],
 			supportsYear: false,
 			titleLanguages: [],
 			filters: []

@@ -71,8 +71,11 @@ describe('resolveImageUrl', () => {
 		expect(() =>
 			resolveImageUrl('deezer', 'http://cdn-images.dzcdn.net/images/cover/abc/x.jpg')
 		).toThrow(RequestError);
+		expect(
+			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/artist/abc/x.jpg').hostname
+		).toBe('cdn-images.dzcdn.net');
 		expect(() =>
-			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/artist/abc/x.jpg')
+			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/track/abc/x.jpg')
 		).toThrow(RequestError);
 		expect(() =>
 			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/cover/%2e%2e/x.jpg')
