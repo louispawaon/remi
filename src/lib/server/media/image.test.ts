@@ -27,9 +27,9 @@ describe('resolveImageUrl', () => {
 			).hostname
 		).toBe('cdn-images.dzcdn.net');
 		expect(
-			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg')
+			resolveImageUrl('igdb', 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg')
 				.hostname
-		).toBe('cdn.thegamesdb.net');
+		).toBe('images.igdb.com');
 		expect(resolveImageUrl('podcastindex', 'https://cdn.example.com/art.jpg?cache=1').href).toBe(
 			'https://cdn.example.com/art.jpg?cache=1'
 		);
@@ -81,16 +81,22 @@ describe('resolveImageUrl', () => {
 			resolveImageUrl('deezer', 'https://cdn-images.dzcdn.net/images/cover/abc/x.jpg?q=1')
 		).toThrow(RequestError);
 		expect(() =>
-			resolveImageUrl('thegamesdb', 'https://evil.example/images/large/boxart/front/53-1.jpg')
+			resolveImageUrl('igdb', 'https://evil.example/igdb/image/upload/t_cover_big/co1uii.jpg')
 		).toThrow(RequestError);
 		expect(() =>
-			resolveImageUrl('thegamesdb', 'http://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg')
+			resolveImageUrl('igdb', 'http://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg')
 		).toThrow(RequestError);
 		expect(() =>
-			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/small/boxart/front/53-1.jpg')
+			resolveImageUrl('igdb', 'https://images.igdb.com/igdb/image/upload/t_thumb/co1uii.jpg')
 		).toThrow(RequestError);
 		expect(() =>
-			resolveImageUrl('thegamesdb', 'https://cdn.thegamesdb.net/images/large/boxart/%2e%2e/x.jpg')
+			resolveImageUrl('igdb', 'https://images.igdb.com/igdb/image/upload/t_cover_big/%2e%2e/x.jpg')
+		).toThrow(RequestError);
+		expect(() =>
+			resolveImageUrl(
+				'igdb',
+				'https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg?q=1'
+			)
 		).toThrow(RequestError);
 		expect(() => resolveImageUrl('podcastindex', 'http://cdn.example.com/art.jpg')).toThrow(
 			RequestError

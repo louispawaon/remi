@@ -26,8 +26,8 @@
 		</p>
 		<p>
 			Game metadata and artwork come from
-			<a href="https://thegamesdb.net" rel="noreferrer">TheGamesDB</a>. Its public API needs a key;
-			the key stays on the server and never reaches the browser or an export.
+			<a href="https://www.igdb.com" rel="noreferrer">IGDB</a>. Its API is reached with server-side
+			Twitch client credentials; they stay on the server and never reach the browser or an export.
 		</p>
 		<p>
 			Podcast metadata and artwork come from
@@ -40,8 +40,9 @@
 		<h2>Provider setup</h2>
 		<p>
 			Movie and TV discovery needs a TMDB v4 read access token in the server environment as
-			<code>TMDB_READ_ACCESS_TOKEN</code>. Game discovery needs a TheGamesDB public API key as
-			<code>THEGAMESDB_API_KEY</code>. Podcast discovery needs a Podcast Index key and secret as
+			<code>TMDB_READ_ACCESS_TOKEN</code>. Game discovery needs IGDB (Twitch) client credentials as
+			<code>IGDB_CLIENT_ID</code> and <code>IGDB_CLIENT_SECRET</code>. Podcast discovery needs a
+			Podcast Index key and secret as
 			<code>PODCASTINDEX_API_KEY</code> and <code>PODCASTINDEX_API_SECRET</code>. Without them,
 			those categories explain the setup step and the rest of Remi keeps working. None of these
 			credentials appear in exports.

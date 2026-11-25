@@ -1,7 +1,8 @@
 import {
+	IGDB_CLIENT_ID,
+	IGDB_CLIENT_SECRET,
 	PODCASTINDEX_API_KEY,
 	PODCASTINDEX_API_SECRET,
-	THEGAMESDB_API_KEY,
 	TMDB_READ_ACCESS_TOKEN
 } from '$app/env/private';
 import { getMediaService } from '#lib/server/media/service';
@@ -15,7 +16,8 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		const query = parseSearchRequest(url);
 		const result = await getMediaService(
 			TMDB_READ_ACCESS_TOKEN,
-			THEGAMESDB_API_KEY,
+			IGDB_CLIENT_ID,
+			IGDB_CLIENT_SECRET,
 			PODCASTINDEX_API_KEY,
 			PODCASTINDEX_API_SECRET
 		).search(query, request.signal);

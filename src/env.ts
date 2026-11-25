@@ -6,8 +6,12 @@ export const variables = defineEnvVars({
 		description: 'TMDB v4 read access token. Server-only; imported from $app/env/private.',
 		schema: optionalSecret
 	},
-	THEGAMESDB_API_KEY: {
-		description: 'TheGamesDB public API key. Server-only; imported from $app/env/private.',
+	IGDB_CLIENT_ID: {
+		description: 'IGDB (Twitch) client ID. Server-only; imported from $app/env/private.',
+		schema: optionalSecret
+	},
+	IGDB_CLIENT_SECRET: {
+		description: 'IGDB (Twitch) client secret. Server-only; imported from $app/env/private.',
 		schema: optionalSecret
 	},
 	PODCASTINDEX_API_KEY: {

@@ -98,7 +98,7 @@ The image interface accepts provider identifiers and validated paths, not arbitr
 - AniList supplies anime and manga-origin categories. One unfiltered manga query covers manga, manhwa, and manhua; country filters hid matches.
 - TMDB supplies movies and TV. Do not promise perfect cross-provider classification or deduplication.
 - Deezer supplies music. One search covers songs and albums, needs no credential, and supports no year or genre filter.
-- TheGamesDB supplies games across platforms. It needs a server-side public API key and supports no year or genre filter.
+- IGDB supplies games across platforms. It needs server-side Twitch client credentials and supports no year or genre filter.
 - Podcast Index supplies podcasts. It needs a server-side key and secret, has no page offset, and artwork comes from publisher hosts.
 - AniList supports combinations of title, year, genre, format, and status where applicable.
 - TMDB title search supports title and year.
@@ -106,7 +106,7 @@ The image interface accepts provider identifiers and validated paths, not arbitr
 
 Debounce search, cancel stale requests, cache bounded results briefly, and respect upstream rate-limit responses. Distinguish unavailable credentials, provider outages, and retryable limits.
 
-Missing TMDB, TheGamesDB, or Podcast Index credentials disable movie/TV, game, or podcast discovery with a setup explanation; the rest of the editor remains usable. Music needs no credential. Include the required TMDB, TheGamesDB, Deezer, and Podcast Index attribution in Credits.
+Missing TMDB, IGDB, or Podcast Index credentials disable movie/TV, game, or podcast discovery with a setup explanation; the rest of the editor remains usable. Music needs no credential. Include the required TMDB, IGDB, Deezer, and Podcast Index attribution in Credits.
 
 ## Artwork handling
 

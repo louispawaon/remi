@@ -71,12 +71,12 @@ describe('request validation', () => {
 		expect(
 			parseImageRequest(
 				image(
-					'provider=thegamesdb&path=https%3A%2F%2Fcdn.thegamesdb.net%2Fimages%2Flarge%2Fboxart%2Ffront%2F53-1.jpg'
+					'provider=igdb&path=https%3A%2F%2Fimages.igdb.com%2Figdb%2Fimage%2Fupload%2Ft_cover_big%2Fco1uii.jpg'
 				)
 			)
 		).toEqual({
-			provider: 'thegamesdb',
-			path: 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg'
+			provider: 'igdb',
+			path: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg'
 		});
 		expect(parseSearchRequest(search('category=game&mode=search&query=sonic')).category).toBe(
 			'game'

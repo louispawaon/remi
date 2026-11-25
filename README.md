@@ -14,7 +14,7 @@ cp .env.example .env
 pnpm exec playwright install chromium
 ```
 
-`TMDB_READ_ACCESS_TOKEN`, `THEGAMESDB_API_KEY`, and `PODCASTINDEX_API_KEY` with
+`TMDB_READ_ACCESS_TOKEN`, `IGDB_CLIENT_ID` with `IGDB_CLIENT_SECRET`, and `PODCASTINDEX_API_KEY` with
 `PODCASTINDEX_API_SECRET` are the provider credentials; AniList’s and Deezer’s public APIs need
 none. All are optional. Quote any value containing `#` or spaces in `.env`; the env parsers
 treat an unquoted `#` as the start of a comment. Without them, the matching categories explain the setup step and the

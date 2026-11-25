@@ -337,7 +337,7 @@ test('searches games without year filters and shows the platform', async ({ page
 			contentType: 'application/json',
 			body: JSON.stringify({
 				category: 'game',
-				provider: 'thegamesdb',
+				provider: 'igdb',
 				supportsYear: false,
 				titleLanguages: [],
 				filters: []
@@ -351,7 +351,7 @@ test('searches games without year filters and shows the platform', async ({ page
 			body: JSON.stringify({
 				results: [
 					{
-						provider: 'thegamesdb',
+						provider: 'igdb',
 						providerId: '53',
 						category: 'game',
 						title: { preferred: 'Sonic the Hedgehog', alternatives: [] },
@@ -359,7 +359,7 @@ test('searches games without year filters and shows the platform', async ({ page
 						format: 'Sega Genesis',
 						status: null,
 						genres: [],
-						coverPath: 'https://cdn.thegamesdb.net/images/large/boxart/front/53-1.jpg'
+						coverPath: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1uii.jpg'
 					}
 				],
 				page: 1,

@@ -34,10 +34,10 @@ export function missingTmdbCredentials(): MediaError {
 	);
 }
 
-export function missingTheGamesDbKey(): MediaError {
+export function missingIgdbCredentials(): MediaError {
 	return new MediaError(
 		'provider_credentials_missing',
-		'Game search needs a TheGamesDB public API key. Add THEGAMESDB_API_KEY to .env and restart.',
+		'Game search needs an IGDB client ID and secret. Add IGDB_CLIENT_ID and IGDB_CLIENT_SECRET to .env and restart.',
 		503
 	);
 }

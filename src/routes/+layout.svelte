@@ -26,7 +26,7 @@
 		'/privacy': {
 			title: 'Privacy — Remi',
 			description:
-				'How Remi handles your data: collections and artwork stay in your browser, search terms go to AniList, TMDB, TheGamesDB, Deezer, and Podcast Index.'
+				'How Remi handles your data: collections and artwork stay in your browser, search terms go to AniList, TMDB, IGDB, Deezer, and Podcast Index.'
 		},
 		'/terms': {
 			title: 'Terms — Remi',
@@ -36,7 +36,7 @@
 		'/credits': {
 			title: 'Credits — Remi',
 			description:
-				'Where Remi’s metadata and artwork come from, how TMDB, TheGamesDB, and Podcast Index are used, and where your data lives.'
+				'Where Remi’s metadata and artwork come from, how TMDB, IGDB, and Podcast Index are used, and where your data lives.'
 		}
 	};
 

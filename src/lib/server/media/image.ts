@@ -8,7 +8,7 @@ export { MAX_IMAGE_BYTES };
 
 const ANILIST_HOSTS = new Set(['s4.anilist.co', 'img.anilist.co']);
 const DEEZER_HOST = 'cdn-images.dzcdn.net';
-const THEGAMESDB_HOST = 'cdn.thegamesdb.net';
+const IGDB_HOST = 'images.igdb.com';
 
 /** Only provider-owned artwork paths may be fetched; arbitrary URLs are rejected. */
 export function resolveImageUrl(provider: MediaProvider, value: string): URL {
@@ -68,30 +68,30 @@ export function resolveImageUrl(provider: MediaProvider, value: string): URL {
 		return url;
 	}
 
-	if (provider === 'thegamesdb') {
+	if (provider === 'igdb') {
 		let url: URL;
 		try {
 			url = new URL(value);
 		} catch {
-			throw new RequestError('Invalid TheGamesDB image URL.');
+			throw new RequestError('Invalid IGDB image URL.');
 		}
 		if (url.protocol !== 'https:' || url.username || url.password || url.port) {
-			throw new RequestError('TheGamesDB images must be plain HTTPS URLs.');
+			throw new RequestError('IGDB images must be plain HTTPS URLs.');
 		}
-		if (url.hostname !== THEGAMESDB_HOST) {
-			throw new RequestError('TheGamesDB images must come from its CDN.');
+		if (url.hostname !== IGDB_HOST) {
+			throw new RequestError('IGDB images must come from its CDN.');
 		}
 		let pathname: string;
 		try {
 			pathname = decodeURIComponent(url.pathname);
 		} catch {
-			throw new RequestError('TheGamesDB image path is not approved.');
+			throw new RequestError('IGDB image path is not approved.');
 		}
-		if (!pathname.startsWith('/images/large/boxart/') || pathname.includes('..')) {
-			throw new RequestError('TheGamesDB image path is not approved.');
+		if (!/^\/igdb\/image\/upload\/t_cover_big\/[A-Za-z0-9_-]+\.jpg$/.test(pathname)) {
+			throw new RequestError('IGDB image path is not approved.');
 		}
 		if (url.search || url.hash) {
-			throw new RequestError('TheGamesDB image URLs cannot carry a query or fragment.');
+			throw new RequestError('IGDB image URLs cannot carry a query or fragment.');
 		}
 		return url;
 	}

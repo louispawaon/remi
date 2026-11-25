@@ -50,15 +50,15 @@ function fetcherMock() {
 				headers: { 'content-type': 'application/json' }
 			});
 		}
-		if (url.includes('api.thegamesdb.net')) {
-			return new Response(
-				JSON.stringify({
-					data: { count: 0, games: [] },
-					include: {},
-					pages: { next: null }
-				}),
-				{ headers: { 'content-type': 'application/json' } }
-			);
+		if (url.includes('id.twitch.tv')) {
+			return new Response(JSON.stringify({ access_token: 'token', expires_in: 5_000_000 }), {
+				headers: { 'content-type': 'application/json' }
+			});
+		}
+		if (url.includes('api.igdb.com')) {
+			return new Response(JSON.stringify([]), {
+				headers: { 'content-type': 'application/json', 'x-count': '0' }
+			});
 		}
 		if (url.includes('api.podcastindex.org')) {
 			return new Response(JSON.stringify({ status: 'true', feeds: [], count: 0 }), {
@@ -201,21 +201,22 @@ describe('MediaService', () => {
 		expect(fetcher).toHaveBeenCalledTimes(2);
 	});
 
-	it('routes games to TheGamesDB without touching TMDB', async () => {
+	it('routes games to IGDB without touching TMDB', async () => {
 		const fetcher = fetcherMock();
 		const service = new MediaService({
-			theGamesDbKey: 'key',
+			igdbClientId: 'client',
+			igdbClientSecret: 'secret',
 			fetch: fetcher as unknown as typeof fetch
 		});
 
 		await expect(
 			service.search({ ...animeRequest, category: 'game', query: 'sonic' })
 		).resolves.toMatchObject({ results: [] });
-		await expect(service.options('game')).resolves.toMatchObject({ provider: 'thegamesdb' });
-		expect(fetcher).toHaveBeenCalledTimes(1);
+		await expect(service.options('game')).resolves.toMatchObject({ provider: 'igdb' });
+		expect(fetcher).toHaveBeenCalledTimes(2);
 	});
 
-	it('reports a missing TheGamesDB key for games', async () => {
+	it('reports missing IGDB credentials for games', async () => {
 		const service = new MediaService({ fetch: fetcherMock() as unknown as typeof fetch });
 
 		await expect(
