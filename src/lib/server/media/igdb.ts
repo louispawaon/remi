@@ -32,7 +32,7 @@ interface IgdbCharacter {
 	id: number;
 	name?: string;
 	mug_shot?: { image_id?: string };
-	games?: IgdbName[];
+	games?: Array<{ name?: string; cover?: { image_id?: string } }>;
 }
 
 export interface IgdbOptions {
@@ -177,12 +177,12 @@ export function createIgdb(options: IgdbOptions): MediaAdapter {
 				const offset = (request.page - 1) * PAGE_SIZE;
 				const { rows } = await query<IgdbCharacter>(
 					'characters',
-					`search "${escape(queryText)}"; fields name, mug_shot.image_id, games.name; limit ${PAGE_SIZE}; offset ${offset};`,
+					`search "${escape(queryText)}"; fields name, mug_shot.image_id, games.name, games.cover.image_id; limit ${PAGE_SIZE}; offset ${offset};`,
 					signal
 				);
-				// The index carries junk and artless entries; only portrait tiles are useful here.
+				// Keep artless entries; normalizeCharacter falls back to the linked game's cover.
 				return {
-					results: rows.filter((row) => row.mug_shot?.image_id).map(normalizeCharacter),
+					results: rows.map(normalizeCharacter),
 					page: request.page,
 					hasNextPage: rows.length === PAGE_SIZE,
 					total: null
@@ -257,6 +257,9 @@ function normalize(game: IgdbGame): MediaResult {
 }
 
 function normalizeCharacter(character: IgdbCharacter): MediaResult {
+	// Only ~3% of IGDB characters have a portrait; the linked game's cover keeps the tile visual.
+	const fallbackArt = character.games?.find((game) => game.cover?.image_id)?.cover?.image_id;
+	const imageId = character.mug_shot?.image_id ?? fallbackArt;
 	return {
 		provider: 'igdb',
 		providerId: `character:${character.id}`,
@@ -266,9 +269,7 @@ function normalizeCharacter(character: IgdbCharacter): MediaResult {
 		format: character.games?.[0]?.name ?? 'Game',
 		status: null,
 		genres: [],
-		coverPath: character.mug_shot?.image_id
-			? `${IMAGE_PREFIX}${character.mug_shot.image_id}.jpg`
-			: null
+		coverPath: imageId ? `${IMAGE_PREFIX}${imageId}.jpg` : null
 	};
 }
 

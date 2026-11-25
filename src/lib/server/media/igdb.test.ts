@@ -169,27 +169,44 @@ describe('IGDB adapter', () => {
 		).rejects.toBeInstanceOf(RequestError);
 	});
 
-	it('searches characters and keeps only entries with art', async () => {
+	it('searches characters and falls back to the linked game cover', async () => {
 		const fetcher = vi.fn<typeof fetch>(async (input) => {
 			if (String(input).includes('id.twitch.tv')) {
 				return jsonResponse({ access_token: 'token', expires_in: 5_000_000 });
 			}
 			return jsonResponse([
 				{ id: 1, name: 'Kratos', mug_shot: { image_id: 'cm1' }, games: [{ name: 'God of War' }] },
-				{ id: 2, name: 'Artless', games: [] }
+				{
+					id: 2,
+					name: 'Artless',
+					games: [{ name: 'Artless Game', cover: { image_id: 'co9' } }]
+				},
+				{ id: 3, name: 'Coverless', games: [{ name: 'No Art' }] }
 			]);
 		});
 		const adapter = create(fetcher);
 		const result = await adapter.search({ ...gameRequest, scope: 'character', page: 1 });
 
 		expect(String(fetcher.mock.calls[1][0])).toContain('/v4/characters');
-		expect(String(fetcher.mock.calls[1][1]?.body)).toContain('mug_shot.image_id');
-		expect(result.results).toHaveLength(1);
+		expect(String(fetcher.mock.calls[1][1]?.body)).toContain('games.cover.image_id');
+		expect(result.results).toHaveLength(3);
 		expect(result.results[0]).toMatchObject({
 			providerId: 'character:1',
 			title: { preferred: 'Kratos' },
 			format: 'God of War',
 			coverPath: 'https://images.igdb.com/igdb/image/upload/t_cover_big/cm1.jpg'
+		});
+		expect(result.results[1]).toMatchObject({
+			providerId: 'character:2',
+			title: { preferred: 'Artless' },
+			format: 'Artless Game',
+			coverPath: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co9.jpg'
+		});
+		expect(result.results[2]).toMatchObject({
+			providerId: 'character:3',
+			title: { preferred: 'Coverless' },
+			format: 'No Art',
+			coverPath: null
 		});
 	});
 
