@@ -18,7 +18,7 @@ While adding to a collection, the user can switch the Add panel from titles to *
 - `src/lib/editor/AddPanel.svelte` — scope of the Add UI, artwork fetch, text-only fallback.
 - **Decision (request, 2026-11-25):** only characters/actors from media Remi already supports; do not add new media types.
 - **Verified (2026-11-25):** AniList returns characters and staff with portraits and a source work. IGDB returns characters with mug shots. Podcast Index exposes only a free-text feed `author`/`ownerName`, no person records.
-- **Assumption (D1, below):** "media present in Remi" means the app's supported categories app-wide, not only titles already in the user's current collection.
+- **Decision D1 (2026-11-25, founder):** app-wide supported media, not limited to the current collection.
 
 ## Scope and dependencies
 
@@ -52,12 +52,12 @@ While adding to a collection, the user can switch the Add panel from titles to *
 
 ### Open decisions
 
-| ID  | Decision                                                                                                                  | Owner   | Blocks     |
-| --- | ------------------------------------------------------------------------------------------------------------------------- | ------- | ---------- |
-| D1  | App-wide supported media, or only media already in the user's current collection? Plan assumes app-wide.                  | founder | all slices |
-| D2  | Live-action characters: actor portrait labelled with the role (recommended), text-only tile, or omit movie/TV characters? | founder | S6         |
-| D3  | Music people: artists only (recommended), or also band members and song performers (adds MusicBrainz or TheAudioDB)       | founder | S5b        |
-| D4  | AniList people: show all staff with an occupation label (recommended), or only voice actors?                              | founder | S2         |
+| ID  | Decision                                                                                                                  | Owner   | Resolution (2026-11-25)                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------ |
+| D1  | App-wide supported media, or only media already in the user's current collection?                                         | founder | **App-wide.** Settled by the founder.                                          |
+| D2  | Live-action characters: actor portrait labelled with the role (recommended), text-only tile, or omit movie/TV characters? | founder | **Actor portrait labelled with the role**, reached by browsing a title's cast. |
+| D3  | Music people: artists only (recommended), or also band members and song performers (adds MusicBrainz or TheAudioDB)       | founder | **Artists only.** No new provider.                                             |
+| D4  | AniList people: show all staff with an occupation label (recommended), or only voice actors?                              | founder | **All staff with an occupation label.**                                        |
 
 ## Slices
 
@@ -65,7 +65,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S1 — Scope plumbing + AniList characters
 
-- **Status:** `ready` (under the D1 assumption)
+- **Status:** `ready for founder review`
 - **Outcome:** In **Anime** or **Manga**, switching the new scope selector to **Characters** and searching returns AniList characters; adding one creates a portrait tile.
 - **Sources:** `docs/oneup/characters-actors-plan.md`; AniList GraphQL (verified 2026-11-25); `src/lib/server/media/anilist.ts`.
 - **Permitted changes:** `src/lib/media/types.ts`, `src/lib/server/media/validate.ts`, `service.ts`, `adapter.ts`, `anilist.ts`, `src/lib/media/client.ts`, `src/lib/editor/AddPanel.svelte`, their tests.
@@ -81,7 +81,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S2 — AniList people / voice actors
 
-- **Status:** `ready` (depends on S1)
+- **Status:** `ready for founder review`
 - **Outcome:** A **People** scope in Anime/Manga returns AniList staff with portraits and an occupation label.
 - **Sources:** AniList `Page.staff` (verified live); D4.
 - **Permitted changes:** `anilist.ts`, options in its adapter, Add panel scope labels, tests.
@@ -93,7 +93,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S3 — IGDB game characters
 
-- **Status:** `ready` (depends on S1)
+- **Status:** `ready for founder review`
 - **Outcome:** A **Characters** scope in Game returns IGDB characters with mug shots and their game.
 - **Sources:** IGDB `/characters` (verified live: Kratos, Link, Cloud, Geralt have art; Genshin/League absent); `src/lib/server/media/igdb.ts`; existing `images.igdb.com` allow-list.
 - **Permitted changes:** `igdb.ts`, its tests, Add panel labels, attribution copy if needed.
@@ -105,7 +105,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S4 — TMDB people (movie / TV actors)
 
-- **Status:** `ready` (depends on S1)
+- **Status:** `ready for founder review`
 - **Outcome:** A **People** scope in Movie/TV searches actors by name, showing portrait and known-for title.
 - **Sources:** TMDB `/search/person`; existing token and `image.tmdb.org` path validation.
 - **Permitted changes:** `tmdb.ts`, its tests, Add panel labels.
@@ -116,7 +116,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S5 — Deezer artists
 
-- **Status:** `ready` (depends on S1)
+- **Status:** `ready for founder review`
 - **Outcome:** A **People** scope in Music searches artists and adds their portrait.
 - **Sources:** Deezer `/search/artist`; existing `cdn-images.dzcdn.net` allow-list currently permits `/images/cover/` only — a path update is required for `/images/artist/`.
 - **Permitted changes:** `deezer.ts`, `image.ts` allow-list, tests, Add panel labels.
@@ -127,7 +127,7 @@ Each slice is independently reviewable and leaves the app working.
 
 ### S6 — Live-action characters (conditional)
 
-- **Status:** `blocked` — D2
+- **Status:** `ready for founder review`
 - **Outcome:** From a movie/TV title, browse its cast and add a character with the actor's portrait labelled with the role.
 - **Sources:** TMDB `/movie/{id}/credits`, `/tv/{id}/aggregate_credits`; D2.
 - **Permitted changes:** TMDB adapter, a cast sub-panel or result mode, tests.
@@ -148,12 +148,29 @@ S1 plus S2–S5 cover characters for anime/manga and games, and people for anime
 
 ## Completion evidence
 
-- **Status:** `pending` (planning only)
-- **Result:** this plan; no product code changed.
-- **Checks run:** 2026-11-25 AniList GraphQL probe for `zoro` → 200, characters and staff returned with portraits; Podcast Index `byfeedurl` probe → 200, no `persons` field.
-- **Remaining approvals:** D1–D4.
-- **Next action:** confirm D1; then start S1 — owner: founder, executor.
-
-### Slice evidence
-
-Append per-slice evidence here when execution starts. Keep earlier entries.
+- **Status:** `ready for founder review`
+- **Result:** commit `3dff2cb` on `main` (`feat: search characters and people alongside titles`).
+- **Checks run:**
+  - 2026-11-25 `pnpm check` → 0 errors, 0 warnings.
+  - 2026-11-25 `pnpm lint` → Prettier and ESLint clean.
+  - 2026-11-25 `pnpm test:unit` → 29 files, 228 tests passed.
+  - 2026-11-25 `CI=1 pnpm exec playwright test --grep-invert "saves a pending edit before following browser Back"` → 51 passed.
+  - 2026-11-25 live probes on an env-backed build (port 3141):
+    - `anime/character zoro` → 23 results; `Zoro Roronoa · ONE PIECE · 1999`; portrait proxied as PNG.
+    - `anime/person kazuya nakai` → `Kazuya Nakai · Voice Actor`; portrait proxied as JPEG.
+    - `game/character kratos` → `Kratos · God of War: Ascension`; portrait proxied as JPEG.
+    - `movie/person tom hanks` → `Tom Hanks · Forrest Gump`; portrait proxied as WebP.
+    - `music/person frank ocean` → `Frank Ocean · Artist`; portrait proxied as JPEG.
+    - `cast movie 13` → 24 roles, first two `Forrest Gump / Tom Hanks` and `Jenny Curran / Robin Wright`.
+  - Old-sheet compatibility: `CardItem` is unchanged and character/people ids are stored as plain `sourceId` strings.
+- **Review:** self-review — no fresh reviewer dispatched; not independent assurance. Verdict `ready for founder review`. Diff re-read against the slice acceptance criteria.
+- **Gaps:**
+  - Browser tests cover the shared scope UI (AniList characters) and the cast flow (TMDB); the IGDB, Deezer, TMDB-person, and AniList-people mappings are covered by adapter unit tests rather than separate browser tests.
+  - IGDB character totals are `null` and paging is page-length based, because art filtering makes `X-Count` misleading.
+  - IGDB character coverage remains console/PC; gacha/mobile casts and game voice actors are absent at the source.
+  - Live-action character tiles use the actor's portrait labelled with the role, per D2; no character art is claimed.
+  - Cast browsing returns at most 24 roles per title.
+  - AniList staff search matches names and includes non-voice staff, per D4.
+  - Deezer returns artists (bands or solo singers), not individual band members, per D3.
+- **Remaining approvals:** founder check of the scope switch and the cast flow.
+- **Next action:** `pnpm dev` → Add → **Anime** → **Characters** → `zoro`; then **Movie** → search a title → **Cast** — owner: founder.
